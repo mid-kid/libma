@@ -14,12 +14,14 @@ CFLAGS = -O2 -Wall -I$(AGBDIR)/include -I. \
 .c.s:
 	$(CC) $(CFLAGS) -S $<
 
-compare: $(LIB)
-	md5sum -c libma.md5
+all: compare
 
 $(LIB): $(OFILES) ardata ardata.txt
 	$(AR) rs $@ $(OFILES)
 	./ardata $@ ardata.txt
+
+compare: $(LIB)
+	md5sum -c libma.md5
 
 clean:
 	rm -f $(LIB) $(OFILES) ardata
