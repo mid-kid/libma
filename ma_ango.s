@@ -8,6 +8,7 @@
 .lcomm onetime_key_bin.5, 0x24
 .lcomm onetime_key_text.6, 0x2d
 
+.align 2
 .thumb_func
 .global MA_MakeAuthorizationCode
 MA_MakeAuthorizationCode:
@@ -70,6 +71,7 @@ MA_MakeAuthorizationCode:
 .lcomm hash.10, 0x11
 .lcomm j.11, 0x4
 
+.align 2
 .thumb_func
 gb_MakeSecretCode:
     push	{r4, r5, r6, lr}
@@ -126,6 +128,7 @@ gb_MakeSecretCode:
 .lcomm dest.15, 0x25
 .lcomm result.16, 0x25
 
+.align 2
 .thumb_func
 gb_OutSecretCode:
     push	{r4, r5, r6, lr}
@@ -162,6 +165,7 @@ gb_OutSecretCode:
 
 .lcomm buf.20, 0x64
 
+.align 2
 .thumb_func
 gb_CreateMD5Hash:
     push	{r4, r5, r6, lr}
@@ -207,6 +211,7 @@ gb_CreateMD5Hash:
 
 .lcomm half.24, 0x4
 
+.align 2
 .thumb_func
 gb_BitHalfMove:
     push	{r4, r5, r6, r7, lr}
@@ -369,6 +374,7 @@ gb_BitHalfMove:
 
 .lcomm buf.28, 0x1
 
+.align 2
 .thumb_func
 gb_BitChangeAndRotation:
     push	{r4, r5, r6, r7, lr}
@@ -418,6 +424,7 @@ gb_BitChangeAndRotation:
 
 .lcomm context.32, 0x58
 
+.align 2
 .thumb_func
 CalcValueMD5:
     push	{r4, r5, r6, lr}
@@ -473,6 +480,7 @@ xchg:
 .size xchg, .-xchg
 .section .text
 
+.align 2
 .thumb_func
 Base64_encode:
     push	{r4, r5, r6, r7, lr}
@@ -617,6 +625,7 @@ base64RevTable.40:
 .lcomm c.42, 0x4
 .lcomm byte.43, 0x4
 
+.align 2
 .thumb_func
 Base64_decode:
     push	{r4, r5, r6, r7, lr}
