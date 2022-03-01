@@ -1,8 +1,6 @@
 .thumb
 .gcc2_compiled.:
 
-.section .text
-
 .section .rodata
 .type PADDING, object
 PADDING:

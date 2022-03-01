@@ -1,8 +1,6 @@
 .thumb
 .gcc2_compiled.:
 
-.section .text
-
 .lcomm eos.3, 0x4
 
 .align 2

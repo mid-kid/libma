@@ -1,8 +1,6 @@
 .thumb
 .gcc2_compiled.:
 
-.section .text
-
 .lcomm seq_bin.3, 0x24
 .lcomm seq_text.4, 0x31
 .lcomm onetime_key_bin.5, 0x24
