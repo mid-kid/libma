@@ -12,6 +12,7 @@ gTimerIntByteInter:
     .word 0xffecffee
 .size gTimerIntByteInter, .-gTimerIntByteInter
 
+.align 2
 .type gNullCounterByte, object
 gNullCounterByte:
     .word 0x00001001
@@ -26,6 +27,7 @@ gNullCounterByte:
     .word 0x00000333
 .size gNullCounterByte, .-gNullCounterByte
 
+.align 2
 .type gP2PCounterByte, object
 gP2PCounterByte:
     .word 0x00000201
@@ -40,6 +42,7 @@ gP2PCounterByte:
     .word 0x00000066
 .size gP2PCounterByte, .-gP2PCounterByte
 
+.align 2
 .type gTimeout90CounterByte, object
 gTimeout90CounterByte:
     .word 0x0005a03e
@@ -54,6 +57,7 @@ gTimeout90CounterByte:
     .word 0x0001200c
 .size gTimeout90CounterByte, .-gTimeout90CounterByte
 
+.align 2
 .type gTimeout30CounterByte, object
 gTimeout30CounterByte:
     .word 0x0001e015
@@ -68,6 +72,7 @@ gTimeout30CounterByte:
     .word 0x00006004
 .size gTimeout30CounterByte, .-gTimeout30CounterByte
 
+.align 2
 .type gTimeout10CounterByte, object
 gTimeout10CounterByte:
     .word 0x0000a007
@@ -82,6 +87,7 @@ gTimeout10CounterByte:
     .word 0x00002001
 .size gTimeout10CounterByte, .-gTimeout10CounterByte
 
+.align 2
 .type gTimeout02CounterByte, object
 gTimeout02CounterByte:
     .word 0x00002002
@@ -96,6 +102,7 @@ gTimeout02CounterByte:
     .word 0x00000667
 .size gTimeout02CounterByte, .-gTimeout02CounterByte
 
+.align 2
 .type gTimeout200msecCounterByte, object
 gTimeout200msecCounterByte:
     .word 0x00000334
@@ -110,6 +117,7 @@ gTimeout200msecCounterByte:
     .word 0x000000a4
 .size gTimeout200msecCounterByte, .-gTimeout200msecCounterByte
 
+.align 2
 .type gTimeout250msecCounterByte, object
 gTimeout250msecCounterByte:
     .word 0x00000401
@@ -124,6 +132,7 @@ gTimeout250msecCounterByte:
     .word 0x000000cd
 .size gTimeout250msecCounterByte, .-gTimeout250msecCounterByte
 
+.align 2
 .type gTimeout40msecCounterByte, object
 gTimeout40msecCounterByte:
     .word 0x000000a4
@@ -138,6 +147,7 @@ gTimeout40msecCounterByte:
     .word 0x00000021
 .size gTimeout40msecCounterByte, .-gTimeout40msecCounterByte
 
+.align 2
 .type gTimerIntWordInter, object
 gTimerIntWordInter:
     .word 0xfff9fff8
@@ -147,6 +157,7 @@ gTimerIntWordInter:
     .word 0xffecffee
 .size gTimerIntWordInter, .-gTimerIntWordInter
 
+.align 2
 .type gNullCounterWord, object
 gNullCounterWord:
     .word 0x00000801
@@ -161,6 +172,7 @@ gNullCounterWord:
     .word 0x000002ab
 .size gNullCounterWord, .-gNullCounterWord
 
+.align 2
 .type gP2PCounterWord, object
 gP2PCounterWord:
     .word 0x00000101
@@ -175,6 +187,7 @@ gP2PCounterWord:
     .word 0x00000055
 .size gP2PCounterWord, .-gP2PCounterWord
 
+.align 2
 .type gTimeout90CounterWord, object
 gTimeout90CounterWord:
     .word 0x0002d01f
@@ -189,6 +202,7 @@ gTimeout90CounterWord:
     .word 0x0000f00a
 .size gTimeout90CounterWord, .-gTimeout90CounterWord
 
+.align 2
 .type gTimeout30CounterWord, object
 gTimeout30CounterWord:
     .word 0x0000f00b
@@ -203,6 +217,7 @@ gTimeout30CounterWord:
     .word 0x00005003
 .size gTimeout30CounterWord, .-gTimeout30CounterWord
 
+.align 2
 .type gTimeout10CounterWord, object
 gTimeout10CounterWord:
     .word 0x00005004
@@ -217,6 +232,7 @@ gTimeout10CounterWord:
     .word 0x00001aac
 .size gTimeout10CounterWord, .-gTimeout10CounterWord
 
+.align 2
 .type gTimeout02CounterWord, object
 gTimeout02CounterWord:
     .word 0x00001001
@@ -231,6 +247,7 @@ gTimeout02CounterWord:
     .word 0x00000556
 .size gTimeout02CounterWord, .-gTimeout02CounterWord
 
+.align 2
 .type gTimeout200msecCounterWord, object
 gTimeout200msecCounterWord:
     .word 0x0000019a
@@ -245,6 +262,7 @@ gTimeout200msecCounterWord:
     .word 0x00000089
 .size gTimeout200msecCounterWord, .-gTimeout200msecCounterWord
 
+.align 2
 .type gTimeout250msecCounterWord, object
 gTimeout250msecCounterWord:
     .word 0x00000201
@@ -259,6 +277,7 @@ gTimeout250msecCounterWord:
     .word 0x000000ab
 .size gTimeout250msecCounterWord, .-gTimeout250msecCounterWord
 
+.align 2
 .type gTimeout40msecCounterWord, object
 gTimeout40msecCounterWord:
     .word 0x00000052
@@ -273,11 +292,13 @@ gTimeout40msecCounterWord:
     .word 0x0000001b
 .size gTimeout40msecCounterWord, .-gTimeout40msecCounterWord
 
+.align 2
 .type MaPacketData_PreStart, object
 MaPacketData_PreStart:
     .word 0x4b4b4b4b
 .size MaPacketData_PreStart, .-MaPacketData_PreStart
 
+.align 2
 .type MaPacketData_Start, object
 MaPacketData_Start:
     .word 0x00106699
@@ -287,6 +308,7 @@ MaPacketData_Start:
     .word 0x00000081
 .size MaPacketData_Start, .-MaPacketData_Start
 
+.align 2
 .type MaPacketData_NULL, object
 MaPacketData_NULL:
     .word 0x000f6699
@@ -294,6 +316,7 @@ MaPacketData_NULL:
     .word 0x00000081
 .size MaPacketData_NULL, .-MaPacketData_NULL
 
+.align 2
 .type MaPacketData_CheckStatus, object
 MaPacketData_CheckStatus:
     .word 0x00176699
@@ -455,6 +478,7 @@ SetInternalRecvBuffer:
 .size SetInternalRecvBuffer, .-SetInternalRecvBuffer
 
 .section .rodata
+.align 2
 .type counterArrayByte.12, object
 counterArrayByte.12:
     .word gTimeout02CounterByte
@@ -462,6 +486,7 @@ counterArrayByte.12:
     .word gTimeout30CounterByte
     .word gTimeout90CounterByte
 
+.align 2
 .type counterArrayWord.13, object
 counterArrayWord.13:
     .word gTimeout02CounterWord
@@ -4184,6 +4209,7 @@ MA_ProcessCheckStatusResponse:
 .size MA_ProcessCheckStatusResponse, .-MA_ProcessCheckStatusResponse
 
 .section .rodata
+.align 2
 .type errTable.174, object
 errTable.174:
     .word 0x13171615

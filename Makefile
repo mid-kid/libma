@@ -24,7 +24,7 @@ compare: $(LIB)
 	md5sum -c libma.md5
 
 clean:
-	rm -f $(LIB) $(OFILES) ardata
+	rm -f $(LIB) $(OFILES) ardata ardata.exe
 
 ardata: CC := $(HOSTCC)
 ardata: CFLAGS := $(HOSTCFLAGS)
