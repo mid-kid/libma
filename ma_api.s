@@ -459,40 +459,39 @@ MakeEndLineBuffer:
 .align 2
 .type strEndMultiLine.25, object
 strEndMultiLine.25:
-    .word 0x0d2e0a0d
-    .short 0x000a
+    .asciz "\r\n.\r\n"
 .size strEndMultiLine.25, .-strEndMultiLine.25
 .align 2
-    .word 0x54495551
-    .word 0x00000a0d
-    .word 0x4f4c4548
-    .word 0x00000020
-    .word 0x00000a0d
-    .word 0x4c49414d
-    .word 0x4f524620
-    .word 0x003c3a4d
-    .word 0x000a0d3e
-    .word 0x54504352
-    .word 0x3a4f5420
-    .word 0x0000003c
-    .word 0x41544144
-    .word 0x00000a0d
-    .word 0x52455355
-    .word 0x00000020
-    .word 0x53534150
-    .word 0x00000020
-    .word 0x54415453
-    .word 0x00000a0d
-    .word 0x5453494c
-    .word 0x00000020
-    .word 0x52544552
-    .word 0x00000020
-    .word 0x454c4544
-    .word 0x00000020
-    .word 0x20504f54
-    .word 0x00000000
-    .word 0x0a0d3020
-    .word 0x00000000
+    .asciz "QUIT\r\n"
+.align 2
+    .asciz "HELO "
+.align 2
+    .asciz "\r\n"
+.align 2
+    .asciz "MAIL FROM:<"
+.align 2
+    .asciz ">\r\n"
+.align 2
+    .asciz "RCPT TO:<"
+.align 2
+    .asciz "DATA\r\n"
+.align 2
+    .asciz "USER "
+.align 2
+    .asciz "PASS "
+.align 2
+    .asciz "STAT\r\n"
+.align 2
+    .asciz "LIST "
+.align 2
+    .asciz "RETR "
+.align 2
+    .asciz "DELE "
+.align 2
+    .asciz "TOP "
+.align 2
+    .asciz " 0\r\n"
+.align 2
 .section .text
 
 .align 2
@@ -9228,67 +9227,31 @@ MATASK_POP3_Head:
 .align 2
 .type strDownload.229, object
 strDownload.229:
-    .word 0x656d6167
-    .word 0x2e796f62
-    .word 0x61746164
-    .word 0x746e6563
-    .word 0x6e2e7265
-    .word 0x706a2e65
-    .word 0x6267632f
-    .word 0x776f642f
-    .word 0x616f6c6e
-    .short 0x0064
+    .asciz "gameboy.datacenter.ne.jp/cgb/download"
 .size strDownload.229, .-strDownload.229
 
 .align 2
 .type strUpload.230, object
 strUpload.230:
-    .word 0x656d6167
-    .word 0x2e796f62
-    .word 0x61746164
-    .word 0x746e6563
-    .word 0x6e2e7265
-    .word 0x706a2e65
-    .word 0x6267632f
-    .word 0x6c70752f
-    .word 0x0064616f
+    .asciz "gameboy.datacenter.ne.jp/cgb/upload"
 .size strUpload.230, .-strUpload.230
 
 .align 2
 .type strUtility.231, object
 strUtility.231:
-    .word 0x656d6167
-    .word 0x2e796f62
-    .word 0x61746164
-    .word 0x746e6563
-    .word 0x6e2e7265
-    .word 0x706a2e65
-    .word 0x6267632f
-    .word 0x6974752f
-    .word 0x7974696c
-    .byte 0x00
+    .asciz "gameboy.datacenter.ne.jp/cgb/utility"
 .size strUtility.231, .-strUtility.231
 
 .align 2
 .type strRanking.232, object
 strRanking.232:
-    .word 0x656d6167
-    .word 0x2e796f62
-    .word 0x61746164
-    .word 0x746e6563
-    .word 0x6e2e7265
-    .word 0x706a2e65
-    .word 0x6267632f
-    .word 0x6e61722f
-    .word 0x676e696b
-    .byte 0x00
+    .asciz "gameboy.datacenter.ne.jp/cgb/ranking"
 .size strRanking.232, .-strRanking.232
 
 .align 2
 .type strHttp.233, object
 strHttp.233:
-    .word 0x70747468
-    .word 0x002f2f3a
+    .asciz "http://"
 .size strHttp.233, .-strHttp.233
 .section .text
 
@@ -9470,123 +9433,79 @@ ExtractServerName:
 .align 2
 .type strHttpGet, object
 strHttpGet:
-    .word 0x20544547
-    .byte 0x00
+    .asciz "GET "
 .size strHttpGet, .-strHttpGet
 
 .align 2
 .type strHttpPost, object
 strHttpPost:
-    .word 0x54534f50
-    .short 0x0020
+    .asciz "POST "
 .size strHttpPost, .-strHttpPost
 
 .align 2
 .type strHttpReqSuffix, object
 strHttpReqSuffix:
-    .word 0x54544820
-    .word 0x2e312f50
-    .word 0x000a0d30
+    .asciz " HTTP/1.0\r\n"
 .size strHttpReqSuffix, .-strHttpReqSuffix
 
 .align 2
 .type strHttpContentLength, object
 strHttpContentLength:
-    .word 0x746e6f43
-    .word 0x2d746e65
-    .word 0x676e654c
-    .word 0x203a6874
-    .word 0x000a0d30
+    .asciz "Content-Length: 0\r\n"
 .size strHttpContentLength, .-strHttpContentLength
 
 .align 2
 .type strHttpAuthenticate, object
 strHttpAuthenticate:
-    .word 0x2d575757
-    .word 0x68747541
-    .word 0x69746e65
-    .word 0x65746163
-    .word 0x4247203a
-    .word 0x6e203030
-    .word 0x3d656d61
-    .short 0x0022
+    .asciz "WWW-Authenticate: GB00 name=\""
 .size strHttpAuthenticate, .-strHttpAuthenticate
 
 .align 2
 .type strHttpAuthorization, object
 strHttpAuthorization:
-    .word 0x68747541
-    .word 0x7a69726f
-    .word 0x6f697461
-    .word 0x47203a6e
-    .word 0x20303042
-    .word 0x656d616e
-    .short 0x223d
-    .byte 0x00
+    .asciz "Authorization: GB00 name=\""
 .size strHttpAuthorization, .-strHttpAuthorization
 
 .align 2
 .type strHttpContentType, object
 strHttpContentType:
-    .word 0x746e6f43
-    .word 0x2d746e65
-    .word 0x65707954
-    .word 0x7061203a
-    .word 0x63696c70
-    .word 0x6f697461
-    .word 0x2d782f6e
-    .word 0x0d626763
-    .short 0x000a
+    .asciz "Content-Type: application/x-cgb\r\n"
 .size strHttpContentType, .-strHttpContentType
 
 .align 2
 .type strHttpGbStatus, object
 strHttpGbStatus:
-    .word 0x532d6247
-    .word 0x75746174
-    .word 0x00203a73
+    .asciz "Gb-Status: "
 .size strHttpGbStatus, .-strHttpGbStatus
 
 .align 2
 .type strHttpGbAuthID, object
 strHttpGbAuthID:
-    .word 0x412d6247
-    .word 0x2d687475
-    .word 0x203a4449
-    .byte 0x00
+    .asciz "Gb-Auth-ID: "
 .size strHttpGbAuthID, .-strHttpGbAuthID
 
 .align 2
 .type strHttpDate, object
 strHttpDate:
-    .word 0x65746144
-    .short 0x203a
-    .byte 0x00
+    .asciz "Date: "
 .size strHttpDate, .-strHttpDate
 
 .align 2
 .type strHttpLocation, object
 strHttpLocation:
-    .word 0x61636f4c
-    .word 0x6e6f6974
-    .short 0x203a
-    .byte 0x00
+    .asciz "Location: "
 .size strHttpLocation, .-strHttpLocation
 
 .align 2
 .type strHttpUserAgent, object
 strHttpUserAgent:
-    .word 0x72657355
-    .word 0x6567412d
-    .word 0x203a746e
-    .word 0x2d424741
-    .byte 0x00
+    .asciz "User-Agent: AGB-"
 .size strHttpUserAgent, .-strHttpUserAgent
 
 .align 2
 .type strServerRoot, object
 strServerRoot:
-    .short 0x002f
+    .asciz "/"
 .size strServerRoot, .-strServerRoot
 .section .text
 
@@ -10077,16 +9996,12 @@ MA_HTTP_GetPost:
 .align 2
 .type hexChar.252, object
 hexChar.252:
-    .word 0x33323130
-    .word 0x37363534
-    .word 0x42413938
-    .word 0x46454443
-    .byte 0x00
+    .asciz "0123456789ABCDEF"
 .size hexChar.252, .-hexChar.252
 .align 2
-    .word 0x000a0d22
-    .word 0x50545448
-    .word 0x00000000
+    .asciz "\"\r\n"
+.align 2
+    .asciz "HTTP"
 .section .text
 
 .align 2

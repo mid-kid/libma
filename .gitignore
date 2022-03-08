@@ -1,0 +1,8 @@
+*.o
+*.a
+*.dmp
+*.new
+*.diff
+
+/ardata
+/ardata.exe

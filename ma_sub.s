@@ -665,10 +665,7 @@ MAU_atoi:
 .align 2
 .type telCharTable, object
 telCharTable:
-    .word 0x33323130
-    .word 0x37363534
-    .word 0x2a233938
-    .byte 0
+    .asciz "0123456789#*"
 .size telCharTable, .-telCharTable
 .section .text
 

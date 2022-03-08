@@ -458,23 +458,7 @@ CalcValueMD5:
 .align 2
 .type xchg, object
 xchg:
-    .word 0x44434241
-    .word 0x48474645
-    .word 0x4c4b4a49
-    .word 0x504f4e4d
-    .word 0x54535251
-    .word 0x58575655
-    .word 0x62615a59
-    .word 0x66656463
-    .word 0x6a696867
-    .word 0x6e6d6c6b
-    .word 0x7271706f
-    .word 0x76757473
-    .word 0x7a797877
-    .word 0x33323130
-    .word 0x37363534
-    .word 0x2f2b3938
-    .byte 0
+    .asciz "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 .size xchg, .-xchg
 .section .text
 
