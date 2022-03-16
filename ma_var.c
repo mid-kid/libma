@@ -1,1 +1,3 @@
-char gMA[0x764];
+#include "ma_var.h"
+
+MA_VAR gMA;
