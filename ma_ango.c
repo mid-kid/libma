@@ -2,7 +2,7 @@
 #include "libma.h"
 
 #include "ma_sub.h"
-#include "md5c.h"
+#include "md5.h"
 
 static void gb_MakeSecretCode(char *key1, char *key2, char *key3, u8 *out);
 static void gb_OutSecretCode(int length, char *string, u8 *out);
