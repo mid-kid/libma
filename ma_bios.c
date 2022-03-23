@@ -1,6 +1,12 @@
-.thumb
-.gcc2_compiled.:
+#include "ma_bios.h"
+#include "libma.h"
 
+static u8 *tmppPacket;
+static u8 *tmppPacketLast;
+static u16 tmpPacketLen;
+static int i;
+
+asm("
 .section .rodata
 .align 2
 .type gTimerIntByteInter, object
@@ -324,7 +330,11 @@ MaPacketData_CheckStatus:
     .word 0x00000081
 .size MaPacketData_CheckStatus, .-MaPacketData_CheckStatus
 .section .text
+");
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_Init
@@ -449,7 +459,12 @@ MABIOS_Init:
     lsl	r0, r0, #16
     .word gMA
 .size MABIOS_Init, .-MABIOS_Init
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 SetInternalRecvBuffer:
@@ -476,7 +491,12 @@ SetInternalRecvBuffer:
 .align 2
     .word gMA
 .size SetInternalRecvBuffer, .-SetInternalRecvBuffer
+");
+#endif
 
+#if 0
+#else
+asm("
 .section .rodata
 .align 2
 .type counterArrayByte.12, object
@@ -600,7 +620,12 @@ MA_SetInterval:
     pop	{r0}
     bx	r0
 .size MA_SetInterval, .-MA_SetInterval
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MA_SetTimeoutCount:
@@ -628,7 +653,12 @@ MA_SetTimeoutCount:
     .word counterArrayByte.12
     .word counterArrayWord.13
 .size MA_SetTimeoutCount, .-MA_SetTimeoutCount
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_GetStatus
@@ -647,7 +677,12 @@ MA_GetStatus:
     mov	r0, #1
     bx	lr
 .size MA_GetStatus, .-MA_GetStatus
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_GetCondition
@@ -658,7 +693,12 @@ MA_GetCondition:
 .align 2
     .word gMA
 .size MA_GetCondition, .-MA_GetCondition
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_ErrorCheck
@@ -675,7 +715,12 @@ MA_ErrorCheck:
     .word gMA
     .word 0x0000fffd
 .size MA_ErrorCheck, .-MA_ErrorCheck
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_SetError
@@ -815,7 +860,12 @@ MA_SetError:
     .word 0x0000fffe
     .word 0x0000fffb
 .size MA_SetError, .-MA_SetError
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MA_PreSend:
@@ -876,7 +926,12 @@ MA_PreSend:
     pop	{r1}
     bx	r1
 .size MA_PreSend, .-MA_PreSend
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MA_InitIoBuffer:
@@ -900,7 +955,12 @@ MA_InitIoBuffer:
     pop	{r0}
     bx	r0
 .size MA_InitIoBuffer, .-MA_InitIoBuffer
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm wordData.35, 0x4
 
 .align 2
@@ -1003,7 +1063,12 @@ MA_StartSioTransmit:
     lsl	r0, r5, #4
     lsl	r0, r0, #16
 .size MA_StartSioTransmit, .-MA_StartSioTransmit
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MA_SetTransmitData:
@@ -1016,7 +1081,12 @@ MA_SetTransmitData:
 .align 2
     .word gMA
 .size MA_SetTransmitData, .-MA_SetTransmitData
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_ChangeSIOMode
@@ -1054,7 +1124,12 @@ MA_ChangeSIOMode:
     .word 0x04000128
     .word 0x0000cfff
 .size MA_ChangeSIOMode, .-MA_ChangeSIOMode
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_SetDataInterval
@@ -1072,7 +1147,12 @@ MA_SetDataInterval:
 .align 2
     .word gMA
 .size MA_SetDataInterval, .-MA_SetDataInterval
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MA_IsSupportedHardware:
@@ -1088,7 +1168,12 @@ MA_IsSupportedHardware:
     mov	r0, #1
     bx	lr
 .size MA_IsSupportedHardware, .-MA_IsSupportedHardware
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_GetCallTypeFromHarwareType
@@ -1115,7 +1200,12 @@ MA_GetCallTypeFromHarwareType:
     mov	r0, #1
     bx	lr
 .size MA_GetCallTypeFromHarwareType, .-MA_GetCallTypeFromHarwareType
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_Null
@@ -1186,7 +1276,12 @@ MABIOS_Null:
     .word tmpPacketLen
     .word MaPacketData_NULL
 .size MABIOS_Null, .-MABIOS_Null
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_Start
@@ -1247,7 +1342,12 @@ MABIOS_Start:
     .word gMA
     .word MaPacketData_PreStart
 .size MABIOS_Start, .-MABIOS_Start
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_Start2
@@ -1327,7 +1427,12 @@ MABIOS_Start2:
     .word MaPacketData_Start
     .word gMA
 .size MABIOS_Start2, .-MABIOS_Start2
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_End
@@ -1392,7 +1497,12 @@ MABIOS_End:
     .word 0xfffffe2c
     .word 0xfffffdf0
 .size MABIOS_End, .-MABIOS_End
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm telNoLen.66, 0x4
 
 .align 2
@@ -1493,7 +1603,12 @@ MABIOS_Tel:
     .word 0xfffffe18
     .word 0xfffffe20
 .size MABIOS_Tel, .-MABIOS_Tel
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_Offline
@@ -1558,7 +1673,12 @@ MABIOS_Offline:
     .word 0xfffffe2c
     .word 0xfffffdf0
 .size MABIOS_Offline, .-MABIOS_Offline
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_WaitCall
@@ -1623,7 +1743,12 @@ MABIOS_WaitCall:
     .word 0xfffffe2c
     .word 0xfffffdf0
 .size MABIOS_WaitCall, .-MABIOS_WaitCall
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_Data
@@ -1735,7 +1860,12 @@ MABIOS_Data:
     .word 0xfffffe18
     .word 0xfffffe20
 .size MABIOS_Data, .-MABIOS_Data
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MABIOS_Data2:
@@ -1842,7 +1972,12 @@ MABIOS_Data2:
     .word 0xfffffe18
     .word 0xfffffe20
 .size MABIOS_Data2, .-MABIOS_Data2
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_ReInit
@@ -1907,7 +2042,12 @@ MABIOS_ReInit:
     .word 0xfffffe2c
     .word 0xfffffdf0
 .size MABIOS_ReInit, .-MABIOS_ReInit
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_CheckStatus
@@ -1976,7 +2116,12 @@ MABIOS_CheckStatus:
     .word 0xfffffe2c
     .word 0xfffffdf0
 .size MABIOS_CheckStatus, .-MABIOS_CheckStatus
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_CheckStatus2
@@ -2060,7 +2205,12 @@ MABIOS_CheckStatus2:
     .word 0xfffffe2c
     .word 0xfffffdf0
 .size MABIOS_CheckStatus2, .-MABIOS_CheckStatus2
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_ChangeClock
@@ -2129,7 +2279,12 @@ MABIOS_ChangeClock:
     .word tmpPacketLen
     .word 0xfffffdf0
 .size MABIOS_ChangeClock, .-MABIOS_ChangeClock
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_EEPROM_Read
@@ -2216,7 +2371,12 @@ MABIOS_EEPROM_Read:
     .word tmpPacketLen
     .word 0xfffffdf0
 .size MABIOS_EEPROM_Read, .-MABIOS_EEPROM_Read
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_EEPROM_Write
@@ -2328,7 +2488,12 @@ MABIOS_EEPROM_Write:
     .word 0xfffffe18
     .word 0xfffffe20
 .size MABIOS_EEPROM_Write, .-MABIOS_EEPROM_Write
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm pData.100, 0x4
 .lcomm dataLen.101, 0x4
 .lcomm userIDLength.102, 0x4
@@ -2525,7 +2690,12 @@ MABIOS_PPPConnect:
     .word 0xfffffe18
     .word 0xfffffe20
 .size MABIOS_PPPConnect, .-MABIOS_PPPConnect
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_PPPDisconnect
@@ -2590,7 +2760,12 @@ MABIOS_PPPDisconnect:
     .word 0xfffffe2c
     .word 0xfffffdf0
 .size MABIOS_PPPDisconnect, .-MABIOS_PPPDisconnect
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_TCPConnect
@@ -2699,7 +2874,12 @@ MABIOS_TCPConnect:
     .word 0xfffffe20
     .word 0xfffffe6b
 .size MABIOS_TCPConnect, .-MABIOS_TCPConnect
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_TCPDisconnect
@@ -2778,7 +2958,12 @@ MABIOS_TCPDisconnect:
     .word tmpPacketLen
     .word 0xfffffdf0
 .size MABIOS_TCPDisconnect, .-MABIOS_TCPDisconnect
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_UDPConnect
@@ -2881,7 +3066,12 @@ MABIOS_UDPConnect:
     .word gMA+0x1e8
     .word 0xfffffe18
 .size MABIOS_UDPConnect, .-MABIOS_UDPConnect
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_UDPDisconnect
@@ -2960,7 +3150,12 @@ MABIOS_UDPDisconnect:
     .word tmpPacketLen
     .word 0xfffffdf0
 .size MABIOS_UDPDisconnect, .-MABIOS_UDPDisconnect
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm serverNameLen.122, 0x4
 
 .align 2
@@ -3063,7 +3258,12 @@ MABIOS_DNSRequest:
     .word 0xfffffe18
     .word 0xfffffe20
 .size MABIOS_DNSRequest, .-MABIOS_DNSRequest
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MABIOS_TestMode
@@ -3128,7 +3328,12 @@ MABIOS_TestMode:
     .word 0xfffffe2c
     .word 0xfffffdf0
 .size MABIOS_TestMode, .-MABIOS_TestMode
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MA_CreatePacket:
@@ -3153,7 +3358,12 @@ MA_CreatePacket:
     pop	{r1}
     bx	r1
 .size MA_CreatePacket, .-MA_CreatePacket
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm checkSum.132, 0x2
 
 .align 2
@@ -3206,7 +3416,12 @@ MA_Create8BitPacket:
     .word tmppPacketLast
     .word checkSum.132
 .size MA_Create8BitPacket, .-MA_Create8BitPacket
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm pPadding.136, 0x4
 .lcomm paddingLength.137, 0x4
 .lcomm amari.138, 0x4
@@ -3351,7 +3566,12 @@ MA_Create32BitPacket:
     .word tmppPacketLast
     .word checkSum.139
 .size MA_Create32BitPacket, .-MA_Create32BitPacket
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm sum.143, 0x2
 
 .align 2
@@ -3386,7 +3606,12 @@ MA_CalcCheckSum:
 .align 2
     .word sum.143
 .size MA_CalcCheckSum, .-MA_CalcCheckSum
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_CancelRequest
@@ -3413,7 +3638,12 @@ MA_CancelRequest:
     .word gMA
     .word 0x00005ff9
 .size MA_CancelRequest, .-MA_CancelRequest
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_BiosStop
@@ -3444,7 +3674,12 @@ MA_BiosStop:
     .word gMA
     .word 0xffffefff
 .size MA_BiosStop, .-MA_BiosStop
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_SendRetry
@@ -3460,7 +3695,12 @@ MA_SendRetry:
 .align 2
     .word gMA+0x1e8
 .size MA_SendRetry, .-MA_SendRetry
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_RecvRetry
@@ -3509,7 +3749,12 @@ MA_RecvRetry:
     .word 0xfffffe58
     .word 0xfffffe59
 .size MA_RecvRetry, .-MA_RecvRetry
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MA_IntrTimer_SIOSend:
@@ -3569,7 +3814,12 @@ MA_IntrTimer_SIOSend:
     pop	{r0}
     bx	r0
 .size MA_IntrTimer_SIOSend, .-MA_IntrTimer_SIOSend
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MA_IntrTimer_SIORecv:
@@ -3625,7 +3875,12 @@ MA_IntrTimer_SIORecv:
     pop	{r0}
     bx	r0
 .size MA_IntrTimer_SIORecv, .-MA_IntrTimer_SIORecv
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MA_IntrTimer_SIOIdle:
@@ -3738,7 +3993,12 @@ MA_IntrTimer_SIOIdle:
     pop	{r0}
     bx	r0
 .size MA_IntrTimer_SIOIdle, .-MA_IntrTimer_SIOIdle
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MA_IntrTimer_SIOWaitTime:
@@ -3920,7 +4180,12 @@ MA_IntrTimer_SIOWaitTime:
     .word 0x0000ffdf
     .word gMA
 .size MA_IntrTimer_SIOWaitTime, .-MA_IntrTimer_SIOWaitTime
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_ProcessCheckStatusResponse
@@ -4207,7 +4472,12 @@ MA_ProcessCheckStatusResponse:
 .align 2
     .word gMA
 .size MA_ProcessCheckStatusResponse, .-MA_ProcessCheckStatusResponse
+");
+#endif
 
+#if 0
+#else
+asm("
 .section .rodata
 .align 2
 .type errTable.174, object
@@ -4238,7 +4508,12 @@ ConvertNegaErrToApiErr:
     .word gMA
     .word errTable.174
 .size ConvertNegaErrToApiErr, .-ConvertNegaErrToApiErr
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_DefaultNegaResProc
@@ -4327,7 +4602,12 @@ MA_DefaultNegaResProc:
     pop	{r0}
     bx	r0
 .size MA_DefaultNegaResProc, .-MA_DefaultNegaResProc
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm pPacket.181, 0x4
 
 .align 2
@@ -4717,7 +4997,12 @@ MA_ProcessRecvPacket:
     .word i
     .word 0x0000ffdf
 .size MA_ProcessRecvPacket, .-MA_ProcessRecvPacket
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm saveSioMode.185, 0x1
 
 .align 2
@@ -4841,7 +5126,12 @@ MA_IntrTimer:
     .word 0x0400010c
     .word gMA
 .size MA_IntrTimer, .-MA_IntrTimer
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_Bios_disconnect
@@ -4890,7 +5180,12 @@ MA_Bios_disconnect:
     .word 0x0000ffdf
     .word 0x0400010c
 .size MA_Bios_disconnect, .-MA_Bios_disconnect
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm dataLeft.192, 0x4
 
 .align 2
@@ -5401,7 +5696,12 @@ MA_IntrSio_Send:
     .word 0xfffffe58
     .word 0xfffffe59
 .size MA_IntrSio_Send, .-MA_IntrSio_Send
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm recvByte.196, 0x1
 .lcomm amari.197, 0x4
 
@@ -5836,7 +6136,12 @@ MA_IntrSio_Recv:
     pop	{r0}
     bx	r0
 .size MA_IntrSio_Recv, .-MA_IntrSio_Recv
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_IntrSerialIO
@@ -5922,8 +6227,5 @@ MA_IntrSerialIO:
     .word 0x0400010c
     .word 0xfffffeff
 .size MA_IntrSerialIO, .-MA_IntrSerialIO
-
-.lcomm tmppPacket, 0x4
-.lcomm tmppPacketLast, 0x4
-.lcomm tmpPacketLen, 0x2
-.lcomm i, 0x4
+");
+#endif

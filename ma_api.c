@@ -1,6 +1,9 @@
-.thumb
-.gcc2_compiled.:
+#include "ma_api.h"
+#include "libma.h"
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global SetApiCallFlag
@@ -21,7 +24,12 @@ SetApiCallFlag:
     .word 0x0000ff3f
     .word gMA
 .size SetApiCallFlag, .-SetApiCallFlag
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global ResetApiCallFlag
@@ -42,7 +50,12 @@ ResetApiCallFlag:
     .word gMA
     .word 0x04000200
 .size ResetApiCallFlag, .-ResetApiCallFlag
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_TaskSet
@@ -86,7 +99,12 @@ MA_TaskSet:
     .word gMA
     .word 0x0000fffe
 .size MA_TaskSet, .-MA_TaskSet
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MA_SetApiError:
@@ -111,7 +129,12 @@ MA_SetApiError:
 .align 2
     .word gMA
 .size MA_SetApiError, .-MA_SetApiError
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm ret.15, 0x4
 
 .align 2
@@ -307,7 +330,12 @@ ApiValisStatusCheck:
 .align 2
     .word gMA
 .size ApiValisStatusCheck, .-ApiValisStatusCheck
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MA_ApiPreExe:
@@ -406,7 +434,12 @@ MA_ApiPreExe:
     .word 0x0000fffd
     .word 0x00000702
 .size MA_ApiPreExe, .-MA_ApiPreExe
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MakeEndLineBuffer:
@@ -454,43 +487,48 @@ MakeEndLineBuffer:
 .align 2
     .word 0x000006fc
 .size MakeEndLineBuffer, .-MakeEndLineBuffer
+");
+#endif
 
+#if 0
+#else
+asm("
 .section .rodata
 .align 2
 .type strEndMultiLine.25, object
 strEndMultiLine.25:
-    .asciz "\r\n.\r\n"
+    .asciz \"\\r\\n.\\r\\n\"
 .size strEndMultiLine.25, .-strEndMultiLine.25
 .align 2
-    .asciz "QUIT\r\n"
+    .asciz \"QUIT\\r\\n\"
 .align 2
-    .asciz "HELO "
+    .asciz \"HELO \"
 .align 2
-    .asciz "\r\n"
+    .asciz \"\\r\\n\"
 .align 2
-    .asciz "MAIL FROM:<"
+    .asciz \"MAIL FROM:<\"
 .align 2
-    .asciz ">\r\n"
+    .asciz \">\\r\\n\"
 .align 2
-    .asciz "RCPT TO:<"
+    .asciz \"RCPT TO:<\"
 .align 2
-    .asciz "DATA\r\n"
+    .asciz \"DATA\\r\\n\"
 .align 2
-    .asciz "USER "
+    .asciz \"USER \"
 .align 2
-    .asciz "PASS "
+    .asciz \"PASS \"
 .align 2
-    .asciz "STAT\r\n"
+    .asciz \"STAT\\r\\n\"
 .align 2
-    .asciz "LIST "
+    .asciz \"LIST \"
 .align 2
-    .asciz "RETR "
+    .asciz \"RETR \"
 .align 2
-    .asciz "DELE "
+    .asciz \"DELE \"
 .align 2
-    .asciz "TOP "
+    .asciz \"TOP \"
 .align 2
-    .asciz " 0\r\n"
+    .asciz \" 0\\r\\n\"
 .align 2
 .section .text
 
@@ -513,7 +551,12 @@ IsEndMultiLine:
     pop	{r1}
     bx	r1
 .size IsEndMultiLine, .-IsEndMultiLine
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 InitPrevBuf:
@@ -534,7 +577,12 @@ InitPrevBuf:
     .word 0x0000047d
     .word 0x000006fa
 .size InitPrevBuf, .-InitPrevBuf
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 ConcatPrevBuf:
@@ -563,7 +611,12 @@ ConcatPrevBuf:
     .word 0x000006fa
     .word 0x0000047d
 .size ConcatPrevBuf, .-ConcatPrevBuf
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_End
@@ -608,7 +661,12 @@ MA_End:
     .word 0x0000ff3f
     .word 0x050001d9
 .size MA_End, .-MA_End
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_Stop
@@ -698,7 +756,12 @@ MA_Stop:
     pop	{r0}
     bx	r0
 .size MA_Stop, .-MA_Stop
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_Stop:
@@ -822,7 +885,12 @@ MATASK_Stop:
     .word 0x0000fff7
     .word 0x0000ffef
 .size MATASK_Stop, .-MATASK_Stop
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_TCP_Cut
@@ -943,7 +1011,12 @@ MA_TCP_Cut:
     pop	{r0}
     bx	r0
 .size MA_TCP_Cut, .-MA_TCP_Cut
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_TCP_Cut:
@@ -1066,7 +1139,12 @@ MATASK_TCP_Cut:
     pop	{r0}
     bx	r0
 .size MATASK_TCP_Cut, .-MATASK_TCP_Cut
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_InitLibrary
@@ -1077,7 +1155,12 @@ MA_InitLibrary:
     pop	{r0}
     bx	r0
 .size MA_InitLibrary, .-MA_InitLibrary
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_InitLibrary2
@@ -1088,7 +1171,12 @@ MA_InitLibrary2:
     pop	{r0}
     bx	r0
 .size MA_InitLibrary2, .-MA_InitLibrary2
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MA_InitLibraryMain:
@@ -1225,7 +1313,12 @@ MA_InitLibraryMain:
     .word 0x0000ffef
     .word 0x0400010c
 .size MA_InitLibraryMain, .-MA_InitLibraryMain
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_InitLibrary:
@@ -1469,7 +1562,12 @@ MATASK_InitLibrary:
     .word 0x0000fff7
     .word 0x0000ffef
 .size MATASK_InitLibrary, .-MATASK_InitLibrary
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_TCP_Connect
@@ -1525,7 +1623,12 @@ MA_TCP_Connect:
 .align 2
     .word gMA
 .size MA_TCP_Connect, .-MA_TCP_Connect
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_TCP_Connect:
@@ -1639,7 +1742,12 @@ MATASK_TCP_Connect:
     pop	{r0}
     bx	r0
 .size MATASK_TCP_Connect, .-MATASK_TCP_Connect
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_TCP_Disconnect
@@ -1681,7 +1789,12 @@ MA_TCP_Disconnect:
 .align 2
     .word gMA
 .size MA_TCP_Disconnect, .-MA_TCP_Disconnect
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_TCP_Disconnect:
@@ -1757,7 +1870,12 @@ MATASK_TCP_Disconnect:
     pop	{r0}
     bx	r0
 .size MATASK_TCP_Disconnect, .-MATASK_TCP_Disconnect
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_TCP_SendRecv
@@ -1817,7 +1935,12 @@ MA_TCP_SendRecv:
 .align 2
     .word gMA
 .size MA_TCP_SendRecv, .-MA_TCP_SendRecv
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_TCP_SendRecv:
@@ -1937,7 +2060,12 @@ MATASK_TCP_SendRecv:
     pop	{r0}
     bx	r0
 .size MATASK_TCP_SendRecv, .-MATASK_TCP_SendRecv
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_GetHostAddress
@@ -1974,7 +2102,12 @@ MA_GetHostAddress:
 .align 2
     .word gMA
 .size MA_GetHostAddress, .-MA_GetHostAddress
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_GetHostAddress:
@@ -2064,7 +2197,12 @@ MATASK_GetHostAddress:
     pop	{r0}
     bx	r0
 .size MATASK_GetHostAddress, .-MATASK_GetHostAddress
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_GetLocalAddress
@@ -2108,7 +2246,12 @@ MA_GetLocalAddress:
     .word gMA
     .word 0x0000fffe
 .size MA_GetLocalAddress, .-MA_GetLocalAddress
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm tmp.89, 0x2
 .lcomm sum.90, 0x2
 .lcomm i.91, 0x4
@@ -2164,7 +2307,12 @@ EEPROMSumCheck:
     pop	{r1}
     bx	r1
 .size EEPROMSumCheck, .-EEPROMSumCheck
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 EEPROMRegistrationCheck:
@@ -2180,7 +2328,12 @@ EEPROMRegistrationCheck:
     mov	r0, #0
     bx	lr
 .size EEPROMRegistrationCheck, .-EEPROMRegistrationCheck
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_TelServer
@@ -2266,7 +2419,12 @@ MA_TelServer:
     .word gMA
     .word 0x0400010c
 .size MA_TelServer, .-MA_TelServer
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_TelServer:
@@ -2712,7 +2870,12 @@ MATASK_TelServer:
     .word 0x0000fff7
     .word 0x0000ffef
 .size MATASK_TelServer, .-MATASK_TelServer
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_Tel
@@ -2766,7 +2929,12 @@ MA_Tel:
     .word gMA
     .word 0x0400010c
 .size MA_Tel, .-MA_Tel
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_Tel:
@@ -3006,7 +3174,12 @@ MATASK_Tel:
     .word 0x0000fff7
     .word 0x0000ffef
 .size MATASK_Tel, .-MATASK_Tel
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_Receive
@@ -3046,7 +3219,12 @@ MA_Receive:
     lsl	r4, r1, #4
     lsl	r0, r0, #16
 .size MA_Receive, .-MA_Receive
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_Receive:
@@ -3271,7 +3449,12 @@ MATASK_Receive:
     .word 0x0000fff7
     .word 0x0000ffef
 .size MATASK_Receive, .-MATASK_Receive
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_SData
@@ -3331,7 +3514,12 @@ MA_SData:
     pop	{r0}
     bx	r0
 .size MA_SData, .-MA_SData
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_GData
@@ -3447,7 +3635,12 @@ MA_GData:
     .word 0x0000fff7
     .word 0x0000fffe
 .size MA_GData, .-MA_GData
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_P2P:
@@ -3617,7 +3810,12 @@ MATASK_P2P:
     .word 0x0000047d
     .word 0x000006fa
 .size MATASK_P2P, .-MATASK_P2P
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_Condition
@@ -3628,7 +3826,12 @@ MA_Condition:
     pop	{r0}
     bx	r0
 .size MA_Condition, .-MA_Condition
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_Condition2
@@ -3639,7 +3842,12 @@ MA_Condition2:
     pop	{r0}
     bx	r0
 .size MA_Condition2, .-MA_Condition2
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MA_ConditionMain:
@@ -3707,7 +3915,12 @@ MA_ConditionMain:
     .word gMA
     .word 0x0400010c
 .size MA_ConditionMain, .-MA_ConditionMain
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_Condition:
@@ -4002,7 +4215,12 @@ MATASK_Condition:
     pop	{r0}
     bx	r0
 .size MATASK_Condition, .-MATASK_Condition
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_Offline
@@ -4052,7 +4270,12 @@ MA_Offline:
     pop	{r0}
     bx	r0
 .size MA_Offline, .-MA_Offline
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_Offline:
@@ -4347,7 +4570,12 @@ MATASK_Offline:
     pop	{r0}
     bx	r0
 .size MATASK_Offline, .-MATASK_Offline
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 CheckSMTPResponse:
@@ -4375,7 +4603,12 @@ CheckSMTPResponse:
     mov	r0, #1
     bx	lr
 .size CheckSMTPResponse, .-CheckSMTPResponse
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_SMTP_Connect
@@ -4417,7 +4650,12 @@ MA_SMTP_Connect:
     .word gMA+0x370
     .word 0xfffffc90
 .size MA_SMTP_Connect, .-MA_SMTP_Connect
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm cp1.149, 0x4
 .lcomm cp2.150, 0x4
 .lcomm smtpRes.151, 0x4
@@ -4939,7 +5177,12 @@ MATASK_SMTP_Connect:
     pop	{r0}
     bx	r0
 .size MATASK_SMTP_Connect, .-MATASK_SMTP_Connect
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_SMTP_Sender
@@ -5002,7 +5245,12 @@ MA_SMTP_Sender:
 .align 2
     .word gMA
 .size MA_SMTP_Sender, .-MA_SMTP_Sender
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm smtpRes.158, 0x4
 
 .align 2
@@ -5450,7 +5698,12 @@ MATASK_SMTP_Sender:
     pop	{r0}
     bx	r0
 .size MATASK_SMTP_Sender, .-MATASK_SMTP_Sender
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_SMTP_Send
@@ -5499,7 +5752,12 @@ MA_SMTP_Send:
 .align 2
     .word gMA
 .size MA_SMTP_Send, .-MA_SMTP_Send
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm smtpRes.165, 0x4
 
 .align 2
@@ -6017,7 +6275,12 @@ MATASK_SMTP_Send:
     pop	{r0}
     bx	r0
 .size MATASK_SMTP_Send, .-MATASK_SMTP_Send
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_POP3_Quit
@@ -6037,7 +6300,12 @@ MA_POP3_Quit:
     pop	{r0}
     bx	r0
 .size MA_POP3_Quit, .-MA_POP3_Quit
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_SMTP_Quit
@@ -6057,7 +6325,12 @@ MA_SMTP_Quit:
     pop	{r0}
     bx	r0
 .size MA_SMTP_Quit, .-MA_SMTP_Quit
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_SMTP_POP3_Quit:
@@ -6344,7 +6617,12 @@ MATASK_SMTP_POP3_Quit:
     pop	{r0}
     bx	r0
 .size MATASK_SMTP_POP3_Quit, .-MATASK_SMTP_POP3_Quit
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 CheckPOP3Response:
@@ -6377,7 +6655,12 @@ CheckPOP3Response:
     mov	r0, #2
     bx	lr
 .size CheckPOP3Response, .-CheckPOP3Response
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_POP3_Connect
@@ -6471,7 +6754,12 @@ MA_POP3_Connect:
     .word strEndMultiLine.25+0x48
     .word strEndMultiLine.25+0x18
 .size MA_POP3_Connect, .-MA_POP3_Connect
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm pop3res.184, 0x4
 
 .align 2
@@ -6990,7 +7278,12 @@ MATASK_POP3_Connect:
     pop	{r0}
     bx	r0
 .size MATASK_POP3_Connect, .-MATASK_POP3_Connect
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_POP3_Stat
@@ -7018,7 +7311,12 @@ MA_POP3_Stat:
 .align 2
     .word gMA
 .size MA_POP3_Stat, .-MA_POP3_Stat
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm cp.191, 0x4
 .lcomm pop3res.192, 0x4
 
@@ -7310,7 +7608,12 @@ MATASK_POP3_Stat:
     pop	{r0}
     bx	r0
 .size MATASK_POP3_Stat, .-MATASK_POP3_Stat
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_POP3_List
@@ -7364,7 +7667,12 @@ MA_POP3_List:
     .word strEndMultiLine.25+0x58
     .word strEndMultiLine.25+0x18
 .size MA_POP3_List, .-MA_POP3_List
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm cp.199, 0x4
 .lcomm pop3res.200, 0x4
 
@@ -7636,7 +7944,12 @@ MATASK_POP3_List:
     pop	{r0}
     bx	r0
 .size MATASK_POP3_List, .-MATASK_POP3_List
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_POP3_Retr
@@ -7809,7 +8122,12 @@ MA_POP3_Retr:
     .word strEndMultiLine.25+0x60
     .word strEndMultiLine.25+0x18
 .size MA_POP3_Retr, .-MA_POP3_Retr
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm cp.207, 0x4
 .lcomm dataLen.208, 0x4
 .lcomm pop3res.209, 0x4
@@ -8284,7 +8602,12 @@ MATASK_POP3_Retr:
     pop	{r0}
     bx	r0
 .size MATASK_POP3_Retr, .-MATASK_POP3_Retr
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_POP3_Dele
@@ -8325,7 +8648,12 @@ MA_POP3_Dele:
     .word strEndMultiLine.25+0x68
     .word strEndMultiLine.25+0x18
 .size MA_POP3_Dele, .-MA_POP3_Dele
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm pop3res.216, 0x4
 
 .align 2
@@ -8579,7 +8907,12 @@ MATASK_POP3_Dele:
     pop	{r0}
     bx	r0
 .size MATASK_POP3_Dele, .-MATASK_POP3_Dele
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_POP3_Head
@@ -8747,7 +9080,12 @@ MA_POP3_Head:
     .word strEndMultiLine.25+0x70
     .word strEndMultiLine.25+0x78
 .size MA_POP3_Head, .-MA_POP3_Head
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm cp.223, 0x4
 .lcomm dataLen.224, 0x4
 .lcomm pop3res.225, 0x4
@@ -9222,36 +9560,41 @@ MATASK_POP3_Head:
     pop	{r0}
     bx	r0
 .size MATASK_POP3_Head, .-MATASK_POP3_Head
+");
+#endif
 
+#if 0
+#else
+asm("
 .section .rodata
 .align 2
 .type strDownload.229, object
 strDownload.229:
-    .asciz "gameboy.datacenter.ne.jp/cgb/download"
+    .asciz \"gameboy.datacenter.ne.jp/cgb/download\"
 .size strDownload.229, .-strDownload.229
 
 .align 2
 .type strUpload.230, object
 strUpload.230:
-    .asciz "gameboy.datacenter.ne.jp/cgb/upload"
+    .asciz \"gameboy.datacenter.ne.jp/cgb/upload\"
 .size strUpload.230, .-strUpload.230
 
 .align 2
 .type strUtility.231, object
 strUtility.231:
-    .asciz "gameboy.datacenter.ne.jp/cgb/utility"
+    .asciz \"gameboy.datacenter.ne.jp/cgb/utility\"
 .size strUtility.231, .-strUtility.231
 
 .align 2
 .type strRanking.232, object
 strRanking.232:
-    .asciz "gameboy.datacenter.ne.jp/cgb/ranking"
+    .asciz \"gameboy.datacenter.ne.jp/cgb/ranking\"
 .size strRanking.232, .-strRanking.232
 
 .align 2
 .type strHttp.233, object
 strHttp.233:
-    .asciz "http://"
+    .asciz \"http://\"
 .size strHttp.233, .-strHttp.233
 .section .text
 
@@ -9428,87 +9771,27 @@ ExtractServerName:
     .word tmpp.235
     .word cp.234
 .size ExtractServerName, .-ExtractServerName
+");
+#endif
 
-.section .rodata
-.align 2
-.type strHttpGet, object
-strHttpGet:
-    .asciz "GET "
-.size strHttpGet, .-strHttpGet
+static const char strHttpGet[] = "GET ";
+static const char strHttpPost[] = "POST ";
+static const char strHttpReqSuffix[] = " HTTP/1.0\r\n";
+static const char strHttpContentLength[] = "Content-Length: 0\r\n";
+static const char strHttpAuthenticate[] = "WWW-Authenticate: GB00 name=\"";
+static const char strHttpAuthorization[] = "Authorization: GB00 name=\"";
+static const char strHttpContentType[] = "Content-Type: application/x-cgb\r\n";
+static const char strHttpGbStatus[] = "Gb-Status: ";
+static const char strHttpGbAuthID[] = "Gb-Auth-ID: ";
+static const char strHttpDate[] = "Date: ";
+static const char strHttpLocation[] = "Location: ";
+static const char strHttpUserAgent[] = "User-Agent: AGB-";
+static const char strServerRoot[] = "/";
+asm(".section .text\n");
 
-.align 2
-.type strHttpPost, object
-strHttpPost:
-    .asciz "POST "
-.size strHttpPost, .-strHttpPost
-
-.align 2
-.type strHttpReqSuffix, object
-strHttpReqSuffix:
-    .asciz " HTTP/1.0\r\n"
-.size strHttpReqSuffix, .-strHttpReqSuffix
-
-.align 2
-.type strHttpContentLength, object
-strHttpContentLength:
-    .asciz "Content-Length: 0\r\n"
-.size strHttpContentLength, .-strHttpContentLength
-
-.align 2
-.type strHttpAuthenticate, object
-strHttpAuthenticate:
-    .asciz "WWW-Authenticate: GB00 name=\""
-.size strHttpAuthenticate, .-strHttpAuthenticate
-
-.align 2
-.type strHttpAuthorization, object
-strHttpAuthorization:
-    .asciz "Authorization: GB00 name=\""
-.size strHttpAuthorization, .-strHttpAuthorization
-
-.align 2
-.type strHttpContentType, object
-strHttpContentType:
-    .asciz "Content-Type: application/x-cgb\r\n"
-.size strHttpContentType, .-strHttpContentType
-
-.align 2
-.type strHttpGbStatus, object
-strHttpGbStatus:
-    .asciz "Gb-Status: "
-.size strHttpGbStatus, .-strHttpGbStatus
-
-.align 2
-.type strHttpGbAuthID, object
-strHttpGbAuthID:
-    .asciz "Gb-Auth-ID: "
-.size strHttpGbAuthID, .-strHttpGbAuthID
-
-.align 2
-.type strHttpDate, object
-strHttpDate:
-    .asciz "Date: "
-.size strHttpDate, .-strHttpDate
-
-.align 2
-.type strHttpLocation, object
-strHttpLocation:
-    .asciz "Location: "
-.size strHttpLocation, .-strHttpLocation
-
-.align 2
-.type strHttpUserAgent, object
-strHttpUserAgent:
-    .asciz "User-Agent: AGB-"
-.size strHttpUserAgent, .-strHttpUserAgent
-
-.align 2
-.type strServerRoot, object
-strServerRoot:
-    .asciz "/"
-.size strServerRoot, .-strServerRoot
-.section .text
-
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_HTTP_Get
@@ -9539,7 +9822,12 @@ MA_HTTP_Get:
     pop	{r0}
     bx	r0
 .size MA_HTTP_Get, .-MA_HTTP_Get
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_HTTP_Post
@@ -9572,7 +9860,12 @@ MA_HTTP_Post:
     pop	{r0}
     bx	r0
 .size MA_HTTP_Post, .-MA_HTTP_Post
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MA_HTTP_GetPost:
@@ -9986,7 +10279,12 @@ MA_HTTP_GetPost:
     pop	{r0}
     bx	r0
 .size MA_HTTP_GetPost, .-MA_HTTP_GetPost
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm tmpLen.249, 0x4
 .lcomm tmpp.250, 0x4
 .lcomm tmpNum.251, 0x1
@@ -9996,12 +10294,12 @@ MA_HTTP_GetPost:
 .align 2
 .type hexChar.252, object
 hexChar.252:
-    .asciz "0123456789ABCDEF"
+    .asciz \"0123456789ABCDEF\"
 .size hexChar.252, .-hexChar.252
 .align 2
-    .asciz "\"\r\n"
+    .asciz \"\\\"\\r\\n\"
 .align 2
-    .asciz "HTTP"
+    .asciz \"HTTP\"
 .section .text
 
 .align 2
@@ -10146,7 +10444,12 @@ ConcatUserAgent:
     .word 0x080000bc
     .word hexChar.252
 .size ConcatUserAgent, .-ConcatUserAgent
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm ret.256, 0x4
 
 .align 2
@@ -10212,9 +10515,13 @@ GetRequestType:
     ldr	r0, [r1, #0]
     bx	lr
 .size GetRequestType, .-GetRequestType
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm tmpLen.260, 0x4
-
 .lcomm bAddContentLength.261, 0x1
 .lcomm bAddContentLengthZero.262, 0x1
 .lcomm bAddAuthorization.263, 0x1
@@ -10410,7 +10717,12 @@ CreateHttpRequestHeader:
     .word strHttpGbAuthID
     .word strHttpUserAgent
 .size CreateHttpRequestHeader, .-CreateHttpRequestHeader
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm step.268, 0x4
 
 .align 2
@@ -10636,7 +10948,12 @@ HttpGetNextStep:
 .align 2
     .word step.268
 .size HttpGetNextStep, .-HttpGetNextStep
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm curCp.272, 0x4
 .lcomm nextCp.273, 0x4
 .lcomm lineCp.274, 0x4
@@ -11971,7 +12288,12 @@ MATASK_HTTP_GetPost:
 .align 2
     .word 0xfffeffff
 .size MATASK_HTTP_GetPost, .-MATASK_HTTP_GetPost
+");
+#endif
 
+#if 0
+#else
+asm("
 .lcomm i.281, 0x4
 
 .align 2
@@ -12016,7 +12338,12 @@ CopyEEPROMString:
 .align 2
     .word i.281
 .size CopyEEPROMString, .-CopyEEPROMString
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 CopyEEPROMData:
@@ -12064,7 +12391,12 @@ CopyEEPROMData:
 .align 2
     .word gMA+0x4a9
 .size CopyEEPROMData, .-CopyEEPROMData
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_GetEEPROMData:
@@ -12419,7 +12751,12 @@ MATASK_GetEEPROMData:
     .word 0x0000fff7
     .word 0x0000ffef
 .size MATASK_GetEEPROMData, .-MATASK_GetEEPROMData
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_EEPROMRead
@@ -12462,7 +12799,12 @@ MA_EEPROMRead:
     .word gMA
     .word 0x0400010c
 .size MA_EEPROMRead, .-MA_EEPROMRead
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_EEPROM_Read:
@@ -12754,7 +13096,12 @@ MATASK_EEPROM_Read:
     .word 0x0000fff7
     .word 0x0000ffef
 .size MATASK_EEPROM_Read, .-MATASK_EEPROM_Read
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_EEPROMWrite
@@ -12797,7 +13144,12 @@ MA_EEPROMWrite:
     .word gMA
     .word 0x0400010c
 .size MA_EEPROMWrite, .-MA_EEPROMWrite
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 MATASK_EEPROM_Write:
@@ -13079,7 +13431,12 @@ MATASK_EEPROM_Write:
     .word 0x0000fff7
     .word 0x0000ffef
 .size MATASK_EEPROM_Write, .-MATASK_EEPROM_Write
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_GetTel
@@ -13151,7 +13508,12 @@ MA_GetTel:
     lsl	r4, r1, #4
     lsl	r0, r0, #16
 .size MA_GetTel, .-MA_GetTel
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_GetUserID
@@ -13224,7 +13586,12 @@ MA_GetUserID:
     lsl	r4, r1, #4
     lsl	r0, r0, #16
 .size MA_GetUserID, .-MA_GetUserID
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_GetMailID
@@ -13296,7 +13663,12 @@ MA_GetMailID:
     lsl	r4, r1, #4
     lsl	r0, r0, #16
 .size MA_GetMailID, .-MA_GetMailID
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_GetSMTPServerName
@@ -13310,7 +13682,12 @@ MA_GetSMTPServerName:
 .align 2
     .word gMA+0x344
 .size MA_GetSMTPServerName, .-MA_GetSMTPServerName
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MA_GetPOP3ServerName
@@ -13324,7 +13701,10 @@ MA_GetPOP3ServerName:
 .align 2
     .word gMA+0x358
 .size MA_GetPOP3ServerName, .-MA_GetPOP3ServerName
+");
+#endif
 
+asm("
 .section .rodata
 .align 2
 .type taskProcTable, object
@@ -13368,7 +13748,11 @@ taskProcTable:
     .word 0x00000000
 .size taskProcTable, .-taskProcTable
 .section .text
+");
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MAAPI_Main
@@ -13461,7 +13845,12 @@ MAAPI_Main:
     .word gMA
     .word taskProcTable
 .size MAAPI_Main, .-MAAPI_Main
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MAAPI_GetConditionFlag
@@ -13472,7 +13861,12 @@ MAAPI_GetConditionFlag:
 .align 2
     .word gMA
 .size MAAPI_GetConditionFlag, .-MAAPI_GetConditionFlag
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 ErrDetailHexConv:
@@ -13534,7 +13928,12 @@ ErrDetailHexConv:
     pop	{r1}
     bx	r1
 .size ErrDetailHexConv, .-ErrDetailHexConv
+");
+#endif
 
+#if 0
+#else
+asm("
 .align 2
 .thumb_func
 .global MAAPI_ErrorCheck
@@ -13653,4 +14052,5 @@ MAAPI_ErrorCheck:
 .align 2
     .word gMA
 .size MAAPI_ErrorCheck, .-MAAPI_ErrorCheck
-
+");
+#endif
