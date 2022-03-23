@@ -303,102 +303,32 @@ void MAU_Socket_Add(u8 sock)
     }
 }
 
-#if 0
 void MAU_Socket_Delete(u8 sock)
 {
     int i;
-    for (i = 0; gMA.sockets[i] != sock; i++) {
-        if (i >= NUM_SOCKETS) return;
+
+    for (i = 0; i < NUM_SOCKETS; i++) {
+        if (gMA.sockets[i] == sock) {
+            gMA.sockets_used[i] = FALSE;
+            break;
+        }
     }
-    gMA.sockets_used[i] = FALSE;
 }
-#else
-asm("
-.align 2
-.thumb_func
-.global MAU_Socket_Delete
-MAU_Socket_Delete:
-    lsl	r0, r0, #24
-    lsr	r3, r0, #24
-    mov	r2, #0
-    ldr	r1, [pc, #20]
-    mov	r0, r1
-    add	r0, #99
-    ldrb	r0, [r0, #0]
-    cmp	r0, r3
-    bne	MAU_Socket_Delete+0x20
-    mov	r0, r1
-    add	r0, #204
-    strb	r2, [r0, #0]
-    b	MAU_Socket_Delete+0x3c
-.align 2
-    .word gMA
 
-    add	r2, #1
-    cmp	r2, #1
-    bgt	MAU_Socket_Delete+0x3c
-    mov	r0, r1
-    add	r0, #99
-    add	r0, r2, r0
-    ldrb	r0, [r0, #0]
-    cmp	r0, r3
-    bne	MAU_Socket_Delete+0x20
-    mov	r0, r1
-    add	r0, #204
-    add	r0, r2, r0
-    mov	r1, #0
-    strb	r1, [r0, #0]
-    bx	lr
-.size MAU_Socket_Delete, .-MAU_Socket_Delete
-");
-#endif
-
-#if 0
 int MAU_Socket_Search(u8 sock)
 {
     int i;
+    int ret;
+
+    ret = FALSE;
     for (i = 0; i < NUM_SOCKETS; i++) {
         if (gMA.sockets[i] == sock) {
-            return TRUE;
+            ret = TRUE;
+            break;
         }
     }
-    return FALSE;
+    return ret;
 }
-#else
-asm("
-.align 2
-.thumb_func
-.global MAU_Socket_Search
-MAU_Socket_Search:
-    push	{r4, lr}
-    lsl	r0, r0, #24
-    lsr	r3, r0, #24
-    mov	r4, #0
-    mov	r1, #0
-    ldr	r2, [pc, #8]
-    mov	r0, r2
-    add	r0, #99
-    b	MAU_Socket_Search+0x24
-.align 2
-    .word gMA
-
-    add	r1, #1
-    cmp	r1, #1
-    bgt	MAU_Socket_Search+0x2c
-    mov	r0, r2
-    add	r0, #99
-    add	r0, r1, r0
-    ldrb	r0, [r0, #0]
-    cmp	r0, r3
-    bne	MAU_Socket_Search+0x18
-    mov	r4, #1
-    mov	r0, r4
-    pop	{r4}
-    pop	{r1}
-    bx	r1
-.size MAU_Socket_Search, .-MAU_Socket_Search
-");
-#endif
 
 int MAU_Socket_GetNum(void)
 {
@@ -412,46 +342,20 @@ int MAU_Socket_GetNum(void)
     return c;
 }
 
-#if 0
 int MAU_Socket_FreeCheck(void)
 {
     int i;
+    int ret;
 
+    ret = FALSE;
     for (i = 0; i < NUM_SOCKETS; i++) {
-        if (gMA.sockets_used[i] == FALSE) return TRUE;
+        if (gMA.sockets_used[i] == FALSE) {
+            ret = TRUE;
+            break;
+        }
     }
-    return FALSE;
+    return ret;
 }
-#else
-asm("
-.align 2
-.thumb_func
-.global MAU_Socket_FreeCheck
-MAU_Socket_FreeCheck:
-    mov	r3, #0
-    mov	r1, #0
-    ldr	r2, [pc, #4]
-    mov	r0, r2
-    add	r0, #204
-    b	MAU_Socket_FreeCheck+0x1c
-.align 2
-    .word gMA
-
-    add	r1, #1
-    cmp	r1, #1
-    bgt	MAU_Socket_FreeCheck+0x24
-    mov	r0, r2
-    add	r0, #204
-    add	r0, r1, r0
-    ldrb	r0, [r0, #0]
-    cmp	r0, #0
-    bne	MAU_Socket_FreeCheck+0x10
-    mov	r3, #1
-    mov	r0, r3
-    bx	lr
-.size MAU_Socket_FreeCheck, .-MAU_Socket_FreeCheck
-");
-#endif
 
 int MAU_Socket_IpAddrCheck(u8 *addr)
 {
