@@ -33,9 +33,9 @@ ardata: CC := $(HOSTCC)
 ardata: CFLAGS := $(HOSTCFLAGS)
 
 # dependence
-ma_bios.o:
-ma_api.o:
-ma_sub.o:
-md5c.o:
-ma_ango.o:
-ma_var.o:
+ma_bios.o: $(wildcard *.h)
+ma_api.o: $(wildcard *.h)
+ma_sub.o: $(wildcard *.h)
+md5c.o: $(wildcard *.h)
+ma_ango.o: $(wildcard *.h)
+ma_var.o: $(wildcard *.h)

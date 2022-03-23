@@ -2,6 +2,7 @@
 #include "libma.h"
 
 #include <stdlib.h>
+#include "ma_var.h"
 
 static void xtoa(unsigned num, char *dest, unsigned base, int negative);
 
@@ -78,7 +79,6 @@ char *MAU_SearchCRLF(char *str, int size)
 void MAU_strcat(char *dest, char *src)
 {
     while (*dest != '\0') dest++;
-
     for (;;) {
         *dest++ = *src;
         if (*src == '\0') break;
@@ -163,12 +163,14 @@ void MAU_memcpy(void *dest, void *src, int size)
 {
     char *d = dest;
     char *s = src;
+
     while (size--) *d++ = *s++;
 }
 
 void MAU_memset(void *dest, u8 c, int size)
 {
     char *d = dest;
+
     while (size--) *d++ = c;
 }
 
@@ -289,43 +291,27 @@ int MAU_CheckCRLF(char *str, u16 size)
     return TRUE;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MAU_Socket_Add
-MAU_Socket_Add:
-    push	{r4, r5, r6, lr}
-    lsl	r0, r0, #24
-    lsr	r4, r0, #24
-    mov	r2, #0
-    ldr	r3, [pc, #20]
-    mov	r5, #1
-    mov	r6, r3
-    sub	r6, #105
-    add	r1, r2, r3
-    ldrb	r0, [r1, #0]
-    cmp	r0, #0
-    bne	MAU_Socket_Add+0x24
-    strb	r5, [r1, #0]
-    add	r0, r2, r6
-    strb	r4, [r0, #0]
-    b	MAU_Socket_Add+0x2a
-.align 2
-    .word gMA+0xcc
-
-    add	r2, #1
-    cmp	r2, #1
-    ble	MAU_Socket_Add+0x10
-    pop	{r4, r5, r6}
-    pop	{r0}
-    bx	r0
-.size MAU_Socket_Add, .-MAU_Socket_Add
-");
-#endif
+void MAU_Socket_Add(u8 sock)
+{
+    int i;
+    for (i = 0; i < NUM_SOCKETS; i++) {
+        if (!gMA.sockets_used[i]) {
+            gMA.sockets_used[i] = TRUE;
+            gMA.sockets[i] = sock;
+            break;
+        }
+    }
+}
 
 #if 0
+void MAU_Socket_Delete(u8 sock)
+{
+    int i;
+    for (i = 0; gMA.sockets[i] != sock; i++) {
+        if (i >= NUM_SOCKETS) return;
+    }
+    gMA.sockets_used[i] = FALSE;
+}
 #else
 asm("
 .align 2
@@ -368,6 +354,16 @@ MAU_Socket_Delete:
 #endif
 
 #if 0
+int MAU_Socket_Search(u8 sock)
+{
+    int i;
+    for (i = 0; i < NUM_SOCKETS; i++) {
+        if (gMA.sockets[i] == sock) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
 #else
 asm("
 .align 2
@@ -404,33 +400,28 @@ MAU_Socket_Search:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MAU_Socket_GetNum
-MAU_Socket_GetNum:
-    mov	r2, #0
-    mov	r1, #0
-    ldr	r3, [pc, #20]
-    add	r0, r1, r3
-    ldrb	r0, [r0, #0]
-    cmp	r0, #1
-    bne	MAU_Socket_GetNum+0x10
-    add	r2, #1
-    add	r1, #1
-    cmp	r1, #1
-    ble	MAU_Socket_GetNum+0x6
-    mov	r0, r2
-    bx	lr
-.align 2
-    .word gMA+0xcc
-.size MAU_Socket_GetNum, .-MAU_Socket_GetNum
-");
-#endif
+int MAU_Socket_GetNum(void)
+{
+    int i;
+    int c;
+
+    c = 0;
+    for (i = 0; i < NUM_SOCKETS; i++) {
+        if (gMA.sockets_used[i] == TRUE) c++;
+    }
+    return c;
+}
 
 #if 0
+int MAU_Socket_FreeCheck(void)
+{
+    int i;
+
+    for (i = 0; i < NUM_SOCKETS; i++) {
+        if (gMA.sockets_used[i] == FALSE) return TRUE;
+    }
+    return FALSE;
+}
 #else
 asm("
 .align 2
@@ -462,80 +453,24 @@ MAU_Socket_FreeCheck:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MAU_Socket_IpAddrCheck
-MAU_Socket_IpAddrCheck:
-    mov	r3, r0
-    ldr	r2, [pc, #52]
-    mov	r1, r2
-    add	r1, #106
-    ldrb	r0, [r3, #0]
-    ldrb	r1, [r1, #0]
-    cmp	r0, r1
-    bne	MAU_Socket_IpAddrCheck+0x3c
-    mov	r1, r2
-    add	r1, #107
-    ldrb	r0, [r3, #1]
-    ldrb	r1, [r1, #0]
-    cmp	r0, r1
-    bne	MAU_Socket_IpAddrCheck+0x3c
-    mov	r1, r2
-    add	r1, #108
-    ldrb	r0, [r3, #2]
-    ldrb	r1, [r1, #0]
-    cmp	r0, r1
-    bne	MAU_Socket_IpAddrCheck+0x3c
-    mov	r1, r2
-    add	r1, #109
-    ldrb	r0, [r3, #3]
-    ldrb	r1, [r1, #0]
-    cmp	r0, r1
-    bne	MAU_Socket_IpAddrCheck+0x3c
-    mov	r0, #1
-    b	MAU_Socket_IpAddrCheck+0x3e
-.align 2
-    .word gMA
+int MAU_Socket_IpAddrCheck(u8 *addr)
+{
+    if (addr[0] != gMA.ipaddr[0]) return FALSE;
+    if (addr[1] != gMA.ipaddr[1]) return FALSE;
+    if (addr[2] != gMA.ipaddr[2]) return FALSE;
+    if (addr[3] != gMA.ipaddr[3]) return FALSE;
+    return TRUE;
+}
 
-    mov	r0, #0
-    bx	lr
-.size MAU_Socket_IpAddrCheck, .-MAU_Socket_IpAddrCheck
-");
-#endif
+void MAU_Socket_Clear(void)
+{
+    int i;
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MAU_Socket_Clear
-MAU_Socket_Clear:
-    ldr	r2, [pc, #40]
-    mov	r3, #0
-    mov	r1, #1
-    mov	r0, r2
-    add	r0, #205
-    strb	r3, [r0, #0]
-    sub	r0, #1
-    sub	r1, #1
-    cmp	r1, #0
-    bge	MAU_Socket_Clear+0xa
-    mov	r1, r2
-    add	r1, #106
-    mov	r0, #0
-    strb	r0, [r1, #0]
-    add	r1, #1
-    strb	r0, [r1, #0]
-    add	r1, #1
-    strb	r0, [r1, #0]
-    add	r1, #1
-    strb	r0, [r1, #0]
-    bx	lr
-.align 2
-    .word gMA
-.size MAU_Socket_Clear, .-MAU_Socket_Clear
-");
-#endif
+    for (i = 0; i < NUM_SOCKETS; i++) {
+        gMA.sockets_used[i] = FALSE;
+    }
+    gMA.ipaddr[0] = 0;
+    gMA.ipaddr[1] = 0;
+    gMA.ipaddr[2] = 0;
+    gMA.ipaddr[3] = 0;
+}
