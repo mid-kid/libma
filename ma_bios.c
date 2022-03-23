@@ -6,331 +6,112 @@ static u8 *tmppPacketLast;
 static u16 tmpPacketLen;
 static int i;
 
-asm("
-.section .rodata
-.align 2
-.type gTimerIntByteInter, object
-gTimerIntByteInter:
-    .word 0xfffbfffc
-    .word 0xfff7fff9
-    .word 0xfff8fff6
-    .word 0xfff2fff6
-    .word 0xffecffee
-.size gTimerIntByteInter, .-gTimerIntByteInter
+static const short gTimerIntByteInter[] = {
+    -4, -5, -7, -9, -10, -8, -10, -14, -18, -20
+};
 
-.align 2
-.type gNullCounterByte, object
-gNullCounterByte:
-    .word 0x00001001
-    .word 0x00000cce
-    .word 0x00000925
-    .word 0x0000071d
-    .word 0x00000667
-    .word 0x00000800
-    .word 0x00000667
-    .word 0x00000492
-    .word 0x0000038e
-    .word 0x00000333
-.size gNullCounterByte, .-gNullCounterByte
+static const int gNullCounterByte[] = {
+    4097, 3278, 2341, 1821, 1639, 2048, 1639, 1170, 910, 819
+};
 
-.align 2
-.type gP2PCounterByte, object
-gP2PCounterByte:
-    .word 0x00000201
-    .word 0x0000019a
-    .word 0x00000125
-    .word 0x000000e4
-    .word 0x000000cd
-    .word 0x00000100
-    .word 0x000000cd
-    .word 0x00000092
-    .word 0x00000072
-    .word 0x00000066
-.size gP2PCounterByte, .-gP2PCounterByte
+static const int gP2PCounterByte[] = {
+    513, 410, 293, 228, 205, 256, 205, 146, 114, 102
+};
 
-.align 2
-.type gTimeout90CounterByte, object
-gTimeout90CounterByte:
-    .word 0x0005a03e
-    .word 0x00048032
-    .word 0x000336ff
-    .word 0x0002801c
-    .word 0x00024019
-    .word 0x0002d01f
-    .word 0x00024019
-    .word 0x00019b7f
-    .word 0x0001400e
-    .word 0x0001200c
-.size gTimeout90CounterByte, .-gTimeout90CounterByte
+static const int gTimeout90CounterByte[] = {
+    368702, 294962, 210687, 163868, 147481, 184351, 147481, 105343, 81934, 73740
+};
 
-.align 2
-.type gTimeout30CounterByte, object
-gTimeout30CounterByte:
-    .word 0x0001e015
-    .word 0x00018011
-    .word 0x00011255
-    .word 0x0000d55f
-    .word 0x0000c009
-    .word 0x0000f00a
-    .word 0x0000c008
-    .word 0x0000892a
-    .word 0x00006aaf
-    .word 0x00006004
-.size gTimeout30CounterByte, .-gTimeout30CounterByte
+static const int gTimeout30CounterByte[] = {
+    122901, 98321, 70229, 54623, 49161, 61450, 49160, 35114, 27311, 24580
+};
 
-.align 2
-.type gTimeout10CounterByte, object
-gTimeout10CounterByte:
-    .word 0x0000a007
-    .word 0x00008006
-    .word 0x00005b72
-    .word 0x00004720
-    .word 0x00004003
-    .word 0x00005003
-    .word 0x00004003
-    .word 0x00002db9
-    .word 0x00002390
-    .word 0x00002001
-.size gTimeout10CounterByte, .-gTimeout10CounterByte
+static const int gTimeout10CounterByte[] = {
+    40967, 32774, 23410, 18208, 16387, 20483, 16387, 11705, 9104, 8193,
+};
 
-.align 2
-.type gTimeout02CounterByte, object
-gTimeout02CounterByte:
-    .word 0x00002002
-    .word 0x0000199b
-    .word 0x0000124a
-    .word 0x00000e3a
-    .word 0x00000cce
-    .word 0x00001001
-    .word 0x00000ccd
-    .word 0x00000925
-    .word 0x0000071d
-    .word 0x00000667
-.size gTimeout02CounterByte, .-gTimeout02CounterByte
+static const int gTimeout02CounterByte[] = {
+    8194, 6555, 4682, 3642, 3278, 4097, 3277, 2341, 1821, 1639
+};
 
-.align 2
-.type gTimeout200msecCounterByte, object
-gTimeout200msecCounterByte:
-    .word 0x00000334
-    .word 0x00000290
-    .word 0x000001d5
-    .word 0x0000016d
-    .word 0x00000148
-    .word 0x0000019a
-    .word 0x00000148
-    .word 0x000000ea
-    .word 0x000000b6
-    .word 0x000000a4
-.size gTimeout200msecCounterByte, .-gTimeout200msecCounterByte
+static const int gTimeout200msecCounterByte[] = {
+    820, 656, 469, 365, 328, 410, 328, 234, 182, 164
+};
 
-.align 2
-.type gTimeout250msecCounterByte, object
-gTimeout250msecCounterByte:
-    .word 0x00000401
-    .word 0x00000334
-    .word 0x0000024a
-    .word 0x000001c8
-    .word 0x0000019a
-    .word 0x00000200
-    .word 0x0000019a
-    .word 0x00000125
-    .word 0x000000e4
-    .word 0x000000cd
-.size gTimeout250msecCounterByte, .-gTimeout250msecCounterByte
+static const int gTimeout250msecCounterByte[] = {
+    1025, 820, 586, 456, 410, 512, 410, 293, 228, 205
+};
 
-.align 2
-.type gTimeout40msecCounterByte, object
-gTimeout40msecCounterByte:
-    .word 0x000000a4
-    .word 0x00000083
-    .word 0x0000005e
-    .word 0x00000049
-    .word 0x00000042
-    .word 0x00000052
-    .word 0x00000041
-    .word 0x0000002f
-    .word 0x00000024
-    .word 0x00000021
-.size gTimeout40msecCounterByte, .-gTimeout40msecCounterByte
+static const int gTimeout40msecCounterByte[] = {
+    164, 131, 94, 73, 66, 82, 65, 47, 36, 33
+};
 
-.align 2
-.type gTimerIntWordInter, object
-gTimerIntWordInter:
-    .word 0xfff9fff8
-    .word 0xfff7fff7
-    .word 0xfff0fff6
-    .word 0xffeefff2
-    .word 0xffecffee
-.size gTimerIntWordInter, .-gTimerIntWordInter
+static const short gTimerIntWordInter[] = {
+    -8, -7, -9, -9, -10, -16, -14, -18, -18, -20
+};
 
-.align 2
-.type gNullCounterWord, object
-gNullCounterWord:
-    .word 0x00000801
-    .word 0x00000925
-    .word 0x0000071d
-    .word 0x00000667
-    .word 0x00000556
-    .word 0x00000400
-    .word 0x00000492
-    .word 0x0000038e
-    .word 0x00000333
-    .word 0x000002ab
-.size gNullCounterWord, .-gNullCounterWord
+static const int gNullCounterWord[] = {
+    2049, 2341, 1821, 1639, 1366, 1024, 1170, 910, 819, 683
+};
 
-.align 2
-.type gP2PCounterWord, object
-gP2PCounterWord:
-    .word 0x00000101
-    .word 0x00000125
-    .word 0x000000e4
-    .word 0x000000cd
-    .word 0x000000ab
-    .word 0x00000080
-    .word 0x00000092
-    .word 0x00000072
-    .word 0x00000066
-    .word 0x00000055
-.size gP2PCounterWord, .-gP2PCounterWord
+static const int gP2PCounterWord[] = {
+    257, 293, 228, 205, 171, 128, 146, 114, 102, 85,
+};
 
-.align 2
-.type gTimeout90CounterWord, object
-gTimeout90CounterWord:
-    .word 0x0002d01f
-    .word 0x000336ff
-    .word 0x0002801c
-    .word 0x00024019
-    .word 0x0001e015
-    .word 0x0001680f
-    .word 0x00019b7f
-    .word 0x0001400e
-    .word 0x0001200c
-    .word 0x0000f00a
-.size gTimeout90CounterWord, .-gTimeout90CounterWord
+static const int gTimeout90CounterWord[] = {
+    184351, 210687, 163868, 147481, 122901, 92175, 105343, 81934, 73740, 61450,
+};
 
-.align 2
-.type gTimeout30CounterWord, object
-gTimeout30CounterWord:
-    .word 0x0000f00b
-    .word 0x00011255
-    .word 0x0000d55f
-    .word 0x0000c009
-    .word 0x0000a007
-    .word 0x00007805
-    .word 0x0000892a
-    .word 0x00006aaf
-    .word 0x00006004
-    .word 0x00005003
-.size gTimeout30CounterWord, .-gTimeout30CounterWord
+static const int gTimeout30CounterWord[] = {
+    61451, 70229, 54623, 49161, 40967, 30725, 35114, 27311, 24580, 20483,
+};
 
-.align 2
-.type gTimeout10CounterWord, object
-gTimeout10CounterWord:
-    .word 0x00005004
-    .word 0x00005b72
-    .word 0x00004720
-    .word 0x00004003
-    .word 0x00003558
-    .word 0x00002802
-    .word 0x00002db9
-    .word 0x00002390
-    .word 0x00002001
-    .word 0x00001aac
-.size gTimeout10CounterWord, .-gTimeout10CounterWord
+static const int gTimeout10CounterWord[] = {
+    20484, 23410, 18208, 16387, 13656, 10242, 11705, 9104, 8193, 6828,
+};
 
-.align 2
-.type gTimeout02CounterWord, object
-gTimeout02CounterWord:
-    .word 0x00001001
-    .word 0x0000124a
-    .word 0x00000e3a
-    .word 0x00000cce
-    .word 0x00000aac
-    .word 0x00000800
-    .word 0x00000925
-    .word 0x0000071d
-    .word 0x00000667
-    .word 0x00000556
-.size gTimeout02CounterWord, .-gTimeout02CounterWord
+static const int gTimeout02CounterWord[] = {
+    4097, 4682, 3642, 3278, 2732, 2048, 2341, 1821, 1639, 1366,
+};
 
-.align 2
-.type gTimeout200msecCounterWord, object
-gTimeout200msecCounterWord:
-    .word 0x0000019a
-    .word 0x000001d5
-    .word 0x0000016d
-    .word 0x00000148
-    .word 0x00000112
-    .word 0x000000cd
-    .word 0x000000ea
-    .word 0x000000b6
-    .word 0x000000a4
-    .word 0x00000089
-.size gTimeout200msecCounterWord, .-gTimeout200msecCounterWord
+static const int gTimeout200msecCounterWord[] = {
+    410, 469, 365, 328, 274, 205, 234, 182, 164, 137,
+};
 
-.align 2
-.type gTimeout250msecCounterWord, object
-gTimeout250msecCounterWord:
-    .word 0x00000201
-    .word 0x0000024a
-    .word 0x000001c8
-    .word 0x0000019a
-    .word 0x00000156
-    .word 0x00000100
-    .word 0x00000125
-    .word 0x000000e4
-    .word 0x000000cd
-    .word 0x000000ab
-.size gTimeout250msecCounterWord, .-gTimeout250msecCounterWord
+static const int gTimeout250msecCounterWord[] = {
+    513, 586, 456, 410, 342, 256, 293, 228, 205, 171,
+};
 
-.align 2
-.type gTimeout40msecCounterWord, object
-gTimeout40msecCounterWord:
-    .word 0x00000052
-    .word 0x0000005e
-    .word 0x00000049
-    .word 0x00000042
-    .word 0x00000037
-    .word 0x00000029
-    .word 0x0000002f
-    .word 0x00000024
-    .word 0x00000021
-    .word 0x0000001b
-.size gTimeout40msecCounterWord, .-gTimeout40msecCounterWord
+static const int gTimeout40msecCounterWord[] = {
+    82, 94, 73, 66, 55, 41, 47, 36, 33, 27,
+};
 
-.align 2
-.type MaPacketData_PreStart, object
-MaPacketData_PreStart:
-    .word 0x4b4b4b4b
-.size MaPacketData_PreStart, .-MaPacketData_PreStart
+static const u8 MaPacketData_PreStart[] = {
+    0x4b, 0x4b, 0x4b, 0x4b
+};
 
-.align 2
-.type MaPacketData_Start, object
-MaPacketData_Start:
-    .word 0x00106699
-    .word 0x494e0800
-    .word 0x4e45544e
-    .word 0x77024f44
-    .word 0x00000081
-.size MaPacketData_Start, .-MaPacketData_Start
+static const u8 MaPacketData_Start[] = {
+    0x99, 0x66,
+    0x10, 0x00, 0x00, 0x08,
+    'N', 'I', 'N', 'T', 'E', 'N', 'D', 'O',
+    0x02, 0x77,
+    0x81, 0x00, 0x00, 0x00
+};
 
-.align 2
-.type MaPacketData_NULL, object
-MaPacketData_NULL:
-    .word 0x000f6699
-    .word 0x0f000000
-    .word 0x00000081
-.size MaPacketData_NULL, .-MaPacketData_NULL
+static const u8 MaPacketData_NULL[] = {
+    0x99, 0x66,
+    0x0f, 0x00, 0x00, 0x00,
+    0x00, 0x0f,
+    0x81, 0x00, 0x00, 0x00
+};
 
-.align 2
-.type MaPacketData_CheckStatus, object
-MaPacketData_CheckStatus:
-    .word 0x00176699
-    .word 0x17000000
-    .word 0x00000081
-.size MaPacketData_CheckStatus, .-MaPacketData_CheckStatus
-.section .text
-");
+static const u8 MaPacketData_CheckStatus[] = {
+    0x99, 0x66,
+    0x17, 0x00, 0x00, 0x00,
+    0x00, 0x17,
+    0x81, 0x00, 0x00, 0x00
+};
+asm(".section .text\n");
 
 #if 0
 #else
