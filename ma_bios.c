@@ -190,45 +190,20 @@ void MABIOS_Init(void)
     gMA.unk_76 = 0;
     gMA.unk_77 = 0;
 
-    gMA.unk_812 = 4;
-    gMA.unk_816 = gMA.unk_804;
-    gMA.unk_480 = 0x10c;
+    gMA.buffer_recv_size = 4;
+    gMA.buffer_recv_ptr = gMA.buffer_recv;
+    gMA.unk_480 = sizeof(gMA.unk_212);
     gMA.unk_484 = gMA.unk_212;
 
     *(vu16 *)REG_IME = 1;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-SetInternalRecvBuffer:
-    push	{r4, lr}
-    ldr	r3, [pc, #36]
-    mov	r0, #203
-    lsl	r0, r0, #2
-    add	r2, r3, r0
-    mov	r0, #4
-    strh	r0, [r2, #0]
-    mov	r4, #204
-    lsl	r4, r4, #2
-    add	r1, r3, r4
-    sub	r4, #12
-    add	r0, r3, r4
-    str	r0, [r1, #0]
-    mov	r1, #205
-    lsl	r1, r1, #2
-    add	r0, r3, r1
-    str	r2, [r0, #0]
-    pop	{r4}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-.size SetInternalRecvBuffer, .-SetInternalRecvBuffer
-");
-#endif
+static void SetInternalRecvBuffer(void)
+{
+    gMA.buffer_recv_size = sizeof(gMA.buffer_recv);
+    gMA.buffer_recv_ptr = gMA.buffer_recv;
+    gMA.buffer_recv_unk = &gMA.buffer_recv_size;
+}
 
 static void MA_SetInterval(int index)
 {
