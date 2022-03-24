@@ -45,22 +45,22 @@ static const u32 gP2PCounterByte[] = {
     256, 205, 146, 114, 102
 };
 
-static const int gTimeout90CounterByte[] = {
+static const u32 gTimeout90CounterByte[] = {
     368702, 294962, 210687, 163868, 147481,
     184351, 147481, 105343, 81934, 73740
 };
 
-static const int gTimeout30CounterByte[] = {
+static const u32 gTimeout30CounterByte[] = {
     122901, 98321, 70229, 54623, 49161,
     61450, 49160, 35114, 27311, 24580
 };
 
-static const int gTimeout10CounterByte[] = {
+static const u32 gTimeout10CounterByte[] = {
     40967, 32774, 23410, 18208, 16387,
     20483, 16387, 11705, 9104, 8193
 };
 
-static const int gTimeout02CounterByte[] = {
+static const u32 gTimeout02CounterByte[] = {
     8194, 6555, 4682, 3642, 3278,
     4097, 3277, 2341, 1821, 1639
 };
@@ -95,22 +95,22 @@ static const u32 gP2PCounterWord[] = {
     128, 146, 114, 102, 85
 };
 
-static const int gTimeout90CounterWord[] = {
+static const u32 gTimeout90CounterWord[] = {
     184351, 210687, 163868, 147481, 122901,
     92175, 105343, 81934, 73740, 61450
 };
 
-static const int gTimeout30CounterWord[] = {
+static const u32 gTimeout30CounterWord[] = {
     61451, 70229, 54623, 49161, 40967,
     30725, 35114, 27311, 24580, 20483
 };
 
-static const int gTimeout10CounterWord[] = {
+static const u32 gTimeout10CounterWord[] = {
     20484, 23410, 18208, 16387, 13656,
     10242, 11705, 9104, 8193, 6828
 };
 
-static const int gTimeout02CounterWord[] = {
+static const u32 gTimeout02CounterWord[] = {
     4097, 4682, 3642, 3278, 2732,
     2048, 2341, 1821, 1639, 1366
 };
@@ -244,56 +244,25 @@ static void MA_SetInterval(int index)
     }
 }
 
-#if 0
-#else
-asm("
-.section .rodata
-.align 2
-.type counterArrayByte.12, object
-counterArrayByte.12:
-    .word gTimeout02CounterByte
-    .word gTimeout10CounterByte
-    .word gTimeout30CounterByte
-    .word gTimeout90CounterByte
+static void MA_SetTimeoutCount(int index)
+{
+    static const u32 *const counterArrayByte[] = {
+        gTimeout02CounterByte,
+        gTimeout10CounterByte,
+        gTimeout30CounterByte,
+        gTimeout90CounterByte
+    };
 
-.align 2
-.type counterArrayWord.13, object
-counterArrayWord.13:
-    .word gTimeout02CounterWord
-    .word gTimeout10CounterWord
-    .word gTimeout30CounterWord
-    .word gTimeout90CounterWord
-.section .text
+    static const u32 *const counterArrayWord[] = {
+        gTimeout02CounterWord,
+        gTimeout10CounterWord,
+        gTimeout30CounterWord,
+        gTimeout90CounterWord
+    };
 
-.align 2
-.thumb_func
-MA_SetTimeoutCount:
-    ldr	r3, [pc, #36]
-    ldr	r2, [pc, #40]
-    lsl	r0, r0, #2
-    add	r2, r0, r2
-    ldrb	r1, [r3, #16]
-    ldr	r2, [r2, #0]
-    lsl	r1, r1, #2
-    add	r1, r1, r2
-    ldr	r1, [r1, #0]
-    str	r1, [r3, #28]
-    ldr	r1, [pc, #24]
-    add	r0, r0, r1
-    ldrb	r1, [r3, #16]
-    ldr	r0, [r0, #0]
-    lsl	r1, r1, #2
-    add	r1, r1, r0
-    ldr	r0, [r1, #0]
-    str	r0, [r3, #32]
-    bx	lr
-.align 2
-    .word gMA
-    .word counterArrayByte.12
-    .word counterArrayWord.13
-.size MA_SetTimeoutCount, .-MA_SetTimeoutCount
-");
-#endif
+    gMA.counter_timeout[MA_SIO_BYTE] = counterArrayByte[index][gMA.interval];
+    gMA.counter_timeout[MA_SIO_WORD] = counterArrayWord[index][gMA.interval];
+}
 
 #if 0
 #else
