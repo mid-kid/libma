@@ -14,11 +14,10 @@ enum ma_sio_modes {
     MA_NUM_SIO_MODES,
 };
 
-// TODO: Try to disable as many volatiles as we can
 typedef struct {
-    u8 unk_0;
+    u8 error;
     u8 _1[1];
-    vu16 unk_2;
+    vu16 condition;
     vu8 unk_4;
     vu8 sio_mode;
     vu8 adapter_type;
@@ -34,7 +33,7 @@ typedef struct {
     u32 counter_timeout200msec[MA_NUM_SIO_MODES];
     u32 counter_adapter[MA_NUM_SIO_MODES];
     u32 unk_60;
-    u32 unk_64;
+    u32 status;
     vu8 unk_68;
     vu8 unk_69;
     u16 unk_70;

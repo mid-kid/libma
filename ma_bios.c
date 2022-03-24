@@ -163,16 +163,16 @@ void MABIOS_Init(void)
 
     *(vu32 *)REG_TM3CNT = 0;
     *(vu16 *)REG_RCNT = 0;
-    *(vu16 *)REG_SIOCNT = 0;
-    *(vu16 *)REG_SIOCNT |= 0x4001;
-    *(vu16 *)REG_IF = 0xc0;
-    *(vu16 *)REG_IE |= 0xc0;
+    *(vu16 *)REG_SIOCNT = SIO_8BIT_MODE;
+    *(vu16 *)REG_SIOCNT |= SIO_IF_ENABLE | SIO_SCK_IN;
+    *(vu16 *)REG_IF = SIO_INTR_FLAG | TIMER3_INTR_FLAG;
+    *(vu16 *)REG_IE |= SIO_INTR_FLAG | TIMER3_INTR_FLAG;
     *(vu32 *)REG_TM3CNT = 0;
 
-    gMA.unk_2 = 0;
-    gMA.unk_0 = 0xff;
+    gMA.condition = 0;
+    gMA.error = -1;
     gMA.unk_4 = 0;
-    gMA.adapter_type = 0xff;
+    gMA.adapter_type = -1;
 
     MA_ChangeSIOMode(0);
     MA_SetInterval(0);
@@ -180,7 +180,7 @@ void MABIOS_Init(void)
     gMA.unk_60 = 0;
     gMA.unk_12 = 0;
     gMA.unk_14 = 0;
-    gMA.unk_64 = 0;
+    gMA.status = 0;
     gMA.unk_824 = 0;
     gMA.unk_68 = 0;
     gMA.unk_69 = 0;
@@ -190,7 +190,7 @@ void MABIOS_Init(void)
     gMA.unk_76 = 0;
     gMA.unk_77 = 0;
 
-    gMA.buffer_recv_size = 4;
+    gMA.buffer_recv_size = sizeof(gMA.buffer_recv);
     gMA.buffer_recv_ptr = gMA.buffer_recv;
     gMA.unk_480 = sizeof(gMA.unk_212);
     gMA.unk_484 = gMA.unk_212;
@@ -264,67 +264,22 @@ static void MA_SetTimeoutCount(int index)
     gMA.counter_timeout[MA_SIO_WORD] = counterArrayWord[index][gMA.interval];
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_GetStatus
-MA_GetStatus:
-    ldr	r0, [pc, #12]
-    ldr	r0, [r0, #64]
-    mov	r1, #1
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_GetStatus+0x14
-    mov	r0, #0
-    b	MA_GetStatus+0x16
-.align 2
-    .word gMA
+int MA_GetStatus(void)
+{
+    if ((gMA.status & 1) != 0) return TRUE;
+    return FALSE;
+}
 
-    mov	r0, #1
-    bx	lr
-.size MA_GetStatus, .-MA_GetStatus
-");
-#endif
+u16 MA_GetCondition(void)
+{
+    return gMA.condition;
+}
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_GetCondition
-MA_GetCondition:
-    ldr	r0, [pc, #4]
-    ldrh	r0, [r0, #2]
-    bx	lr
-.align 2
-    .word gMA
-.size MA_GetCondition, .-MA_GetCondition
-");
-#endif
-
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_ErrorCheck
-MA_ErrorCheck:
-    ldr	r1, [pc, #12]
-    ldrh	r2, [r1, #2]
-    ldr	r0, [pc, #12]
-    and	r0, r2
-    ldrh	r2, [r1, #2]
-    strh	r0, [r1, #2]
-    ldrb	r0, [r1, #0]
-    bx	lr
-.align 2
-    .word gMA
-    .word 0x0000fffd
-.size MA_ErrorCheck, .-MA_ErrorCheck
-");
-#endif
+u8 MA_ErrorCheck(void)
+{
+    gMA.condition &= ~2;
+    return gMA.error;
+}
 
 #if 0
 #else
