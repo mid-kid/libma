@@ -4,7 +4,7 @@
 #include "ma_var.h"
 
 //static void SetInternalRecvBuffer();
-//static void MA_SetInterval();
+static void MA_SetInterval(int index);
 //static void MA_SetTimeoutCount();
 //static void MA_PreSend();
 //static void MA_InitIoBuffer();
@@ -157,135 +157,46 @@ static const u8 MaPacketData_CheckStatus[] = {
 };
 asm(".section .text\n");
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MABIOS_Init
-MABIOS_Init:
-    push	{r4, r5, r6, r7, lr}
-    ldr	r6, [pc, #204]
-    mov	r5, #0
-    strh	r5, [r6, #0]
-    ldr	r3, [pc, #200]
-    mov	r4, #0
-    str	r4, [r3, #0]
-    ldr	r0, [pc, #200]
-    strh	r4, [r0, #0]
-    ldr	r2, [pc, #200]
-    strh	r4, [r2, #0]
-    ldrh	r0, [r2, #0]
-    ldr	r7, [pc, #196]
-    mov	r1, r7
-    orr	r0, r1
-    strh	r0, [r2, #0]
-    ldr	r0, [pc, #192]
-    mov	r2, #192
-    strh	r2, [r0, #0]
-    ldr	r1, [pc, #192]
-    ldrh	r0, [r1, #0]
-    orr	r0, r2
-    strh	r0, [r1, #0]
-    str	r4, [r3, #0]
-    ldr	r7, [pc, #184]
-    ldrh	r0, [r7, #2]
-    strh	r4, [r7, #2]
-    mov	r0, #255
-    strb	r0, [r7, #0]
-    ldrb	r0, [r7, #4]
-    strb	r5, [r7, #4]
-    ldrb	r0, [r7, #6]
-    mov	r0, #1
-    neg	r0, r0
-    strb	r0, [r7, #6]
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    mov	r0, #0
-    bl	MA_SetInterval
-    str	r4, [r7, #60]
-    ldrh	r0, [r7, #12]
-    strh	r4, [r7, #12]
-    ldrh	r0, [r7, #14]
-    strh	r4, [r7, #14]
-    str	r4, [r7, #64]
-    mov	r1, #206
-    lsl	r1, r1, #2
-    add	r0, r7, r1
-    str	r4, [r0, #0]
-    mov	r0, r7
-    add	r0, #68
-    ldrb	r1, [r0, #0]
-    strb	r5, [r0, #0]
-    mov	r1, r7
-    add	r1, #69
-    ldrb	r0, [r1, #0]
-    strb	r5, [r1, #0]
-    mov	r0, r7
-    add	r0, #70
-    strh	r4, [r0, #0]
-    add	r0, #2
-    ldrb	r1, [r0, #0]
-    strb	r5, [r0, #0]
-    mov	r1, r7
-    add	r1, #73
-    ldrb	r0, [r1, #0]
-    strb	r5, [r1, #0]
-    mov	r0, r7
-    add	r0, #76
-    ldrb	r1, [r0, #0]
-    strb	r5, [r0, #0]
-    mov	r1, r7
-    add	r1, #77
-    ldrb	r0, [r1, #0]
-    strb	r5, [r1, #0]
-    mov	r2, #203
-    lsl	r2, r2, #2
-    add	r1, r7, r2
-    mov	r0, #4
-    strh	r0, [r1, #0]
-    mov	r0, #204
-    lsl	r0, r0, #2
-    add	r1, r7, r0
-    sub	r2, #8
-    add	r0, r7, r2
-    str	r0, [r1, #0]
-    mov	r0, #240
-    lsl	r0, r0, #1
-    add	r1, r7, r0
-    sub	r0, #212
-    strh	r0, [r1, #0]
-    mov	r2, #242
-    lsl	r2, r2, #1
-    add	r1, r7, r2
-    mov	r0, r7
-    add	r0, #212
-    str	r0, [r1, #0]
-    mov	r0, #1
-    strh	r0, [r6, #0]
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    @ DATA
-    lsl	r0, r1, #8
-    lsl	r0, r0, #16
-    lsl	r4, r1, #4
-    lsl	r0, r0, #16
-    lsl	r4, r6, #4
-    lsl	r0, r0, #16
-    lsl	r0, r5, #4
-    lsl	r0, r0, #16
-    and	r1, r0
-    lsl	r0, r0, #0
-    lsl	r2, r0, #8
-    lsl	r0, r0, #16
-    lsl	r0, r0, #8
-    lsl	r0, r0, #16
-    .word gMA
-.size MABIOS_Init, .-MABIOS_Init
-");
-#endif
+void MABIOS_Init(void)
+{
+    *(vu16 *)REG_IME = 0;
+
+    *(vu32 *)REG_TM3CNT = 0;
+    *(vu16 *)REG_RCNT = 0;
+    *(vu16 *)REG_SIOCNT = 0;
+    *(vu16 *)REG_SIOCNT |= 0x4001;
+    *(vu16 *)REG_IF = 0xc0;
+    *(vu16 *)REG_IE |= 0xc0;
+    *(vu32 *)REG_TM3CNT = 0;
+
+    gMA.unk_2 = 0;
+    gMA.unk_0 = 0xff;
+    gMA.unk_4 = 0;
+    gMA.adapter_type = 0xff;
+
+    MA_ChangeSIOMode(0);
+    MA_SetInterval(0);
+
+    gMA.unk_60 = 0;
+    gMA.unk_12 = 0;
+    gMA.unk_14 = 0;
+    gMA.unk_64 = 0;
+    gMA.unk_824 = 0;
+    gMA.unk_68 = 0;
+    gMA.unk_69 = 0;
+    gMA.unk_70 = 0;
+    gMA.unk_72 = 0;
+    gMA.unk_73 = 0;
+    gMA.unk_76 = 0;
+    gMA.unk_77 = 0;
+
+    gMA.unk_812 = 4;
+    gMA.unk_816 = gMA.unk_804;
+    gMA.unk_480 = 0x10c;
+    gMA.unk_484 = gMA.unk_212;
+
+    *(vu16 *)REG_IME = 1;
+}
 
 #if 0
 #else
@@ -321,7 +232,7 @@ SetInternalRecvBuffer:
 
 static void MA_SetInterval(int index)
 {
-    if (gMA.adapter_type == MATYPE_PROT_SLAVE | MATYPE_PDC) {
+    if (gMA.adapter_type == (MATYPE_PROT_SLAVE | MATYPE_PDC)) {
         index += 5;
     }
 

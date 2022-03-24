@@ -1,12 +1,14 @@
 #ifndef _MA_BIOS
 #define _MA_BIOS
 
+#include <AgbTypes.h>
+
 //void MABIOS_Init();
 //void MA_GetStatus();
 //void MA_GetCondition();
 //void MA_ErrorCheck();
 //void MA_SetError();
-//void MA_ChangeSIOMode();
+void MA_ChangeSIOMode(u8 mode);
 //void MA_SetDataInterval();
 //void MA_GetCallTypeFromHarwareType();
 //void MABIOS_Null();
