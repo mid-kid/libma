@@ -22,12 +22,12 @@ int MAU_atoi(char *str);
 void MAU_DecodeEEPROMTelNo(u8 *num, char *str);
 int MAU_IsValidTelNoStr(char *str);
 int MAU_CheckCRLF(char *str, u16 size);
-//void MAU_Socket_Add();
-//void MAU_Socket_Delete();
-//void MAU_Socket_Search();
-//void MAU_Socket_GetNum();
-//void MAU_Socket_FreeCheck();
-//void MAU_Socket_IpAddrCheck();
-//void MAU_Socket_Clear();
+void MAU_Socket_Add(u8 sock);
+void MAU_Socket_Delete(u8 sock);
+int MAU_Socket_Search(u8 sock);
+int MAU_Socket_GetNum(void);
+int MAU_Socket_FreeCheck(void);
+int MAU_Socket_IpAddrCheck(u8 *addr);
+void MAU_Socket_Clear(void);
 
 #endif // _MA_SUB

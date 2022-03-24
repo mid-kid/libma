@@ -1,89 +1,133 @@
 #include "ma_bios.h"
 #include "libma.h"
 
+#include "ma_var.h"
+
+//static void SetInternalRecvBuffer();
+//static void MA_SetInterval();
+//static void MA_SetTimeoutCount();
+//static void MA_PreSend();
+//static void MA_InitIoBuffer();
+//static void MA_StartSioTransmit();
+//static void MA_SetTransmitData();
+//static void MA_IsSupportedHardware();
+//static void MABIOS_Data2();
+//static void MA_CreatePacket();
+//static void MA_Create8BitPacket();
+//static void MA_Create32BitPacket();
+//static void MA_CalcCheckSum();
+//static void MA_IntrTimer_SIOSend();
+//static void MA_IntrTimer_SIORecv();
+//static void MA_IntrTimer_SIOIdle();
+//static void MA_IntrTimer_SIOWaitTime();
+//static void ConvertNegaErrToApiErr();
+//static void MA_ProcessRecvPacket();
+//static void MA_IntrSio_Send();
+//static void MA_IntrSio_Recv();
+
 static u8 *tmppPacket;
 static u8 *tmppPacketLast;
 static u16 tmpPacketLen;
 static int i;
 
-static const short gTimerIntByteInter[] = {
-    -4, -5, -7, -9, -10, -8, -10, -14, -18, -20
+static const s16 gTimerIntByteInter[] = {
+    -4, -5, -7, -9, -10,
+    -8, -10, -14, -18, -20
 };
 
-static const int gNullCounterByte[] = {
-    4097, 3278, 2341, 1821, 1639, 2048, 1639, 1170, 910, 819
+static const u32 gNullCounterByte[] = {
+    4097, 3278, 2341, 1821, 1639,
+    2048, 1639, 1170, 910, 819
 };
 
-static const int gP2PCounterByte[] = {
-    513, 410, 293, 228, 205, 256, 205, 146, 114, 102
+static const u32 gP2PCounterByte[] = {
+    513, 410, 293, 228, 205,
+    256, 205, 146, 114, 102
 };
 
 static const int gTimeout90CounterByte[] = {
-    368702, 294962, 210687, 163868, 147481, 184351, 147481, 105343, 81934, 73740
+    368702, 294962, 210687, 163868, 147481,
+    184351, 147481, 105343, 81934, 73740
 };
 
 static const int gTimeout30CounterByte[] = {
-    122901, 98321, 70229, 54623, 49161, 61450, 49160, 35114, 27311, 24580
+    122901, 98321, 70229, 54623, 49161,
+    61450, 49160, 35114, 27311, 24580
 };
 
 static const int gTimeout10CounterByte[] = {
-    40967, 32774, 23410, 18208, 16387, 20483, 16387, 11705, 9104, 8193,
+    40967, 32774, 23410, 18208, 16387,
+    20483, 16387, 11705, 9104, 8193
 };
 
 static const int gTimeout02CounterByte[] = {
-    8194, 6555, 4682, 3642, 3278, 4097, 3277, 2341, 1821, 1639
+    8194, 6555, 4682, 3642, 3278,
+    4097, 3277, 2341, 1821, 1639
 };
 
-static const int gTimeout200msecCounterByte[] = {
-    820, 656, 469, 365, 328, 410, 328, 234, 182, 164
+static const u32 gTimeout200msecCounterByte[] = {
+    820, 656, 469, 365, 328,
+    410, 328, 234, 182, 164
 };
 
-static const int gTimeout250msecCounterByte[] = {
-    1025, 820, 586, 456, 410, 512, 410, 293, 228, 205
+static const u32 gTimeout250msecCounterByte[] = {
+    1025, 820, 586, 456, 410,
+    512, 410, 293, 228, 205
 };
 
-static const int gTimeout40msecCounterByte[] = {
-    164, 131, 94, 73, 66, 82, 65, 47, 36, 33
+static const u32 gTimeout40msecCounterByte[] = {
+    164, 131, 94, 73, 66,
+    82, 65, 47, 36, 33
 };
 
-static const short gTimerIntWordInter[] = {
-    -8, -7, -9, -9, -10, -16, -14, -18, -18, -20
+static const s16 gTimerIntWordInter[] = {
+    -8, -7, -9, -9, -10,
+    -16, -14, -18, -18, -20
 };
 
-static const int gNullCounterWord[] = {
-    2049, 2341, 1821, 1639, 1366, 1024, 1170, 910, 819, 683
+static const u32 gNullCounterWord[] = {
+    2049, 2341, 1821, 1639, 1366,
+    1024, 1170, 910, 819, 683
 };
 
-static const int gP2PCounterWord[] = {
-    257, 293, 228, 205, 171, 128, 146, 114, 102, 85,
+static const u32 gP2PCounterWord[] = {
+    257, 293, 228, 205, 171,
+    128, 146, 114, 102, 85
 };
 
 static const int gTimeout90CounterWord[] = {
-    184351, 210687, 163868, 147481, 122901, 92175, 105343, 81934, 73740, 61450,
+    184351, 210687, 163868, 147481, 122901,
+    92175, 105343, 81934, 73740, 61450
 };
 
 static const int gTimeout30CounterWord[] = {
-    61451, 70229, 54623, 49161, 40967, 30725, 35114, 27311, 24580, 20483,
+    61451, 70229, 54623, 49161, 40967,
+    30725, 35114, 27311, 24580, 20483
 };
 
 static const int gTimeout10CounterWord[] = {
-    20484, 23410, 18208, 16387, 13656, 10242, 11705, 9104, 8193, 6828,
+    20484, 23410, 18208, 16387, 13656,
+    10242, 11705, 9104, 8193, 6828
 };
 
 static const int gTimeout02CounterWord[] = {
-    4097, 4682, 3642, 3278, 2732, 2048, 2341, 1821, 1639, 1366,
+    4097, 4682, 3642, 3278, 2732,
+    2048, 2341, 1821, 1639, 1366
 };
 
-static const int gTimeout200msecCounterWord[] = {
-    410, 469, 365, 328, 274, 205, 234, 182, 164, 137,
+static const u32 gTimeout200msecCounterWord[] = {
+    410, 469, 365, 328, 274,
+    205, 234, 182, 164, 137
 };
 
-static const int gTimeout250msecCounterWord[] = {
-    513, 586, 456, 410, 342, 256, 293, 228, 205, 171,
+static const u32 gTimeout250msecCounterWord[] = {
+    513, 586, 456, 410, 342,
+    256, 293, 228, 205, 171
 };
 
-static const int gTimeout40msecCounterWord[] = {
-    82, 94, 73, 66, 55, 41, 47, 36, 33, 27,
+static const u32 gTimeout40msecCounterWord[] = {
+    82, 94, 73, 66, 55,
+    41, 47, 36, 33, 27
 };
 
 static const u8 MaPacketData_PreStart[] = {
@@ -275,6 +319,45 @@ SetInternalRecvBuffer:
 ");
 #endif
 
+static void MA_SetInterval(int index)
+{
+    if (gMA.adapter_type == MATYPE_PROT_SLAVE | MATYPE_PDC) {
+        index += 5;
+    }
+
+    gMA.interval = index;
+    gMA.timer[MA_SIO_BYTE] = gTimerIntByteInter[index];
+    gMA.timer[MA_SIO_WORD] = gTimerIntWordInter[index];
+    gMA.counter_null[MA_SIO_BYTE] = gNullCounterByte[index];
+    gMA.counter_null[MA_SIO_WORD] = gNullCounterWord[index];
+    gMA.counter_p2p[MA_SIO_BYTE] = gP2PCounterByte[index];
+    gMA.counter_p2p[MA_SIO_WORD] = gP2PCounterWord[index];
+    gMA.counter_timeout200msec[MA_SIO_BYTE] = gTimeout200msecCounterByte[index];
+    gMA.counter_timeout200msec[MA_SIO_WORD] = gTimeout200msecCounterWord[index];
+
+    switch (gMA.adapter_type) {
+    case MATYPE_PROT_SLAVE | MATYPE_CDMA:
+        gMA.counter_adapter[MA_SIO_BYTE] = gTimeout250msecCounterByte[index];
+        gMA.counter_adapter[MA_SIO_WORD] = gTimeout250msecCounterWord[index];
+        break;
+
+    case MATYPE_PROT_SLAVE | MATYPE_PDC:
+        gMA.counter_adapter[MA_SIO_BYTE] = gTimeout200msecCounterByte[index];
+        gMA.counter_adapter[MA_SIO_WORD] = gTimeout200msecCounterWord[index];
+        break;
+
+    case MATYPE_PROT_SLAVE | MATYPE_PHS_Pocket:
+        gMA.counter_adapter[MA_SIO_BYTE] = gTimeout40msecCounterByte[index];
+        gMA.counter_adapter[MA_SIO_WORD] = gTimeout40msecCounterWord[index];
+        break;
+
+    default:
+        gMA.counter_adapter[MA_SIO_BYTE] = 0;
+        gMA.counter_adapter[MA_SIO_WORD] = 0;
+        break;
+    }
+}
+
 #if 0
 #else
 asm("
@@ -296,117 +379,6 @@ counterArrayWord.13:
     .word gTimeout90CounterWord
 .section .text
 
-.align 2
-.thumb_func
-MA_SetInterval:
-    push	{r4, lr}
-    mov	r4, r0
-    ldr	r0, [pc, #100]
-    ldrb	r1, [r0, #6]
-    mov	r3, r0
-    cmp	r1, #136
-    bne	MA_SetInterval+0x10
-    add	r4, #5
-    ldrb	r0, [r3, #16]
-    strb	r4, [r3, #16]
-    ldr	r0, [pc, #88]
-    lsl	r1, r4, #1
-    add	r0, r1, r0
-    ldrh	r0, [r0, #0]
-    ldrh	r2, [r3, #8]
-    strh	r0, [r3, #8]
-    ldr	r0, [pc, #80]
-    add	r1, r1, r0
-    ldrh	r0, [r1, #0]
-    ldrh	r1, [r3, #10]
-    strh	r0, [r3, #10]
-    ldr	r0, [pc, #76]
-    lsl	r1, r4, #2
-    add	r0, r1, r0
-    ldr	r0, [r0, #0]
-    str	r0, [r3, #20]
-    ldr	r0, [pc, #68]
-    add	r0, r1, r0
-    ldr	r0, [r0, #0]
-    str	r0, [r3, #24]
-    ldr	r0, [pc, #64]
-    add	r0, r1, r0
-    ldr	r0, [r0, #0]
-    str	r0, [r3, #36]
-    ldr	r0, [pc, #60]
-    add	r0, r1, r0
-    ldr	r0, [r0, #0]
-    str	r0, [r3, #40]
-    ldr	r0, [pc, #56]
-    add	r0, r1, r0
-    ldr	r4, [r0, #0]
-    str	r4, [r3, #44]
-    ldr	r0, [pc, #52]
-    add	r0, r1, r0
-    ldr	r2, [r0, #0]
-    str	r2, [r3, #48]
-    ldrb	r0, [r3, #6]
-    cmp	r0, #137
-    beq	MA_SetInterval+0x96
-    cmp	r0, #137
-    bgt	MA_SetInterval+0x90
-    cmp	r0, #136
-    beq	MA_SetInterval+0xb0
-    b	MA_SetInterval+0xd0
-.align 2
-    .word gMA
-    .word gTimerIntByteInter
-    .word gTimerIntWordInter
-    .word gNullCounterByte
-    .word gNullCounterWord
-    .word gP2PCounterByte
-    .word gP2PCounterWord
-    .word gTimeout200msecCounterByte
-    .word gTimeout200msecCounterWord
-
-    cmp	r0, #139
-    beq	MA_SetInterval+0xb6
-    b	MA_SetInterval+0xd0
-    ldr	r0, [pc, #16]
-    add	r0, r1, r0
-    ldr	r0, [r0, #0]
-    str	r0, [r3, #52]
-    ldr	r0, [pc, #12]
-    add	r0, r1, r0
-    ldr	r0, [r0, #0]
-    b	MA_SetInterval+0xd4
-.align 2
-    .word gTimeout250msecCounterByte
-    .word gTimeout250msecCounterWord
-
-    str	r4, [r3, #52]
-    str	r2, [r3, #56]
-    b	MA_SetInterval+0xd6
-    ldr	r0, [pc, #16]
-    add	r0, r1, r0
-    ldr	r0, [r0, #0]
-    str	r0, [r3, #52]
-    ldr	r0, [pc, #12]
-    add	r0, r1, r0
-    ldr	r0, [r0, #0]
-    b	MA_SetInterval+0xd4
-.align 2
-    .word gTimeout40msecCounterByte
-    .word gTimeout40msecCounterWord
-
-    mov	r0, #0
-    str	r0, [r3, #52]
-    str	r0, [r3, #56]
-    pop	{r4}
-    pop	{r0}
-    bx	r0
-.size MA_SetInterval, .-MA_SetInterval
-");
-#endif
-
-#if 0
-#else
-asm("
 .align 2
 .thumb_func
 MA_SetTimeoutCount:
@@ -865,48 +837,17 @@ MA_SetTransmitData:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_ChangeSIOMode
-MA_ChangeSIOMode:
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    ldr	r1, [pc, #16]
-    ldrb	r2, [r1, #5]
-    strb	r0, [r1, #5]
-    cmp	r0, #0
-    bne	MA_ChangeSIOMode+0x24
-    ldr	r2, [pc, #12]
-    ldrh	r1, [r2, #0]
-    ldr	r0, [pc, #12]
-    and	r0, r1
-    b	MA_ChangeSIOMode+0x38
-.align 2
-    .word gMA
-    .word 0x04000128
-    .word 0x0000cfff
-
-    ldr	r2, [pc, #20]
-    ldrh	r1, [r2, #0]
-    ldr	r0, [pc, #20]
-    and	r0, r1
-    strh	r0, [r2, #0]
-    ldrh	r0, [r2, #0]
-    mov	r3, #128
-    lsl	r3, r3, #5
-    mov	r1, r3
-    orr	r0, r1
-    strh	r0, [r2, #0]
-    bx	lr
-.align 2
-    .word 0x04000128
-    .word 0x0000cfff
-.size MA_ChangeSIOMode, .-MA_ChangeSIOMode
-");
-#endif
+void MA_ChangeSIOMode(u8 mode)
+{
+    gMA.sio_mode = mode;
+    if (mode == MA_SIO_BYTE) {
+        *(vu16 *)REG_SIOCNT &= ~SIO_MODE_MASK;
+        //*(vu16 *)REG_SIOCNT |= SIO_8BIT_MODE;
+    } else {
+        *(vu16 *)REG_SIOCNT &= ~SIO_MODE_MASK;
+        *(vu16 *)REG_SIOCNT |= SIO_32BIT_MODE;
+    }
+}
 
 #if 0
 #else
