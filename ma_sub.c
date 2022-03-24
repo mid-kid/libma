@@ -267,7 +267,6 @@ void MAU_DecodeEEPROMTelNo(u8 *num, char *str)
     }
 
     if (i == 8) *str = '\0';
-    return;
 }
 
 int MAU_IsValidTelNoStr(char *str)
