@@ -15,7 +15,7 @@ enum ma_sio_modes {
 };
 
 typedef struct {
-    u8 error;
+    vu8 error;
     u8 _1[1];
     vu16 condition;
     vu8 unk_4;
@@ -33,7 +33,7 @@ typedef struct {
     u32 counter_timeout200msec[MA_NUM_SIO_MODES];
     u32 counter_adapter[MA_NUM_SIO_MODES];
     u32 unk_60;
-    u32 status;
+    vu32 status;
     vu8 unk_68;
     vu8 unk_69;
     u16 unk_70;
@@ -42,7 +42,11 @@ typedef struct {
     u8 _74[2];
     vu8 unk_76;
     vu8 unk_77;
-    u8 _78[21];
+    u8 _78[14];
+    vu8 unk_92;
+    u8 _93[4];
+    vu8 unk_97;
+    u8 _98[1];
     u8 sockets[NUM_SOCKETS];
     u8 _101[5];
     u8 ipaddr[4];
@@ -53,7 +57,10 @@ typedef struct {
     u16 unk_480;
     u8 _482[2];
     void *unk_484;
-    u8 _488[316];
+    vu16 unk_488;
+    u8 _490[14];
+    vu16 unk_504;
+    u8 _506[298];
     u8 buffer_recv[4];
     u8 _808[4];
     u16 buffer_recv_size;

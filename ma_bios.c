@@ -266,7 +266,7 @@ static void MA_SetTimeoutCount(int index)
 
 int MA_GetStatus(void)
 {
-    if ((gMA.status & 1) != 0) return TRUE;
+    if ((gMA.status & 1) != 0) return TRUE;  // MAGIC
     return FALSE;
 }
 
@@ -277,154 +277,42 @@ u16 MA_GetCondition(void)
 
 u8 MA_ErrorCheck(void)
 {
-    gMA.condition &= ~2;
+    gMA.condition &= ~(1 << 1);  // MAGIC
     return gMA.error;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_SetError
-MA_SetError:
-    push	{r4, r5, r6, lr}
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    mov	r6, r0
-    cmp	r6, #16
-    bne	MA_SetError+0x9a
-    ldr	r5, [pc, #236]
-    mov	r0, r5
-    add	r0, #92
-    ldrb	r1, [r0, #0]
-    mov	r4, #0
-    strb	r4, [r0, #0]
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    ldrb	r0, [r5, #5]
-    lsl	r0, r0, #1
-    mov	r1, r5
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r5, #12]
-    mov	r1, #0
-    strh	r0, [r5, #12]
-    str	r4, [r5, #60]
-    ldrb	r0, [r5, #4]
-    strb	r1, [r5, #4]
-    ldr	r0, [r5, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #188]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #184]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #180]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #164]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #160]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    mov	r4, #255
-    mov	r0, r4
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    bl	MAU_Socket_Clear
-    ldrh	r0, [r5, #2]
-    and	r4, r0
-    ldrh	r0, [r5, #2]
-    strh	r4, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldr	r4, [pc, #96]
-    ldrb	r0, [r4, #0]
-    mov	r2, #0
-    strb	r6, [r4, #0]
-    ldrb	r0, [r4, #4]
-    strb	r2, [r4, #4]
-    mov	r1, #244
-    lsl	r1, r1, #1
-    add	r0, r4, r1
-    ldrh	r1, [r0, #0]
-    mov	r3, #0
-    strh	r2, [r0, #0]
-    mov	r1, #252
-    lsl	r1, r1, #1
-    add	r0, r4, r1
-    ldrh	r1, [r0, #0]
-    strh	r2, [r0, #0]
-    ldrh	r0, [r4, #2]
-    mov	r1, #2
-    orr	r0, r1
-    ldrh	r1, [r4, #2]
-    orr	r0, r3
-    strh	r0, [r4, #2]
-    ldrh	r1, [r4, #2]
-    ldr	r0, [pc, #72]
-    and	r0, r1
-    ldrh	r1, [r4, #2]
-    strh	r0, [r4, #2]
-    mov	r1, r4
-    add	r1, #97
-    ldrb	r0, [r1, #0]
-    strb	r3, [r1, #0]
-    ldrh	r1, [r4, #2]
-    ldr	r0, [pc, #56]
-    and	r0, r1
-    ldrh	r1, [r4, #2]
-    strh	r0, [r4, #2]
-    ldrh	r1, [r4, #2]
-    ldr	r0, [pc, #52]
-    and	r0, r1
-    ldrh	r1, [r4, #2]
-    strh	r0, [r4, #2]
-    mov	r1, #206
-    lsl	r1, r1, #2
-    add	r0, r4, r1
-    str	r2, [r0, #0]
-    pop	{r4, r5, r6}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-    .word 0xfffffdff
-    .word 0xfffffbff
-    .word 0xffffdfff
-    .word 0x0000fff7
-    .word 0x0000ffef
-    .word 0x0000ffdf
-    .word 0x0000fffe
-    .word 0x0000fffb
-.size MA_SetError, .-MA_SetError
-");
-#endif
+void MA_SetError(u8 error)
+{
+    if (error == 0x10) {
+        gMA.unk_92 = 0;
+        MA_ChangeSIOMode(0);
+        gMA.unk_12 = gMA.timer[gMA.sio_mode];
+        gMA.unk_60 = 0;
+        gMA.unk_4 = 0;
+        gMA.status &= ~(1 << 0);  // MAGIC
+        gMA.status &= ~(1 << 9);  // MAGIC
+        gMA.status &= ~(1 << 10);  // MAGIC
+        gMA.status &= ~(1 << 13);  // MAGIC
+        gMA.status &= ~(1 << 2);  // MAGIC
+        gMA.condition &= ~(1 << 3);  // MAGIC
+        gMA.condition &= ~(1 << 4);  // MAGIC
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+        MAU_Socket_Clear();
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+    }
+    gMA.error = error;
+    gMA.unk_4 = 0;
+    gMA.unk_488 = 0;
+    gMA.unk_504 = 0;
+    gMA.condition |= (1 << 1);  // MAGIC
+    gMA.condition &= ~(1 << 5);  // MAGIC
+    gMA.unk_97 = 0;
+    gMA.condition &= ~(1 << 0);  // MAGIC
+    gMA.condition &= ~(1 << 2);  // MAGIC
+    gMA.unk_824 = 0;
+}
 
 #if 0
 #else
