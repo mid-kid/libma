@@ -381,23 +381,10 @@ static void MA_StartSioTransmit(void)
     *(vu16 *)REG_SIOCNT |= SIO_START;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MA_SetTransmitData:
-    ldr	r1, [pc, #8]
-    mov	r2, #206
-    lsl	r2, r2, #2
-    add	r1, r1, r2
-    str	r0, [r1, #0]
-    bx	lr
-.align 2
-    .word gMA
-.size MA_SetTransmitData, .-MA_SetTransmitData
-");
-#endif
+static void MA_SetTransmitData(MA_IOBUF *buffer)
+{
+    gMA.iobuf_sio_tx = buffer;
+}
 
 void MA_ChangeSIOMode(u8 mode)
 {
