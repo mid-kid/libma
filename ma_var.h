@@ -11,6 +11,29 @@
 #define MATYPE_PROT_MASTER (MAPROT_REPLY | 0x0)
 #define MATYPE_PROT_SLAVE (MAPROT_REPLY | 0x8)
 
+#define CONDITION_UNK_0 (1 << 0)
+#define CONDITION_UNK_1 (1 << 1)
+#define CONDITION_UNK_2 (1 << 2)
+#define CONDITION_UNK_3 (1 << 3)
+#define CONDITION_UNK_4 (1 << 4)
+#define CONDITION_UNK_5 (1 << 5)
+#define CONDITION_UNK_6 (1 << 6)
+
+#define STATUS_UNK_0 (1 << 0)
+#define STATUS_UNK_1 (1 << 1)
+#define STATUS_UNK_2 (1 << 2)
+#define STATUS_UNK_3 (1 << 3)
+#define STATUS_UNK_4 (1 << 4)
+#define STATUS_UNK_5 (1 << 5)
+#define STATUS_UNK_6 (1 << 6)
+#define STATUS_UNK_7 (1 << 7)
+#define STATUS_UNK_8 (1 << 8)
+#define STATUS_UNK_9 (1 << 9)
+#define STATUS_UNK_10 (1 << 10)
+#define STATUS_UNK_11 (1 << 11)
+#define STATUS_UNK_12 (1 << 12)
+#define STATUS_UNK_13 (1 << 13)
+
 enum ma_sio_modes {
     MA_SIO_BYTE,
     MA_SIO_WORD,
@@ -29,7 +52,7 @@ typedef struct {
 typedef struct {
     vu8 error;
     u8 _1[1];
-    vu16 condition;  // FLAGS
+    vu16 condition;
     vu8 unk_4;
     vu8 sio_mode;
     vu8 adapter_type;
@@ -45,7 +68,7 @@ typedef struct {
     u32 counter_timeout200msec[MA_NUM_SIO_MODES];
     u32 counter_adapter[MA_NUM_SIO_MODES];
     u32 unk_60;
-    vu32 status;  // FLAGS
+    vu32 status;
     vu8 unk_68;
     vu8 unk_69;
     u16 unk_70;
