@@ -5,6 +5,13 @@
 #include "ma_var.h"
 #include "ma_sub.h"
 
+enum timeouts {
+    TIMEOUT_02,
+    TIMEOUT_10,
+    TIMEOUT_30,
+    TIMEOUT_90
+};
+
 //static void SetInternalRecvBuffer();
 static void MA_SetInterval(int index);
 //static void MA_SetTimeoutCount();
@@ -417,7 +424,7 @@ int MA_GetCallTypeFromHarwareType(u8 hardware)
             hardware == (MATYPE_PROT_SLAVE | MATYPE_PHS_Pocket)) {
         return 1;
     }
-    return 3;
+    return 3;  // MAGIC
 }
 
 void MABIOS_Null(void)
@@ -426,84 +433,38 @@ void MABIOS_Null(void)
 
     SetInternalRecvBuffer();
     gMA.condition &= ~(1 << 5);  // MAGIC
-    gMA.unk_68 = 0xf;
+    gMA.unk_68 = 0xf;  // MAGIC
 
     tmpPacketLen = sizeof(MaPacketData_NULL);
     if (gMA.sio_mode == MA_SIO_BYTE) tmpPacketLen -= 2;
     MA_InitIoBuffer(&gMA.unk_488, (u8 *)MaPacketData_NULL, tmpPacketLen, 3);
 
-    gMA.unk_4 = 1;
+    gMA.unk_4 = 1;  // MAGIC
     gMA.unk_12 = gMA.timer[gMA.sio_mode];
     gMA.status |= (1 << 2);  // MAGIC
     gMA.status |= (1 << 1);  // MAGIC
-    MA_SetTimeoutCount(2);
+    MA_SetTimeoutCount(TIMEOUT_30);
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MABIOS_Start
-MABIOS_Start:
-    push	{r4, r5, lr}
-    ldr	r5, [pc, #108]
-    mov	r0, #0
-    str	r0, [r5, #0]
-    bl	MA_PreSend
-    cmp	r0, #0
-    beq	MABIOS_Start+0x68
-    bl	SetInternalRecvBuffer
-    ldr	r4, [pc, #92]
-    ldrh	r1, [r4, #2]
-    mov	r0, #32
-    ldrh	r2, [r4, #2]
-    orr	r0, r1
-    strh	r0, [r4, #2]
-    mov	r1, r4
-    add	r1, #68
-    ldrb	r0, [r1, #0]
-    mov	r0, #16
-    strb	r0, [r1, #0]
-    mov	r1, #244
-    lsl	r1, r1, #1
-    add	r0, r4, r1
-    ldr	r1, [pc, #68]
-    mov	r2, #1
-    mov	r3, #1
-    bl	MA_InitIoBuffer
-    ldrb	r0, [r4, #4]
-    mov	r0, #1
-    strb	r0, [r4, #4]
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #1
-    mov	r1, r4
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r4, #12]
-    strh	r0, [r4, #12]
-    mov	r0, #2
-    bl	MA_SetTimeoutCount
-    ldr	r0, [r4, #64]
-    mov	r1, #2
-    orr	r0, r1
-    str	r0, [r4, #64]
-    ldrh	r1, [r4, #12]
-    mov	r0, #195
-    lsl	r0, r0, #16
-    orr	r0, r1
-    str	r0, [r5, #0]
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word 0x0400010c
-    .word gMA
-    .word MaPacketData_PreStart
-.size MABIOS_Start, .-MABIOS_Start
-");
-#endif
+void MABIOS_Start(void)
+{
+    *(vu32 *)REG_TM3CNT = 0;
+    if (!MA_PreSend()) return;
+
+    SetInternalRecvBuffer();
+    gMA.condition |= (1 << 5);  // MAGIC
+    gMA.unk_68 = 0x10;
+
+    MA_InitIoBuffer(&gMA.unk_488, (u8 *)MaPacketData_PreStart, 1, 1);
+
+    gMA.unk_4 = 1;
+    gMA.unk_12 = gMA.timer[gMA.sio_mode];
+    MA_SetTimeoutCount(TIMEOUT_30);
+    gMA.status |= (1 << 1);  // MAGIC
+
+    *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE |
+        TMR_PRESCALER_1024CK | gMA.unk_12;
+}
 
 #if 0
 #else
