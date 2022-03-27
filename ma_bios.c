@@ -1,6 +1,7 @@
 #include "ma_bios.h"
 #include "libma.h"
 
+#include <stdlib.h>
 #include "ma_var.h"
 #include "ma_sub.h"
 
@@ -182,7 +183,7 @@ void MABIOS_Init(void)
     gMA.unk_12 = 0;
     gMA.unk_14 = 0;
     gMA.status = 0;
-    gMA.unk_824 = 0;
+    gMA.iobuf_sio_tx = NULL;
     gMA.unk_68 = 0;
     gMA.unk_69 = 0;
     gMA.unk_70 = 0;
@@ -312,7 +313,7 @@ void MA_SetError(u8 error)
     gMA.unk_97 = 0;
     gMA.condition &= ~(1 << 0);  // MAGIC
     gMA.condition &= ~(1 << 2);  // MAGIC
-    gMA.unk_824 = 0;
+    gMA.iobuf_sio_tx = NULL;
 }
 
 static int MA_PreSend(void)
@@ -341,123 +342,44 @@ static int MA_PreSend(void)
     return TRUE;
 }
 
-static void MA_InitIoBuffer(MA_IOBUF *buffer, int param_2, u16 param_3, u16 param_4)
+static void MA_InitIoBuffer(MA_IOBUF *buffer, u8 *mem, u16 param_3, u16 param_4)
 {
     buffer->unk_0 = param_4;
-    buffer->unk_8 = param_2;
-    buffer->unk_12 = param_2;
+    buffer->readptr = mem;
+    buffer->writeptr = mem;
     buffer->unk_2 = param_3;
-    buffer->unk_4 = 0;
-    buffer->unk_6 = 0;
+    buffer->readcnt = 0;
+    buffer->writecnt = 0;
 }
 
-#if 0
-#else
-asm("
-.lcomm wordData.35, 0x4
+static void MA_StartSioTransmit(void)
+{
+    static u32 wordData;
 
-.align 2
-.thumb_func
-MA_StartSioTransmit:
-    push	{r4, r5, lr}
-    ldr	r1, [pc, #96]
-    mov	r2, #206
-    lsl	r2, r2, #2
-    add	r0, r1, r2
-    ldr	r0, [r0, #0]
-    mov	ip, r1
-    cmp	r0, #0
-    beq	MA_StartSioTransmit+0xb4
-    ldr	r2, [pc, #84]
-    ldrh	r1, [r2, #0]
-    mov	r0, #128
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_StartSioTransmit+0x2a
-    mov	r3, #128
-    ldrh	r1, [r2, #0]
-    mov	r0, r3
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_StartSioTransmit+0x20
-    mov	r1, ip
-    ldrb	r0, [r1, #5]
-    cmp	r0, #1
-    bne	MA_StartSioTransmit+0x74
-    ldr	r5, [pc, #56]
-    mov	r4, #206
-    lsl	r4, r4, #2
-    add	r4, ip
-    ldr	r3, [r4, #0]
-    ldr	r2, [r3, #8]
-    ldrb	r0, [r2, #3]
-    ldrb	r1, [r2, #2]
-    lsl	r1, r1, #8
-    orr	r1, r0
-    ldrb	r0, [r2, #1]
-    lsl	r0, r0, #16
-    orr	r1, r0
-    ldrb	r0, [r2, #0]
-    lsl	r0, r0, #24
-    orr	r1, r0
-    str	r1, [r5, #0]
-    ldr	r0, [pc, #24]
-    str	r1, [r0, #0]
-    add	r2, #4
-    str	r2, [r3, #8]
-    ldr	r1, [r4, #0]
-    ldrh	r0, [r1, #4]
-    add	r0, #4
-    b	MA_StartSioTransmit+0x90
-.align 2
-    .word gMA
-    .word 0x04000128
-    .word wordData.35
-    .word 0x04000120
+    if (!gMA.iobuf_sio_tx) return;
 
-    ldr	r2, [pc, #68]
-    mov	r3, #206
-    lsl	r3, r3, #2
-    add	r3, ip
-    ldr	r1, [r3, #0]
-    ldr	r0, [r1, #8]
-    ldrb	r0, [r0, #0]
-    strb	r0, [r2, #0]
-    ldr	r0, [r1, #8]
-    add	r0, #1
-    str	r0, [r1, #8]
-    ldr	r1, [r3, #0]
-    ldrh	r0, [r1, #4]
-    add	r0, #1
-    ldrh	r2, [r1, #4]
-    strh	r0, [r1, #4]
-    mov	r1, #206
-    lsl	r1, r1, #2
-    add	r1, ip
-    mov	r0, #0
-    str	r0, [r1, #0]
-    mov	r2, ip
-    ldr	r0, [r2, #64]
-    mov	r1, #3
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r2, #64]
-    ldr	r2, [pc, #20]
-    ldrh	r0, [r2, #0]
-    mov	r1, #128
-    orr	r0, r1
-    strh	r0, [r2, #0]
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-    lsl	r0, r0, #0
-    lsl	r2, r5, #4
-    lsl	r0, r0, #16
-    lsl	r0, r5, #4
-    lsl	r0, r0, #16
-.size MA_StartSioTransmit, .-MA_StartSioTransmit
-");
-#endif
+    while (*(vu16 *)REG_SIOCNT & SIO_START);
+
+    if (gMA.sio_mode == MA_SIO_WORD) {
+        wordData = gMA.iobuf_sio_tx->readptr[3] << 0 |
+                   gMA.iobuf_sio_tx->readptr[2] << 8 |
+                   gMA.iobuf_sio_tx->readptr[1] << 16 |
+                   gMA.iobuf_sio_tx->readptr[0] << 24;
+        *(vu32 *)REG_SIODATA32 = wordData;
+
+        gMA.iobuf_sio_tx->readptr += 4;
+        gMA.iobuf_sio_tx->readcnt += 4;
+    } else {
+        *(vu8 *)REG_SIODATA8 = gMA.iobuf_sio_tx->readptr[0];
+
+        gMA.iobuf_sio_tx->readptr += 1;
+        gMA.iobuf_sio_tx->readcnt += 1;
+    }
+
+    gMA.iobuf_sio_tx = NULL;
+    gMA.status &= ~(1 << 1);
+    *(vu16 *)REG_SIOCNT |= SIO_START;
+}
 
 #if 0
 #else
