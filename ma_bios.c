@@ -2,6 +2,7 @@
 #include "libma.h"
 
 #include "ma_var.h"
+#include "ma_sub.h"
 
 //static void SetInternalRecvBuffer();
 static void MA_SetInterval(int index);
@@ -266,7 +267,7 @@ static void MA_SetTimeoutCount(int index)
 
 int MA_GetStatus(void)
 {
-    if ((gMA.status & 1) != 0) return TRUE;  // MAGIC
+    if ((gMA.status & (1 << 0)) != 0) return TRUE;  // MAGIC
     return FALSE;
 }
 
@@ -283,7 +284,7 @@ u8 MA_ErrorCheck(void)
 
 void MA_SetError(u8 error)
 {
-    if (error == 0x10) {
+    if (error == MAAPIE_MA_NOT_FOUND) {
         gMA.unk_92 = 0;
         MA_ChangeSIOMode(0);
         gMA.unk_12 = gMA.timer[gMA.sio_mode];
@@ -314,71 +315,31 @@ void MA_SetError(u8 error)
     gMA.unk_824 = 0;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MA_PreSend:
-    push	{r4, lr}
-    ldr	r3, [pc, #88]
-    ldrh	r1, [r3, #2]
-    mov	r0, #32
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_PreSend+0x68
-    ldrh	r1, [r3, #2]
-    mov	r0, #2
-    and	r0, r1
-    lsl	r0, r0, #16
-    lsr	r4, r0, #16
-    cmp	r4, #0
-    bne	MA_PreSend+0x68
-    ldrh	r1, [r3, #2]
-    ldr	r0, [pc, #64]
-    and	r0, r1
-    ldrh	r1, [r3, #2]
-    mov	r2, #0
-    strh	r0, [r3, #2]
-    ldrb	r0, [r3, #0]
-    mov	r0, #255
-    strb	r0, [r3, #0]
-    ldrh	r1, [r3, #2]
-    ldr	r0, [pc, #48]
-    and	r0, r1
-    ldrh	r1, [r3, #2]
-    strh	r0, [r3, #2]
-    ldrh	r0, [r3, #14]
-    strh	r4, [r3, #14]
-    ldr	r0, [r3, #64]
-    mov	r1, #9
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r3, #64]
-    str	r4, [r3, #60]
-    mov	r0, r3
-    add	r0, #68
-    ldrb	r1, [r0, #0]
-    strb	r2, [r0, #0]
-    add	r0, #1
-    ldrb	r1, [r0, #0]
-    strb	r2, [r0, #0]
-    mov	r0, #1
-    b	MA_PreSend+0x70
-.align 2
-    .word gMA
-    .word 0x0000fffd
-    .word 0x0000ffbf
+static int MA_PreSend(void)
+{
+    int flag;
 
-    mov	r0, #33
-    bl	MA_SetError
-    mov	r0, #0
-    pop	{r4}
-    pop	{r1}
-    bx	r1
-.size MA_PreSend, .-MA_PreSend
-");
-#endif
+    if ((gMA.condition & (1 << 5))) {  // MAGIC
+        MA_SetError(MAAPIE_CANNOT_EXECUTE);
+        return FALSE;
+    }
+
+    flag = gMA.condition & (1 << 1);  // MAGIC
+    if (flag) {
+        MA_SetError(MAAPIE_CANNOT_EXECUTE);
+        return FALSE;
+    }
+
+    gMA.condition &= ~(1 << 1);  // MAGIC
+    gMA.error = -1;
+    gMA.condition &= ~(1 << 6);  // MAGIC
+    gMA.unk_14 = flag;
+    gMA.status &= ~(1 << 3);  // MAGIC
+    gMA.unk_60 = flag;
+    gMA.unk_68 = 0;
+    gMA.unk_69 = 0;
+    return TRUE;
+}
 
 #if 0
 #else

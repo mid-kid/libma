@@ -17,7 +17,7 @@ enum ma_sio_modes {
 typedef struct {
     vu8 error;
     u8 _1[1];
-    vu16 condition;
+    vu16 condition;  // FLAGS
     vu8 unk_4;
     vu8 sio_mode;
     vu8 adapter_type;
@@ -33,7 +33,7 @@ typedef struct {
     u32 counter_timeout200msec[MA_NUM_SIO_MODES];
     u32 counter_adapter[MA_NUM_SIO_MODES];
     u32 unk_60;
-    vu32 status;
+    vu32 status;  // FLAGS
     vu8 unk_68;
     vu8 unk_69;
     u16 unk_70;
