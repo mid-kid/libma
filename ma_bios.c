@@ -398,81 +398,28 @@ void MA_ChangeSIOMode(u8 mode)
     }
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_SetDataInterval
-MA_SetDataInterval:
-    lsl	r0, r0, #16
-    lsr	r0, r0, #16
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    ldr	r2, [pc, #8]
-    ldrh	r3, [r2, #8]
-    strh	r0, [r2, #8]
-    ldrh	r0, [r2, #10]
-    strh	r1, [r2, #10]
-    bx	lr
-.align 2
-    .word gMA
-.size MA_SetDataInterval, .-MA_SetDataInterval
-");
-#endif
+void MA_SetDataInterval(s16 interval_byte, s16 interval_word)
+{
+    gMA.timer[MA_SIO_BYTE] = interval_byte;
+    gMA.timer[MA_SIO_WORD] = interval_word;
+}
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MA_IsSupportedHardware:
-    lsl	r0, r0, #24
-    mov	r1, #240
-    lsl	r1, r1, #24
-    and	r1, r0
-    lsr	r1, r1, #24
-    cmp	r1, #128
-    beq	MA_IsSupportedHardware+0x12
-    mov	r0, #0
-    b	MA_IsSupportedHardware+0x14
-    mov	r0, #1
-    bx	lr
-.size MA_IsSupportedHardware, .-MA_IsSupportedHardware
-");
-#endif
+static int MA_IsSupportedHardware(u8 hardware)
+{
+    if ((hardware & MATYPE_PROT_MASK) == MAPROT_REPLY) return TRUE;
+    return FALSE;
+}
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_GetCallTypeFromHarwareType
-MA_GetCallTypeFromHarwareType:
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    mov	r1, r0
-    cmp	r0, #136
-    bne	MA_GetCallTypeFromHarwareType+0xe
-    mov	r0, #0
-    b	MA_GetCallTypeFromHarwareType+0x28
-    cmp	r0, #137
-    bne	MA_GetCallTypeFromHarwareType+0x16
-    mov	r0, #2
-    b	MA_GetCallTypeFromHarwareType+0x28
-    mov	r0, r1
-    add	r0, #118
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #1
-    bls	MA_GetCallTypeFromHarwareType+0x26
-    mov	r0, #3
-    b	MA_GetCallTypeFromHarwareType+0x28
-    mov	r0, #1
-    bx	lr
-.size MA_GetCallTypeFromHarwareType, .-MA_GetCallTypeFromHarwareType
-");
-#endif
+int MA_GetCallTypeFromHarwareType(u8 hardware)
+{
+    if (hardware == (MATYPE_PROT_SLAVE | MATYPE_PDC)) return 0;
+    if (hardware == (MATYPE_PROT_SLAVE | MATYPE_CDMA)) return 2;
+    if (hardware == (MATYPE_PROT_SLAVE | MATYPE_PHS_Pocket) ||
+            hardware == (MATYPE_PROT_SLAVE | MATYPE_PHS_DoCoMo)) {
+        return 1;
+    }
+    return 3;
+}
 
 #if 0
 #else

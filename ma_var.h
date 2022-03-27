@@ -5,8 +5,11 @@
 
 #define NUM_SOCKETS 2
 
-#define MATYPE_PROT_MASTER 0x80
-#define MATYPE_PROT_SLAVE 0x88
+#define MAPROT_REPLY 0x80
+
+#define MATYPE_PROT_MASK 0xf0
+#define MATYPE_PROT_MASTER (MAPROT_REPLY | 0x0)
+#define MATYPE_PROT_SLAVE (MAPROT_REPLY | 0x8)
 
 enum ma_sio_modes {
     MA_SIO_BYTE,
