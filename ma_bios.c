@@ -2629,7 +2629,18 @@ MA_Create32BitPacket:
 ");
 #endif
 
-#if 0
+#if 0  // STATIC
+static u16 MA_CalcCheckSum(u8 *data, u16 size)
+{
+    static u16 sum;
+
+    sum = 0;
+    while (size != 0) {
+        sum = sum + *data++;
+        size--;
+    }
+    return sum;
+}
 #else
 asm("
 .lcomm sum.143, 0x2
