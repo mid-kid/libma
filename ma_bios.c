@@ -341,34 +341,15 @@ static int MA_PreSend(void)
     return TRUE;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MA_InitIoBuffer:
-    push	{r4, lr}
-    lsl	r2, r2, #16
-    lsr	r2, r2, #16
-    lsl	r3, r3, #16
-    lsr	r3, r3, #16
-    ldrh	r4, [r0, #0]
-    mov	r4, #0
-    strh	r3, [r0, #0]
-    str	r1, [r0, #8]
-    str	r1, [r0, #12]
-    ldrh	r1, [r0, #2]
-    strh	r2, [r0, #2]
-    ldrh	r1, [r0, #4]
-    strh	r4, [r0, #4]
-    ldrh	r1, [r0, #6]
-    strh	r4, [r0, #6]
-    pop	{r4}
-    pop	{r0}
-    bx	r0
-.size MA_InitIoBuffer, .-MA_InitIoBuffer
-");
-#endif
+static void MA_InitIoBuffer(MA_IOBUF *buffer, int param_2, u16 param_3, u16 param_4)
+{
+    buffer->unk_0 = param_4;
+    buffer->unk_8 = param_2;
+    buffer->unk_12 = param_2;
+    buffer->unk_2 = param_3;
+    buffer->unk_4 = 0;
+    buffer->unk_6 = 0;
+}
 
 #if 0
 #else

@@ -15,6 +15,15 @@ enum ma_sio_modes {
 };
 
 typedef struct {
+    vu16 unk_0;
+    vu16 unk_2;
+    vu16 unk_4;
+    vu16 unk_6;
+    u32 unk_8;
+    u32 unk_12;
+} MA_IOBUF;
+
+typedef struct {
     vu8 error;
     u8 _1[1];
     vu16 condition;  // FLAGS
