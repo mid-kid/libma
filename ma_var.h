@@ -19,7 +19,7 @@ enum ma_sio_modes {
 
 typedef struct {
     vu16 unk_0;
-    vu16 unk_2;
+    vu16 size;
     vu16 readcnt;
     vu16 writecnt;
     vu8 *readptr;
@@ -69,10 +69,9 @@ typedef struct {
     u16 unk_480;
     u8 _482[2];
     void *unk_484;
-    vu16 unk_488;
-    u8 _490[14];
-    vu16 unk_504;
-    u8 _506[298];
+    MA_IOBUF unk_488;
+    MA_IOBUF unk_504;
+    u8 _506[284];
     u8 buffer_recv[4];
     u8 _808[4];
     u16 buffer_recv_size;

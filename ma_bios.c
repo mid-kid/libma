@@ -157,7 +157,6 @@ static const u8 MaPacketData_CheckStatus[] = {
     0x00, 0x17,
     0x81, 0x00, 0x00, 0x00
 };
-asm(".section .text\n");
 
 void MABIOS_Init(void)
 {
@@ -306,8 +305,8 @@ void MA_SetError(u8 error)
     }
     gMA.error = error;
     gMA.unk_4 = 0;
-    gMA.unk_488 = 0;
-    gMA.unk_504 = 0;
+    gMA.unk_488.unk_0 = 0;
+    gMA.unk_504.unk_0 = 0;
     gMA.condition |= (1 << 1);  // MAGIC
     gMA.condition &= ~(1 << 5);  // MAGIC
     gMA.unk_97 = 0;
@@ -342,12 +341,12 @@ static int MA_PreSend(void)
     return TRUE;
 }
 
-static void MA_InitIoBuffer(MA_IOBUF *buffer, u8 *mem, u16 param_3, u16 param_4)
+static void MA_InitIoBuffer(MA_IOBUF *buffer, u8 *mem, u16 size, u16 param_4)
 {
     buffer->unk_0 = param_4;
     buffer->readptr = mem;
     buffer->writeptr = mem;
-    buffer->unk_2 = param_3;
+    buffer->size = size;
     buffer->readcnt = 0;
     buffer->writecnt = 0;
 }
@@ -377,7 +376,7 @@ static void MA_StartSioTransmit(void)
     }
 
     gMA.iobuf_sio_tx = NULL;
-    gMA.status &= ~(1 << 1);
+    gMA.status &= ~(1 << 1);  // MAGIC
     *(vu16 *)REG_SIOCNT |= SIO_START;
 }
 
@@ -414,88 +413,31 @@ int MA_GetCallTypeFromHarwareType(u8 hardware)
 {
     if (hardware == (MATYPE_PROT_SLAVE | MATYPE_PDC)) return 0;
     if (hardware == (MATYPE_PROT_SLAVE | MATYPE_CDMA)) return 2;
-    if (hardware == (MATYPE_PROT_SLAVE | MATYPE_PHS_Pocket) ||
-            hardware == (MATYPE_PROT_SLAVE | MATYPE_PHS_DoCoMo)) {
+    if (hardware == (MATYPE_PROT_SLAVE | MATYPE_PHS_DoCoMo) ||
+            hardware == (MATYPE_PROT_SLAVE | MATYPE_PHS_Pocket)) {
         return 1;
     }
     return 3;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MABIOS_Null
-MABIOS_Null:
-    push	{r4, r5, r6, lr}
-    ldr	r4, [pc, #124]
-    ldr	r0, [r4, #64]
-    mov	r5, #1
-    and	r0, r5
-    cmp	r0, #0
-    beq	MABIOS_Null+0x78
-    ldr	r0, [r4, #64]
-    mov	r6, #4
-    and	r0, r6
-    cmp	r0, #0
-    bne	MABIOS_Null+0x78
-    bl	SetInternalRecvBuffer
-    ldrh	r1, [r4, #2]
-    ldr	r0, [pc, #100]
-    and	r0, r1
-    ldrh	r1, [r4, #2]
-    strh	r0, [r4, #2]
-    mov	r1, r4
-    add	r1, #68
-    ldrb	r0, [r1, #0]
-    mov	r0, #15
-    strb	r0, [r1, #0]
-    ldr	r2, [pc, #84]
-    mov	r0, #12
-    strh	r0, [r2, #0]
-    ldrb	r0, [r4, #5]
-    cmp	r0, #0
-    bne	MABIOS_Null+0x40
-    mov	r0, #10
-    strh	r0, [r2, #0]
-    mov	r1, #244
-    lsl	r1, r1, #1
-    add	r0, r4, r1
-    ldr	r1, [pc, #68]
-    ldrh	r2, [r2, #0]
-    mov	r3, #3
-    bl	MA_InitIoBuffer
-    ldrb	r0, [r4, #4]
-    strb	r5, [r4, #4]
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #1
-    mov	r1, r4
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r4, #12]
-    strh	r0, [r4, #12]
-    ldr	r0, [r4, #64]
-    orr	r0, r6
-    str	r0, [r4, #64]
-    ldr	r0, [r4, #64]
-    mov	r1, #2
-    orr	r0, r1
-    str	r0, [r4, #64]
-    mov	r0, #2
-    bl	MA_SetTimeoutCount
-    pop	{r4, r5, r6}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-    .word 0x0000ffdf
-    .word tmpPacketLen
-    .word MaPacketData_NULL
-.size MABIOS_Null, .-MABIOS_Null
-");
-#endif
+void MABIOS_Null(void)
+{
+    if (!(gMA.status & (1 << 0) && !(gMA.status & (1 << 2)))) return;  // MAGIC
+
+    SetInternalRecvBuffer();
+    gMA.condition &= ~(1 << 5);  // MAGIC
+    gMA.unk_68 = 0xf;
+
+    tmpPacketLen = sizeof(MaPacketData_NULL);
+    if (gMA.sio_mode == MA_SIO_BYTE) tmpPacketLen -= 2;
+    MA_InitIoBuffer(&gMA.unk_488, (u8 *)MaPacketData_NULL, tmpPacketLen, 3);
+
+    gMA.unk_4 = 1;
+    gMA.unk_12 = gMA.timer[gMA.sio_mode];
+    gMA.status |= (1 << 2);  // MAGIC
+    gMA.status |= (1 << 1);  // MAGIC
+    MA_SetTimeoutCount(2);
+}
 
 #if 0
 #else
