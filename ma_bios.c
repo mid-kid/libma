@@ -16,6 +16,7 @@
 
 #define MACMD_START 0x10
 #define MACMD_END 0x11
+#define MACMD_TEL 0x12
 
 #define MAPROT_HEADER_SIZE 6
 #define MAPROT_FOOTER_SIZE 4
@@ -45,7 +46,7 @@ static void SetInternalRecvBuffer(void);
 static void MA_SetInterval(int index);
 static void MA_SetTimeoutCount(int index);
 static int MA_PreSend(void);
-static void MA_InitIoBuffer(MA_IOBUF *buffer, u8 *mem, u16 size, u16 param_4);
+static void MA_InitIoBuffer(MA_IOBUF *buffer, u8 *mem, u16 size, u16 unk);
 //static void MA_StartSioTransmit();
 //static void MA_SetTransmitData();
 //static void MA_IsSupportedHardware();
@@ -377,9 +378,9 @@ static int MA_PreSend(void)
     return TRUE;
 }
 
-static void MA_InitIoBuffer(MA_IOBUF *buffer, u8 *mem, u16 size, u16 param_4)
+static void MA_InitIoBuffer(MA_IOBUF *buffer, u8 *mem, u16 size, u16 unk)
 {
-    buffer->unk_0 = param_4;
+    buffer->unk_0 = unk;
     buffer->readptr = mem;
     buffer->writeptr = mem;
     buffer->size = size;
@@ -530,117 +531,45 @@ void MABIOS_End(void)
 
     gMA.cmd_cur = MACMD_END;
     gMA.condition |= CONDITION_UNK_5;
-    gMA.unk_4 = 1;
+    gMA.unk_4 = 1;  // MAGIC
     gMA.unk_12 = gMA.timer[gMA.sio_mode];
     MA_SetTimeoutCount(2);
     gMA.status |= STATUS_UNK_1;
 }
 
-#if 0
-#else
-asm("
-.lcomm telNoLen.66, 0x4
+void MABIOS_Tel(u8 calltype, char *number)
+{
+    static int telNoLen;
 
-.align 2
-.thumb_func
-.global MABIOS_Tel
-MABIOS_Tel:
-    push	{r4, r5, r6, r7, lr}
-    mov	r4, r1
-    lsl	r0, r0, #24
-    lsr	r7, r0, #24
-    ldr	r6, [pc, #164]
-    ldr	r5, [pc, #168]
-    str	r5, [r6, #0]
-    bl	MA_PreSend
-    cmp	r0, #0
-    beq	MABIOS_Tel+0xaa
-    bl	SetInternalRecvBuffer
-    ldr	r0, [pc, #156]
-    add	r1, r5, r0
-    ldrh	r2, [r1, #2]
-    mov	r0, #32
-    ldrh	r3, [r1, #2]
-    mov	r3, #0
-    orr	r0, r2
-    strh	r0, [r1, #2]
-    ldr	r2, [pc, #144]
-    add	r1, r5, r2
-    ldrb	r0, [r1, #0]
-    mov	r0, #18
-    strb	r0, [r1, #0]
-    ldr	r0, [r6, #0]
-    strb	r7, [r0, #6]
-    ldr	r1, [pc, #132]
-    str	r3, [r1, #0]
-    ldrb	r2, [r4, #0]
-    cmp	r2, #0
-    beq	MABIOS_Tel+0x5a
-    mov	r5, r6
-    mov	r3, r1
-    ldr	r0, [r5, #0]
-    ldr	r1, [r3, #0]
-    add	r1, #1
-    add	r0, r0, r1
-    strb	r2, [r0, #6]
-    add	r4, #1
-    str	r1, [r3, #0]
-    ldrb	r2, [r4, #0]
-    cmp	r2, #0
-    bne	MABIOS_Tel+0x46
-    ldr	r4, [pc, #104]
-    ldr	r0, [pc, #80]
-    ldr	r0, [r0, #0]
-    ldr	r1, [pc, #92]
-    ldr	r2, [r1, #0]
-    add	r2, #1
-    lsl	r2, r2, #16
-    lsr	r2, r2, #16
-    mov	r1, #18
-    bl	MA_CreatePacket
-    strh	r0, [r4, #0]
-    ldr	r5, [pc, #84]
-    mov	r1, r5
-    add	r1, #48
-    ldrh	r2, [r4, #0]
-    mov	r0, r5
-    mov	r3, #3
-    bl	MA_InitIoBuffer
-    ldr	r0, [pc, #72]
-    add	r4, r5, r0
-    ldrb	r0, [r4, #4]
-    mov	r0, #1
-    strb	r0, [r4, #4]
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #1
-    ldr	r2, [pc, #60]
-    add	r1, r5, r2
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r4, #12]
-    strh	r0, [r4, #12]
-    mov	r0, #3
-    bl	MA_SetTimeoutCount
-    ldr	r0, [r4, #64]
-    mov	r1, #2
-    orr	r0, r1
-    str	r0, [r4, #64]
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word tmppPacket
-    .word gMA+0x218
-    .word 0xfffffde8
-    .word 0xfffffe2c
-    .word telNoLen.66
-    .word tmpPacketLen
-    .word gMA+0x1e8
-    .word 0xfffffe18
-    .word 0xfffffe20
-.size MABIOS_Tel, .-MABIOS_Tel
-");
+    tmppPacket = gMA.buffer_packet_send;
+    if (!MA_PreSend()) return;
+
+    SetInternalRecvBuffer();
+    gMA.condition |= CONDITION_UNK_5;
+    gMA.cmd_cur = MACMD_TEL;
+
+    tmppPacket[MAPROT_HEADER_SIZE] = calltype;
+    telNoLen = 0;
+#if NONMATCHING
+    while (*number != '\0') {
+        tmppPacket[6 + ++telNoLen] = *number++;
+    }
+#else
+    while (*number != '\0') {
+        char *i = tmppPacket;
+        int n = telNoLen + 1;
+        *(char *)(i + n + MAPROT_HEADER_SIZE) = *number++;
+        telNoLen = n;
+    }
 #endif
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TEL, telNoLen + 1);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
+
+    gMA.unk_4 = 1;
+    gMA.unk_12 = gMA.timer[gMA.sio_mode];
+    MA_SetTimeoutCount(3);
+    gMA.status |= STATUS_UNK_1;
+}
 
 #if 0
 #else
