@@ -14,6 +14,9 @@
 #define MATYPE_GBC 0
 #define MATYPE_GBA 1
 
+#define MACMD_START 0x10
+#define MACMD_END 0x11
+
 #define MAPROT_HEADER_SIZE 6
 #define MAPROT_FOOTER_SIZE 4
 
@@ -38,18 +41,18 @@ enum timeouts {
     TIMEOUT_90
 };
 
-//static void SetInternalRecvBuffer();
+static void SetInternalRecvBuffer(void);
 static void MA_SetInterval(int index);
-//static void MA_SetTimeoutCount();
-//static void MA_PreSend();
-//static void MA_InitIoBuffer();
+static void MA_SetTimeoutCount(int index);
+static int MA_PreSend(void);
+static void MA_InitIoBuffer(MA_IOBUF *buffer, u8 *mem, u16 size, u16 param_4);
 //static void MA_StartSioTransmit();
 //static void MA_SetTransmitData();
 //static void MA_IsSupportedHardware();
 //static void MABIOS_Data2();
-//static void MA_CreatePacket();
-//static void MA_Create8BitPacket();
-//static void MA_Create32BitPacket();
+static int MA_CreatePacket(u8 *packet, u8 cmd, u16 size);
+static int MA_Create8BitPacket(u8 *packet, u8 cmd, u16 size);
+static int MA_Create32BitPacket(u8 *packet, u8 cmd, u16 size);
 static u16 MA_CalcCheckSum(u8 *data, u16 size);
 //static void MA_IntrTimer_SIOSend();
 //static void MA_IntrTimer_SIORecv();
@@ -216,7 +219,7 @@ void MABIOS_Init(void)
     gMA.unk_14 = 0;
     gMA.status = 0;
     gMA.iobuf_sio_tx = NULL;
-    gMA.unk_68 = 0;
+    gMA.cmd_cur = 0;
     gMA.unk_69 = 0;
     gMA.unk_70 = 0;
     gMA.unk_72 = 0;
@@ -338,7 +341,7 @@ void MA_SetError(u8 error)
     }
     gMA.error = error;
     gMA.unk_4 = 0;
-    gMA.unk_488.unk_0 = 0;
+    gMA.iobuf_packet_send.unk_0 = 0;
     gMA.unk_504.unk_0 = 0;
     gMA.condition |= CONDITION_UNK_1;
     gMA.condition &= ~CONDITION_UNK_5;
@@ -369,7 +372,7 @@ static int MA_PreSend(void)
     gMA.unk_14 = flag;
     gMA.status &= ~STATUS_UNK_3;
     gMA.unk_60 = flag;
-    gMA.unk_68 = 0;
+    gMA.cmd_cur = 0;
     gMA.unk_69 = 0;
     return TRUE;
 }
@@ -459,11 +462,11 @@ void MABIOS_Null(void)
 
     SetInternalRecvBuffer();
     gMA.condition &= ~CONDITION_UNK_5;
-    gMA.unk_68 = 0xf;  // MAGIC
+    gMA.cmd_cur = 0xf;  // MAGIC
 
     tmpPacketLen = sizeof(MaPacketData_NULL);
     if (gMA.sio_mode == MA_SIO_BYTE) tmpPacketLen -= 2;
-    MA_InitIoBuffer(&gMA.unk_488, (u8 *)MaPacketData_NULL, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, (u8 *)MaPacketData_NULL, tmpPacketLen, 3);
 
     gMA.unk_4 = 1;  // MAGIC
     gMA.unk_12 = gMA.timer[gMA.sio_mode];
@@ -479,9 +482,9 @@ void MABIOS_Start(void)
 
     SetInternalRecvBuffer();
     gMA.condition |= CONDITION_UNK_5;
-    gMA.unk_68 = 0x10;  // MAGIC
+    gMA.cmd_cur = MACMD_START;
 
-    MA_InitIoBuffer(&gMA.unk_488, (u8 *)MaPacketData_PreStart, 1, 1);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, (u8 *)MaPacketData_PreStart, 1, 1);
 
     gMA.unk_4 = 1;  // MAGIC
     gMA.unk_12 = gMA.timer[gMA.sio_mode];
@@ -500,13 +503,13 @@ void MABIOS_Start2(void)
 
     SetInternalRecvBuffer();
     gMA.condition |= CONDITION_UNK_5;
-    gMA.unk_68 = 0x10;  // MAGIC
+    gMA.cmd_cur = MACMD_START;
 
     if (gMA.sio_mode == MA_SIO_BYTE) {
-        MA_InitIoBuffer(&gMA.unk_488, (u8 *)MaPacketData_Start,
+        MA_InitIoBuffer(&gMA.iobuf_packet_send, (u8 *)MaPacketData_Start,
             sizeof(MaPacketData_Start) - 2, 3);
     } else {
-        MA_InitIoBuffer(&gMA.unk_488, (u8 *)MaPacketData_Start,
+        MA_InitIoBuffer(&gMA.iobuf_packet_send, (u8 *)MaPacketData_Start,
             sizeof(MaPacketData_Start), 3);
     }
 
@@ -516,75 +519,22 @@ void MABIOS_Start2(void)
     gMA.status |= STATUS_UNK_1;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MABIOS_End
-MABIOS_End:
-    push	{r4, r5, r6, lr}
-    ldr	r6, [pc, #112]
-    ldr	r5, [pc, #112]
-    str	r5, [r6, #0]
-    bl	MA_PreSend
-    cmp	r0, #0
-    beq	MABIOS_End+0x6c
-    bl	SetInternalRecvBuffer
-    ldr	r4, [pc, #100]
-    ldr	r0, [r6, #0]
-    mov	r1, #17
-    mov	r2, #0
-    bl	MA_CreatePacket
-    strh	r0, [r4, #0]
-    mov	r0, r5
-    sub	r0, #48
-    ldrh	r2, [r4, #0]
-    mov	r1, r5
-    mov	r3, #3
-    bl	MA_InitIoBuffer
-    ldr	r0, [pc, #76]
-    add	r4, r5, r0
-    ldr	r2, [pc, #76]
-    add	r1, r5, r2
-    ldrb	r0, [r1, #0]
-    mov	r0, #17
-    strb	r0, [r1, #0]
-    ldrh	r1, [r4, #2]
-    mov	r0, #32
-    ldrh	r2, [r4, #2]
-    orr	r0, r1
-    strh	r0, [r4, #2]
-    ldrb	r0, [r4, #4]
-    mov	r0, #1
-    strb	r0, [r4, #4]
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #1
-    ldr	r2, [pc, #52]
-    add	r1, r5, r2
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r4, #12]
-    strh	r0, [r4, #12]
-    mov	r0, #2
-    bl	MA_SetTimeoutCount
-    ldr	r0, [r4, #64]
-    mov	r1, #2
-    orr	r0, r1
-    str	r0, [r4, #64]
-    pop	{r4, r5, r6}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word tmppPacket
-    .word gMA+0x218
-    .word tmpPacketLen
-    .word 0xfffffde8
-    .word 0xfffffe2c
-    .word 0xfffffdf0
-.size MABIOS_End, .-MABIOS_End
-");
-#endif
+void MABIOS_End(void)
+{
+    tmppPacket = gMA.buffer_packet_send;
+    if (!MA_PreSend()) return;
+
+    SetInternalRecvBuffer();
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_END, 0);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
+
+    gMA.cmd_cur = MACMD_END;
+    gMA.condition |= CONDITION_UNK_5;
+    gMA.unk_4 = 1;
+    gMA.unk_12 = gMA.timer[gMA.sio_mode];
+    MA_SetTimeoutCount(2);
+    gMA.status |= STATUS_UNK_1;
+}
 
 #if 0
 #else
@@ -2417,35 +2367,14 @@ MABIOS_TestMode:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MA_CreatePacket:
-    push	{lr}
-    mov	r3, r0
-    lsl	r1, r1, #24
-    lsr	r1, r1, #24
-    lsl	r2, r2, #16
-    lsr	r2, r2, #16
-    ldr	r0, [pc, #12]
-    ldrb	r0, [r0, #5]
-    cmp	r0, #1
-    beq	MA_CreatePacket+0x20
-    mov	r0, r3
-    bl	MA_Create8BitPacket
-    b	MA_CreatePacket+0x26
-.align 2
-    .word gMA
-
-    mov	r0, r3
-    bl	MA_Create32BitPacket
-    pop	{r1}
-    bx	r1
-.size MA_CreatePacket, .-MA_CreatePacket
-");
-#endif
+static int MA_CreatePacket(u8 *packet, u8 cmd, u16 size)
+{
+    if (gMA.sio_mode == MA_SIO_WORD) {
+        return MA_Create32BitPacket(packet, cmd, size);
+    } else {
+        return MA_Create8BitPacket(packet, cmd, size);
+    }
+}
 
 #if 0  // STATIC
 static int MA_Create8BitPacket(u8 *packet, u8 cmd, u16 size)

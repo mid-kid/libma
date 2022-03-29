@@ -63,7 +63,7 @@ typedef struct {
     u32 counter_adapter[MA_NUM_SIO_MODES];
     u32 unk_60;
     vu32 status;
-    vu8 unk_68;
+    vu8 cmd_cur;
     vu8 unk_69;
     u16 unk_70;
     vu8 unk_72;
@@ -86,9 +86,11 @@ typedef struct {
     u16 unk_480;
     u8 _482[2];
     void *unk_484;
-    MA_IOBUF unk_488;
+    MA_IOBUF iobuf_packet_send;
     MA_IOBUF unk_504;
-    u8 _506[284];
+    u8 _520[16];
+    u8 buffer_packet_send[4];
+    u8 _540[264];
     u8 buffer_recv[4];
     u8 _808[4];
     u16 buffer_recv_size;
