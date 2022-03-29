@@ -5,6 +5,32 @@
 #include "ma_var.h"
 #include "ma_sub.h"
 
+#define MAPROT_REPLY 0x80
+
+#define MATYPE_PROT_MASK 0xf0
+#define MATYPE_PROT_MASTER (MAPROT_REPLY | 0x0)
+#define MATYPE_PROT_SLAVE (MAPROT_REPLY | 0x8)
+
+#define MATYPE_GBC 0
+#define MATYPE_GBA 1
+
+#define MAPROT_HEADER_SIZE 6
+#define MAPROT_FOOTER_SIZE 4
+
+typedef struct {
+    u16 magic;
+    u8 cmd;
+    u8 pad;
+    u16 size;
+} MAPROT_HEADER __attribute__((packed));
+
+typedef struct {
+    u8 checksum_hi;
+    u8 checksum_lo;
+    u8 device;
+    u8 pad[3];
+} MAPROT_FOOTER;
+
 enum timeouts {
     TIMEOUT_02,
     TIMEOUT_10,
@@ -24,7 +50,7 @@ static void MA_SetInterval(int index);
 //static void MA_CreatePacket();
 //static void MA_Create8BitPacket();
 //static void MA_Create32BitPacket();
-//static void MA_CalcCheckSum();
+static u16 MA_CalcCheckSum(u8 *data, u16 size);
 //static void MA_IntrTimer_SIOSend();
 //static void MA_IntrTimer_SIORecv();
 //static void MA_IntrTimer_SIOIdle();
@@ -35,7 +61,7 @@ static void MA_SetInterval(int index);
 //static void MA_IntrSio_Recv();
 
 static u8 *tmppPacket;
-static u8 *tmppPacketLast;
+static MAPROT_FOOTER *tmppPacketLast;
 static u16 tmpPacketLen;
 static int i;
 
@@ -2421,7 +2447,26 @@ MA_CreatePacket:
 ");
 #endif
 
-#if 0
+#if 0  // STATIC
+static int MA_Create8BitPacket(u8 *packet, u8 cmd, u16 size)
+{
+    static u16 checkSum;
+
+    MAPROT_HEADER *p = (MAPROT_HEADER *)packet;
+    p->magic = 0x6699;
+    p->cmd = cmd;
+    p->pad = 0;
+    p->size = (size & 0x00ff) << 8 | (size & 0xff00) >> 8;
+
+    tmppPacketLast = (MAPROT_FOOTER *)(packet + MAPROT_HEADER_SIZE + size);
+    checkSum = MA_CalcCheckSum(packet + 2, size + 4);
+    tmppPacketLast->checksum_hi = checkSum >> 8;
+    tmppPacketLast->checksum_lo = checkSum >> 0;
+    tmppPacketLast->device = MATYPE_PROT_MASTER | MATYPE_GBA;
+    tmppPacketLast->pad[0] = 0;
+
+    return size + MAPROT_HEADER_SIZE + MAPROT_FOOTER_SIZE;
+}
 #else
 asm("
 .lcomm checkSum.132, 0x2
@@ -2479,7 +2524,44 @@ MA_Create8BitPacket:
 ");
 #endif
 
-#if 0
+#if 0  // STATIC
+static int MA_Create32BitPacket(u8 *packet, u8 cmd, u16 size)
+{
+    static u8 *pPadding;
+    static int paddingLength;
+    static int amari;
+    static u16 checkSum;
+
+    MAPROT_HEADER *p = (MAPROT_HEADER *)packet;
+    p->magic = 0x6699;
+    p->cmd = cmd;
+    p->pad = 0;
+    p->size = (size & 0x00ff) << 8 | (size & 0xff00) >> 8;
+
+    if (p->size == 0) {
+        paddingLength = 0;
+    } else {
+        amari = size % 4;
+        if (amari == 0) {
+            paddingLength = amari;
+        } else {
+            paddingLength = 4 - amari;
+        }
+
+        pPadding = packet + MAPROT_HEADER_SIZE + size;
+        for (i = 0; i < paddingLength; i++) *pPadding++ = 0;
+    }
+
+    tmppPacketLast = (MAPROT_FOOTER *)(packet + MAPROT_HEADER_SIZE + size + paddingLength);
+    checkSum = MA_CalcCheckSum(packet + 2, size + 4);
+    tmppPacketLast->checksum_hi = checkSum >> 8;
+    tmppPacketLast->checksum_lo = checkSum >> 0;
+    tmppPacketLast->device = MATYPE_PROT_MASTER | MATYPE_GBA;
+    tmppPacketLast->pad[0] = 0;
+    tmppPacketLast->pad[1] = 0;
+    tmppPacketLast->pad[2] = 0;
+    return size + paddingLength + MAPROT_HEADER_SIZE + MAPROT_FOOTER_SIZE + 2;
+}
 #else
 asm("
 .lcomm pPadding.136, 0x4

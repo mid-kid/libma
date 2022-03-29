@@ -5,12 +5,6 @@
 
 #define NUM_SOCKETS 2
 
-#define MAPROT_REPLY 0x80
-
-#define MATYPE_PROT_MASK 0xf0
-#define MATYPE_PROT_MASTER (MAPROT_REPLY | 0x0)
-#define MATYPE_PROT_SLAVE (MAPROT_REPLY | 0x8)
-
 #define CONDITION_UNK_0 (1 << 0)
 #define CONDITION_UNK_1 (1 << 1)
 #define CONDITION_UNK_2 (1 << 2)
