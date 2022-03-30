@@ -551,7 +551,7 @@ void MABIOS_Tel(u8 calltype, char *number)
     gMA.condition |= CONDITION_UNK_5;
     gMA.cmd_cur = MACMD_TEL;
 
-    tmppPacket[MAPROT_HEADER_SIZE] = calltype;
+    tmppPacket[MAPROT_HEADER_SIZE + 0] = calltype;
     telNoLen = 0;
     while (*number != '\0') {
 #if NONMATCHING
@@ -615,7 +615,7 @@ void MABIOS_Data(u8 *data_recv, u8 *data_send, u8 size, u8 socket)
     gMA.condition |= CONDITION_UNK_5;
     gMA.cmd_cur = MACMD_DATA;
 
-    tmppPacket[MAPROT_HEADER_SIZE] = socket;
+    tmppPacket[MAPROT_HEADER_SIZE + 0] = socket;
     for (i = 0; i < size; i++) {
 #if NONMATCHING
         tmppPacket[MAPROT_HEADER_SIZE + 1 + i] = *data_send++;
@@ -634,117 +634,34 @@ void MABIOS_Data(u8 *data_recv, u8 *data_send, u8 size, u8 socket)
     gMA.status |= STATUS_UNK_1;
 }
 
-#if 0
+static void MABIOS_Data2(u8 *data_recv, u8 *data_send, u8 size)
+{
+    tmppPacket = gMA.buffer_packet_send;
+    if (!MA_PreSend()) return;
+
+    gMA.buffer_recv_unk = data_recv;
+    gMA.condition |= CONDITION_UNK_5;
+    gMA.cmd_cur = MACMD_DATA;
+
+    tmppPacket[MAPROT_HEADER_SIZE + 0] = 0xff;
+    tmppPacket[MAPROT_HEADER_SIZE + 1] = size;
+    for (i = 0; i < size; i++) {
+#if NONMATCHING
+        tmppPacket[i + MAPROT_HEADER_SIZE + 2] = *data_send++;
 #else
-asm("
-.align 2
-.thumb_func
-MABIOS_Data2:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, r8
-    push	{r7}
-    mov	r8, r0
-    mov	r6, r1
-    lsl	r2, r2, #24
-    lsr	r7, r2, #24
-    ldr	r4, [pc, #176]
-    ldr	r5, [pc, #176]
-    str	r5, [r4, #0]
-    bl	MA_PreSend
-    cmp	r0, #0
-    beq	MABIOS_Data2+0xb6
-    ldr	r0, [pc, #168]
-    add	r1, r5, r0
-    mov	r2, #142
-    lsl	r2, r2, #1
-    add	r0, r5, r2
-    mov	r2, r8
-    str	r2, [r0, #0]
-    ldrh	r2, [r1, #2]
-    mov	r0, #32
-    ldrh	r3, [r1, #2]
-    mov	r3, #0
-    orr	r0, r2
-    strh	r0, [r1, #2]
-    ldr	r0, [pc, #148]
-    add	r1, r5, r0
-    ldrb	r0, [r1, #0]
-    mov	r0, #21
-    strb	r0, [r1, #0]
-    ldr	r1, [r4, #0]
-    mov	r0, #255
-    strb	r0, [r1, #6]
-    ldr	r0, [r4, #0]
-    strb	r7, [r0, #7]
-    ldr	r0, [pc, #132]
-    str	r3, [r0, #0]
-    ldr	r1, [pc, #132]
-    mov	r8, r1
-    add	r2, r7, #2
-    cmp	r3, r7
-    bge	MABIOS_Data2+0x72
-    mov	r5, r4
-    mov	r3, r0
-    ldr	r1, [r5, #0]
-    ldr	r0, [r3, #0]
-    add	r0, r0, r1
-    ldrb	r1, [r6, #0]
-    strb	r1, [r0, #8]
-    add	r6, #1
-    ldr	r0, [r3, #0]
-    add	r0, #1
-    str	r0, [r3, #0]
-    cmp	r0, r7
-    blt	MABIOS_Data2+0x5c
-    ldr	r0, [r4, #0]
-    mov	r1, #21
-    bl	MA_CreatePacket
-    mov	r2, r8
-    strh	r0, [r2, #0]
-    ldr	r5, [pc, #88]
-    mov	r1, r5
-    add	r1, #48
-    ldrh	r2, [r2, #0]
-    mov	r0, r5
-    mov	r3, #3
-    bl	MA_InitIoBuffer
-    ldr	r0, [pc, #76]
-    add	r4, r5, r0
-    ldrb	r0, [r4, #4]
-    mov	r0, #1
-    strb	r0, [r4, #4]
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #1
-    ldr	r2, [pc, #64]
-    add	r1, r5, r2
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r4, #12]
-    strh	r0, [r4, #12]
-    mov	r0, #2
-    bl	MA_SetTimeoutCount
-    ldr	r0, [r4, #64]
-    mov	r1, #2
-    orr	r0, r1
-    str	r0, [r4, #64]
-    pop	{r3}
-    mov	r8, r3
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word tmppPacket
-    .word gMA+0x218
-    .word 0xfffffde8
-    .word 0xfffffe2c
-    .word i
-    .word tmpPacketLen
-    .word gMA+0x1e8
-    .word 0xfffffe18
-    .word 0xfffffe20
-.size MABIOS_Data2, .-MABIOS_Data2
-");
+        char *p = tmppPacket;
+        int n = i + 2;
+        *(char *)(p + n + MAPROT_HEADER_SIZE) = *data_send++;
 #endif
+    }
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DATA, size + 2);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
+
+    gMA.unk_4 = 1;
+    gMA.unk_12 = gMA.timer[gMA.sio_mode];
+    MA_SetTimeoutCount(TIMEOUT_30);
+    gMA.status |= STATUS_UNK_1;
+}
 
 #if 0
 #else
