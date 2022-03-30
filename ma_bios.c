@@ -19,6 +19,7 @@
 #define MACMD_TEL 0x12
 #define MACMD_OFFLINE 0x13
 #define MACMD_WAITCALL 0x14
+#define MACMD_DATA 0x15
 
 #define MAPROT_HEADER_SIZE 6
 #define MAPROT_FOOTER_SIZE 4
@@ -28,7 +29,7 @@ typedef struct {
     u8 cmd;
     u8 pad;
     u16 size;
-} MAPROT_HEADER __attribute__((packed));
+} MAPROT_HEADER;
 
 typedef struct {
     u8 checksum_hi;
@@ -535,7 +536,7 @@ void MABIOS_End(void)
     gMA.condition |= CONDITION_UNK_5;
     gMA.unk_4 = 1;  // MAGIC
     gMA.unk_12 = gMA.timer[gMA.sio_mode];
-    MA_SetTimeoutCount(2);
+    MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
 }
 
@@ -552,24 +553,22 @@ void MABIOS_Tel(u8 calltype, char *number)
 
     tmppPacket[MAPROT_HEADER_SIZE] = calltype;
     telNoLen = 0;
+    while (*number != '\0') {
 #if NONMATCHING
-    while (*number != '\0') {
-        tmppPacket[6 + ++telNoLen] = *number++;
-    }
+        tmppPacket[MAPROT_HEADER_SIZE + 1 + telNoLen++] = *number++;
 #else
-    while (*number != '\0') {
-        char *i = tmppPacket;
+        char *p = tmppPacket;
         int n = telNoLen + 1;
-        *(char *)(i + n + MAPROT_HEADER_SIZE) = *number++;
+        *(char *)(p + n + MAPROT_HEADER_SIZE) = *number++;
         telNoLen = n;
-    }
 #endif
+    }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TEL, telNoLen + 1);
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
 
     gMA.unk_4 = 1;  // MAGIC
     gMA.unk_12 = gMA.timer[gMA.sio_mode];
-    MA_SetTimeoutCount(3);
+    MA_SetTimeoutCount(TIMEOUT_90);
     gMA.status |= STATUS_UNK_1;
 }
 
@@ -586,7 +585,7 @@ void MABIOS_Offline(void)
     gMA.condition |= CONDITION_UNK_5;
     gMA.unk_4 = 1;  // MAGIC
     gMA.unk_12 = gMA.timer[gMA.sio_mode];
-    MA_SetTimeoutCount(2);
+    MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
 }
 
@@ -603,126 +602,37 @@ void MABIOS_WaitCall(void)
     gMA.condition |= CONDITION_UNK_5;
     gMA.unk_4 = 1;  // MAGIC
     gMA.unk_12 = gMA.timer[gMA.sio_mode];
-    MA_SetTimeoutCount(2);
+    MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
 }
 
-#if 0
+void MABIOS_Data(u8 *data_recv, u8 *data_send, u8 size, u8 socket)
+{
+    tmppPacket = gMA.buffer_packet_send;
+    if (!MA_PreSend()) return;
+
+    gMA.buffer_recv_unk = data_recv;
+    gMA.condition |= CONDITION_UNK_5;
+    gMA.cmd_cur = MACMD_DATA;
+
+    tmppPacket[MAPROT_HEADER_SIZE] = socket;
+    for (i = 0; i < size; i++) {
+#if NONMATCHING
+        tmppPacket[MAPROT_HEADER_SIZE + 1 + i] = *data_send++;
 #else
-asm("
-.align 2
-.thumb_func
-.global MABIOS_Data
-MABIOS_Data:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, r9
-    mov	r6, r8
-    push	{r6, r7}
-    mov	r8, r0
-    mov	r6, r1
-    lsl	r2, r2, #24
-    lsr	r7, r2, #24
-    lsl	r3, r3, #24
-    lsr	r3, r3, #24
-    mov	r9, r3
-    ldr	r4, [pc, #176]
-    ldr	r5, [pc, #176]
-    str	r5, [r4, #0]
-    bl	MA_PreSend
-    cmp	r0, #0
-    beq	MABIOS_Data+0xbc
-    ldr	r0, [pc, #168]
-    add	r1, r5, r0
-    mov	r2, #142
-    lsl	r2, r2, #1
-    add	r0, r5, r2
-    mov	r2, r8
-    str	r2, [r0, #0]
-    ldrh	r2, [r1, #2]
-    mov	r0, #32
-    ldrh	r3, [r1, #2]
-    mov	r3, #0
-    orr	r0, r2
-    strh	r0, [r1, #2]
-    ldr	r0, [pc, #148]
-    add	r1, r5, r0
-    ldrb	r0, [r1, #0]
-    mov	r0, #21
-    strb	r0, [r1, #0]
-    ldr	r0, [r4, #0]
-    mov	r1, r9
-    strb	r1, [r0, #6]
-    ldr	r0, [pc, #136]
-    str	r3, [r0, #0]
-    ldr	r2, [pc, #136]
-    mov	r8, r2
-    add	r2, r7, #1
-    cmp	r3, r7
-    bge	MABIOS_Data+0x76
-    mov	r5, r4
-    mov	r3, r0
-    ldr	r1, [r5, #0]
-    ldr	r0, [r3, #0]
-    add	r0, r0, r1
-    ldrb	r1, [r6, #0]
-    strb	r1, [r0, #7]
-    add	r6, #1
-    ldr	r0, [r3, #0]
-    add	r0, #1
-    str	r0, [r3, #0]
-    cmp	r0, r7
-    blt	MABIOS_Data+0x60
-    ldr	r0, [r4, #0]
-    mov	r1, #21
-    bl	MA_CreatePacket
-    mov	r1, r8
-    strh	r0, [r1, #0]
-    ldr	r5, [pc, #92]
-    mov	r1, r5
-    add	r1, #48
-    mov	r0, r8
-    ldrh	r2, [r0, #0]
-    mov	r0, r5
-    mov	r3, #3
-    bl	MA_InitIoBuffer
-    ldr	r1, [pc, #76]
-    add	r4, r5, r1
-    ldrb	r0, [r4, #4]
-    mov	r0, #1
-    strb	r0, [r4, #4]
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #1
-    ldr	r2, [pc, #68]
-    add	r1, r5, r2
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r4, #12]
-    strh	r0, [r4, #12]
-    mov	r0, #2
-    bl	MA_SetTimeoutCount
-    ldr	r0, [r4, #64]
-    mov	r1, #2
-    orr	r0, r1
-    str	r0, [r4, #64]
-    pop	{r3, r4}
-    mov	r8, r3
-    mov	r9, r4
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word tmppPacket
-    .word gMA+0x218
-    .word 0xfffffde8
-    .word 0xfffffe2c
-    .word i
-    .word tmpPacketLen
-    .word gMA+0x1e8
-    .word 0xfffffe18
-    .word 0xfffffe20
-.size MABIOS_Data, .-MABIOS_Data
-");
+        char *p = tmppPacket;
+        int n = i + 1;
+        *(char *)(p + n + MAPROT_HEADER_SIZE) = *data_send++;
 #endif
+    }
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DATA, size + 1);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
+
+    gMA.unk_4 = 1;  // MAGIC
+    gMA.unk_12 = gMA.timer[gMA.sio_mode];
+    MA_SetTimeoutCount(TIMEOUT_30);
+    gMA.status |= STATUS_UNK_1;
+}
 
 #if 0
 #else
