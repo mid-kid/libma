@@ -32,6 +32,7 @@
 #define MACMD_UDPCONNECT 0x25
 #define MACMD_UDPDISCONNECT 0x26
 #define MACMD_DNSREQUEST 0x28
+#define MACMD_TESTMODE 0x3f
 
 #define MAPROT_HEADER_SIZE 6
 #define MAPROT_FOOTER_SIZE 4
@@ -961,75 +962,22 @@ void MABIOS_DNSRequest(u8 *data_recv, char *addr)
     gMA.status |= STATUS_UNK_1;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MABIOS_TestMode
-MABIOS_TestMode:
-    push	{r4, r5, r6, lr}
-    ldr	r6, [pc, #112]
-    ldr	r5, [pc, #112]
-    str	r5, [r6, #0]
-    bl	MA_PreSend
-    cmp	r0, #0
-    beq	MABIOS_TestMode+0x6c
-    bl	SetInternalRecvBuffer
-    ldr	r4, [pc, #100]
-    ldr	r0, [r6, #0]
-    mov	r1, #63
-    mov	r2, #0
-    bl	MA_CreatePacket
-    strh	r0, [r4, #0]
-    mov	r0, r5
-    sub	r0, #48
-    ldrh	r2, [r4, #0]
-    mov	r1, r5
-    mov	r3, #3
-    bl	MA_InitIoBuffer
-    ldr	r0, [pc, #76]
-    add	r4, r5, r0
-    ldr	r2, [pc, #76]
-    add	r1, r5, r2
-    ldrb	r0, [r1, #0]
-    mov	r0, #63
-    strb	r0, [r1, #0]
-    ldrh	r1, [r4, #2]
-    mov	r0, #32
-    ldrh	r2, [r4, #2]
-    orr	r0, r1
-    strh	r0, [r4, #2]
-    ldrb	r0, [r4, #4]
-    mov	r0, #1
-    strb	r0, [r4, #4]
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #1
-    ldr	r2, [pc, #52]
-    add	r1, r5, r2
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r4, #12]
-    strh	r0, [r4, #12]
-    mov	r0, #2
-    bl	MA_SetTimeoutCount
-    ldr	r0, [r4, #64]
-    mov	r1, #2
-    orr	r0, r1
-    str	r0, [r4, #64]
-    pop	{r4, r5, r6}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word tmppPacket
-    .word gMA+0x218
-    .word tmpPacketLen
-    .word 0xfffffde8
-    .word 0xfffffe2c
-    .word 0xfffffdf0
-.size MABIOS_TestMode, .-MABIOS_TestMode
-");
-#endif
+void MABIOS_TestMode(void)
+{
+    tmppPacket = gMA.buffer_packet_send;
+    if (!MA_PreSend()) return;
+
+    SetInternalRecvBuffer();
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TESTMODE, 0);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
+
+    gMA.cmd_cur = MACMD_TESTMODE;
+    gMA.condition |= CONDITION_UNK_5;
+    gMA.unk_4 = 1;  // MAGIC
+    gMA.unk_12 = gMA.timer[gMA.sio_mode];
+    MA_SetTimeoutCount(TIMEOUT_30);
+    gMA.status |= STATUS_UNK_1;
+}
 
 static int MA_CreatePacket(u8 *packet, u8 cmd, u16 size)
 {
@@ -1040,7 +988,6 @@ static int MA_CreatePacket(u8 *packet, u8 cmd, u16 size)
     }
 }
 
-#if 0  // STATIC
 static int MA_Create8BitPacket(u8 *packet, u8 cmd, u16 size)
 {
     static u16 checkSum;
@@ -1060,64 +1007,7 @@ static int MA_Create8BitPacket(u8 *packet, u8 cmd, u16 size)
 
     return size + MAPROT_HEADER_SIZE + MAPROT_FOOTER_SIZE;
 }
-#else
-asm("
-.lcomm checkSum.132, 0x2
 
-.align 2
-.thumb_func
-MA_Create8BitPacket:
-    push	{r4, r5, r6, lr}
-    mov	r4, r2
-    lsl	r4, r4, #16
-    lsr	r4, r4, #16
-    mov	r6, #0
-    ldr	r2, [pc, #76]
-    strh	r2, [r0, #0]
-    strb	r1, [r0, #2]
-    strb	r6, [r0, #3]
-    mov	r1, #255
-    and	r1, r4
-    lsl	r1, r1, #8
-    lsr	r2, r4, #8
-    orr	r1, r2
-    strh	r1, [r0, #4]
-    ldr	r5, [pc, #60]
-    add	r1, r4, #6
-    add	r1, r0, r1
-    str	r1, [r5, #0]
-    add	r0, #2
-    add	r1, r4, #4
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    bl	MA_CalcCheckSum
-    ldr	r2, [pc, #44]
-    strh	r0, [r2, #0]
-    ldr	r1, [r5, #0]
-    lsr	r0, r0, #8
-    strb	r0, [r1, #0]
-    ldr	r1, [r5, #0]
-    ldrh	r0, [r2, #0]
-    strb	r0, [r1, #1]
-    ldr	r1, [r5, #0]
-    mov	r0, #129
-    strb	r0, [r1, #2]
-    ldr	r0, [r5, #0]
-    strb	r6, [r0, #3]
-    add	r4, #10
-    mov	r0, r4
-    pop	{r4, r5, r6}
-    pop	{r1}
-    bx	r1
-.align 2
-    .word 0x00006699
-    .word tmppPacketLast
-    .word checkSum.132
-.size MA_Create8BitPacket, .-MA_Create8BitPacket
-");
-#endif
-
-#if 0  // STATIC
 static int MA_Create32BitPacket(u8 *packet, u8 cmd, u16 size)
 {
     static u8 *pPadding;
@@ -1155,156 +1045,7 @@ static int MA_Create32BitPacket(u8 *packet, u8 cmd, u16 size)
     tmppPacketLast->pad[2] = 0;
     return size + paddingLength + MAPROT_HEADER_SIZE + MAPROT_FOOTER_SIZE + 2;
 }
-#else
-asm("
-.lcomm pPadding.136, 0x4
-.lcomm paddingLength.137, 0x4
-.lcomm amari.138, 0x4
-.lcomm checkSum.139, 0x2
 
-.align 2
-.thumb_func
-MA_Create32BitPacket:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, sl
-    mov	r6, r9
-    mov	r5, r8
-    push	{r5, r6, r7}
-    sub	sp, #4
-    mov	r4, r0
-    lsl	r2, r2, #16
-    lsr	r5, r2, #16
-    mov	r2, #0
-    ldr	r0, [pc, #44]
-    strh	r0, [r4, #0]
-    strb	r1, [r4, #2]
-    strb	r2, [r4, #3]
-    mov	r0, #255
-    and	r0, r5
-    lsl	r0, r0, #8
-    lsr	r1, r5, #8
-    orr	r0, r1
-    strh	r0, [r4, #4]
-    mov	r2, r0
-    cmp	r2, #0
-    bne	MA_Create32BitPacket+0x50
-    ldr	r0, [pc, #24]
-    str	r2, [r0, #0]
-    add	r0, r5, #6
-    mov	r8, r0
-    ldr	r6, [pc, #20]
-    add	r1, r4, #2
-    mov	r9, r1
-    add	r2, r5, #4
-    str	r2, [sp, #0]
-    b	MA_Create32BitPacket+0xb6
-.align 2
-    .word 0x00006699
-    .word paddingLength.137
-    .word tmppPacketLast
-
-    ldr	r0, [pc, #16]
-    mov	r2, #3
-    and	r2, r5
-    str	r2, [r0, #0]
-    cmp	r2, #0
-    bne	MA_Create32BitPacket+0x6c
-    ldr	r0, [pc, #8]
-    str	r2, [r0, #0]
-    b	MA_Create32BitPacket+0x74
-.align 2
-    .word amari.138
-    .word paddingLength.137
-
-    ldr	r1, [pc, #156]
-    mov	r0, #4
-    sub	r0, r0, r2
-    str	r0, [r1, #0]
-    ldr	r3, [pc, #152]
-    add	r1, r5, #6
-    add	r0, r4, r1
-    str	r0, [r3, #0]
-    ldr	r6, [pc, #148]
-    mov	sl, r6
-    mov	r2, #0
-    str	r2, [r6, #0]
-    ldr	r7, [pc, #132]
-    ldr	r0, [r7, #0]
-    mov	r8, r1
-    ldr	r6, [pc, #140]
-    add	r1, r4, #2
-    mov	r9, r1
-    add	r7, r5, #4
-    str	r7, [sp, #0]
-    cmp	r2, r0
-    bge	MA_Create32BitPacket+0xb6
-    mov	r0, #0
-    mov	ip, r0
-    mov	r2, sl
-    ldr	r0, [r3, #0]
-    mov	r1, ip
-    strb	r1, [r0, #0]
-    add	r0, #1
-    str	r0, [r3, #0]
-    ldr	r1, [r2, #0]
-    add	r1, #1
-    str	r1, [r2, #0]
-    ldr	r7, [pc, #92]
-    ldr	r0, [r7, #0]
-    cmp	r1, r0
-    blt	MA_Create32BitPacket+0x9e
-    mov	r1, r8
-    add	r0, r4, r1
-    ldr	r2, [pc, #80]
-    ldr	r1, [r2, #0]
-    add	r0, r0, r1
-    str	r0, [r6, #0]
-    ldr	r7, [sp, #0]
-    lsl	r1, r7, #16
-    lsr	r1, r1, #16
-    mov	r0, r9
-    bl	MA_CalcCheckSum
-    ldr	r3, [pc, #76]
-    strh	r0, [r3, #0]
-    ldr	r1, [r6, #0]
-    lsr	r0, r0, #8
-    mov	r2, #0
-    strb	r0, [r1, #0]
-    ldr	r1, [r6, #0]
-    ldrh	r0, [r3, #0]
-    strb	r0, [r1, #1]
-    ldr	r1, [r6, #0]
-    mov	r0, #129
-    strb	r0, [r1, #2]
-    ldr	r0, [r6, #0]
-    strb	r2, [r0, #3]
-    ldr	r0, [r6, #0]
-    strb	r2, [r0, #4]
-    ldr	r0, [r6, #0]
-    strb	r2, [r0, #5]
-    ldr	r1, [pc, #24]
-    ldr	r0, [r1, #0]
-    add	r0, r5, r0
-    add	r0, #12
-    add	sp, #4
-    pop	{r3, r4, r5}
-    mov	r8, r3
-    mov	r9, r4
-    mov	sl, r5
-    pop	{r4, r5, r6, r7}
-    pop	{r1}
-    bx	r1
-.align 2
-    .word paddingLength.137
-    .word pPadding.136
-    .word i
-    .word tmppPacketLast
-    .word checkSum.139
-.size MA_Create32BitPacket, .-MA_Create32BitPacket
-");
-#endif
-
-#if 0  // STATIC
 static u16 MA_CalcCheckSum(u8 *data, u16 size)
 {
     static u16 sum;
@@ -1316,44 +1057,6 @@ static u16 MA_CalcCheckSum(u8 *data, u16 size)
     }
     return sum;
 }
-#else
-asm("
-.lcomm sum.143, 0x2
-
-.align 2
-.thumb_func
-MA_CalcCheckSum:
-    push	{r4, r5, r6, lr}
-    mov	r4, r0
-    lsl	r1, r1, #16
-    lsr	r2, r1, #16
-    ldr	r1, [pc, #40]
-    mov	r0, #0
-    strh	r0, [r1, #0]
-    mov	r5, r1
-    cmp	r2, #0
-    beq	MA_CalcCheckSum+0x2c
-    mov	r6, r5
-    mov	r1, #0
-    ldrb	r0, [r4, #0]
-    add	r3, r1, r0
-    mov	r1, r3
-    add	r4, #1
-    sub	r0, r2, #1
-    lsl	r0, r0, #16
-    lsr	r2, r0, #16
-    cmp	r2, #0
-    bne	MA_CalcCheckSum+0x18
-    strh	r3, [r6, #0]
-    ldrh	r0, [r5, #0]
-    pop	{r4, r5, r6}
-    pop	{r1}
-    bx	r1
-.align 2
-    .word sum.143
-.size MA_CalcCheckSum, .-MA_CalcCheckSum
-");
-#endif
 
 #if 0
 #else
