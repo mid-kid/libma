@@ -25,6 +25,10 @@
 #define MACMD_CHANGECLOCK 0x18
 #define MACMD_EEPROM_READ 0x19
 #define MACMD_EEPROM_WRITE 0x1a
+#define MACMD_PPPCONNECT 0x21
+#define MACMD_PPPDISCONNECT 0x22
+#define MACMD_TCPCONNECT 0x23
+#define MACMD_TCPDISCONNECT 0x24
 
 #define MAPROT_HEADER_SIZE 6
 #define MAPROT_FOOTER_SIZE 4
@@ -562,9 +566,9 @@ void MABIOS_Tel(u8 calltype, char *number)
 #if NONMATCHING
         tmppPacket[MAPROT_HEADER_SIZE + 1 + telNoLen++] = *number++;
 #else
-        char *p = tmppPacket;
+        u8 *p = tmppPacket;
         int n = telNoLen + 1;
-        *(char *)(p + n + MAPROT_HEADER_SIZE) = *number++;
+        *(u8 *)(p + n + MAPROT_HEADER_SIZE) = *number++;
         telNoLen = n;
 #endif
     }
@@ -625,9 +629,9 @@ void MABIOS_Data(u8 *data_recv, u8 *data_send, u8 size, u8 socket)
 #if NONMATCHING
         tmppPacket[MAPROT_HEADER_SIZE + 1 + i] = *data_send++;
 #else
-        char *p = tmppPacket;
+        u8 *p = tmppPacket;
         int n = i + 1;
-        *(char *)(p + n + MAPROT_HEADER_SIZE) = *data_send++;
+        *(u8 *)(p + n + MAPROT_HEADER_SIZE) = *data_send++;
 #endif
     }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DATA, size + 1);
@@ -654,9 +658,9 @@ static void MABIOS_Data2(u8 *data_recv, u8 *data_send, u8 size)
 #if NONMATCHING
         tmppPacket[i + MAPROT_HEADER_SIZE + 2] = *data_send++;
 #else
-        char *p = tmppPacket;
+        u8 *p = tmppPacket;
         int n = i + 2;
-        *(char *)(p + n + MAPROT_HEADER_SIZE) = *data_send++;
+        *(u8 *)(p + n + MAPROT_HEADER_SIZE) = *data_send++;
 #endif
     }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DATA, size + 2);
@@ -773,9 +777,9 @@ void MABIOS_EEPROM_Write(u8 *data_recv, u8 offset, u8 *data_send, u8 size)
 #if NONMATCHING
         tmppPacket[MAPROT_HEADER_SIZE + 1 + i] = *data_send++;
 #else
-        char *p = tmppPacket;
+        u8 *p = tmppPacket;
         int n = i + 1;
-        *(char *)(p + n + MAPROT_HEADER_SIZE) = *data_send++;
+        *(u8 *)(p + n + MAPROT_HEADER_SIZE) = *data_send++;
 #endif
     }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_EEPROM_WRITE, size + 1);
@@ -787,475 +791,98 @@ void MABIOS_EEPROM_Write(u8 *data_recv, u8 offset, u8 *data_send, u8 size)
     gMA.status |= STATUS_UNK_1;
 }
 
-#if 0
-#else
-asm("
-.lcomm pData.100, 0x4
-.lcomm dataLen.101, 0x4
-.lcomm userIDLength.102, 0x4
-.lcomm passwordLength.103, 0x4
+void MABIOS_PPPConnect(u8 *data_recv, char *userid, char *password, u8 *dns1, u8 *dns2)
+{
+    static u8 *pData;
+    static int dataLen;
+    static int userIDLength;
+    static int passwordLength;
 
-.align 2
-.thumb_func
-.global MABIOS_PPPConnect
-MABIOS_PPPConnect:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, sl
-    mov	r6, r9
-    mov	r5, r8
-    push	{r5, r6, r7}
-    mov	sl, r0
-    mov	r4, r1
-    mov	r6, r2
-    mov	r7, r3
-    ldr	r0, [sp, #32]
-    mov	r8, r0
-    ldr	r0, [pc, #332]
-    ldr	r5, [pc, #332]
-    str	r5, [r0, #0]
-    ldr	r1, [pc, #332]
-    mov	r9, r1
-    add	r0, r5, #6
-    str	r0, [r1, #0]
-    bl	MA_PreSend
-    cmp	r0, #0
-    bne	MABIOS_PPPConnect+0x2e
-    b	MABIOS_PPPConnect+0x156
-    ldr	r2, [pc, #320]
-    add	r1, r5, r2
-    ldrh	r2, [r1, #2]
-    mov	r0, #32
-    ldrh	r3, [r1, #2]
-    orr	r0, r2
-    strh	r0, [r1, #2]
-    ldr	r0, [pc, #308]
-    add	r1, r5, r0
-    ldrb	r0, [r1, #0]
-    mov	r0, #33
-    strb	r0, [r1, #0]
-    mov	r1, #142
-    lsl	r1, r1, #1
-    add	r0, r5, r1
-    mov	r2, sl
-    str	r2, [r0, #0]
-    mov	r0, r4
-    bl	MAU_strlen
-    ldr	r5, [pc, #288]
-    str	r0, [r5, #0]
-    mov	r0, r6
-    bl	MAU_strlen
-    ldr	r1, [pc, #280]
-    str	r0, [r1, #0]
-    ldr	r2, [pc, #280]
-    ldr	r1, [r5, #0]
-    add	r0, r1, r0
-    add	r0, #10
-    str	r0, [r2, #0]
-    mov	r2, r9
-    ldr	r0, [r2, #0]
-    strb	r1, [r0, #0]
-    add	r0, #1
-    str	r0, [r2, #0]
-    ldr	r0, [r5, #0]
-    cmp	r0, #0
-    beq	MABIOS_PPPConnect+0x98
-    mov	r3, r9
-    mov	r2, r5
-    ldr	r1, [r3, #0]
-    ldrb	r0, [r4, #0]
-    strb	r0, [r1, #0]
-    add	r4, #1
-    add	r1, #1
-    str	r1, [r3, #0]
-    ldr	r0, [r2, #0]
-    sub	r0, #1
-    str	r0, [r2, #0]
-    cmp	r0, #0
-    bne	MABIOS_PPPConnect+0x82
-    ldr	r3, [pc, #208]
-    ldr	r0, [r3, #0]
-    ldr	r2, [pc, #220]
-    ldr	r1, [r2, #0]
-    strb	r1, [r0, #0]
-    add	r0, #1
-    str	r0, [r3, #0]
-    ldr	r0, [r2, #0]
-    ldr	r5, [pc, #184]
-    ldr	r4, [pc, #212]
-    mov	sl, r4
-    ldr	r4, [pc, #212]
-    ldr	r1, [pc, #212]
-    mov	r9, r1
-    cmp	r0, #0
-    beq	MABIOS_PPPConnect+0xce
-    ldr	r1, [r3, #0]
-    ldrb	r0, [r6, #0]
-    strb	r0, [r1, #0]
-    add	r6, #1
-    add	r1, #1
-    str	r1, [r3, #0]
-    ldr	r0, [r2, #0]
-    sub	r0, #1
-    str	r0, [r2, #0]
-    cmp	r0, #0
-    bne	MABIOS_PPPConnect+0xb8
-    mov	r0, #0
-    str	r0, [r4, #0]
-    ldr	r3, [pc, #152]
-    mov	r2, r4
-    ldr	r1, [r3, #0]
-    ldrb	r0, [r7, #0]
-    strb	r0, [r1, #0]
-    add	r7, #1
-    add	r1, #1
-    str	r1, [r3, #0]
-    ldr	r0, [r2, #0]
-    add	r0, #1
-    str	r0, [r2, #0]
-    cmp	r0, #3
-    ble	MABIOS_PPPConnect+0xd6
-    mov	r0, #0
-    str	r0, [r4, #0]
-    ldr	r3, [pc, #120]
-    mov	r2, r4
-    ldr	r1, [r3, #0]
-    mov	r4, r8
-    ldrb	r0, [r4, #0]
-    strb	r0, [r1, #0]
-    mov	r0, #1
-    add	r8, r0
-    add	r1, #1
-    str	r1, [r3, #0]
-    ldr	r0, [r2, #0]
-    add	r0, #1
-    str	r0, [r2, #0]
-    cmp	r0, #3
-    ble	MABIOS_PPPConnect+0xf4
-    ldr	r0, [r5, #0]
-    mov	r1, sl
-    ldrh	r2, [r1, #0]
-    mov	r1, #33
-    bl	MA_CreatePacket
-    mov	r2, r9
-    strh	r0, [r2, #0]
-    ldr	r5, [pc, #108]
-    mov	r1, r5
-    add	r1, #48
-    ldrh	r2, [r2, #0]
-    mov	r0, r5
-    mov	r3, #3
-    bl	MA_InitIoBuffer
-    ldr	r0, [pc, #96]
-    add	r4, r5, r0
-    ldrb	r0, [r4, #4]
-    mov	r0, #1
-    strb	r0, [r4, #4]
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #1
-    ldr	r2, [pc, #84]
-    add	r1, r5, r2
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r4, #12]
-    strh	r0, [r4, #12]
-    mov	r0, #2
-    bl	MA_SetTimeoutCount
-    ldr	r0, [r4, #64]
-    mov	r1, #2
-    orr	r0, r1
-    str	r0, [r4, #64]
-    pop	{r3, r4, r5}
-    mov	r8, r3
-    mov	r9, r4
-    mov	sl, r5
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word tmppPacket
-    .word gMA+0x218
-    .word pData.100
-    .word 0xfffffde8
-    .word 0xfffffe2c
-    .word userIDLength.102
-    .word passwordLength.103
-    .word dataLen.101
-    .word i
-    .word tmpPacketLen
-    .word gMA+0x1e8
-    .word 0xfffffe18
-    .word 0xfffffe20
-.size MABIOS_PPPConnect, .-MABIOS_PPPConnect
-");
-#endif
+    tmppPacket = gMA.buffer_packet_send;
+    pData = tmppPacket + MAPROT_HEADER_SIZE;
+    if (!MA_PreSend()) return;
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MABIOS_PPPDisconnect
-MABIOS_PPPDisconnect:
-    push	{r4, r5, r6, lr}
-    ldr	r6, [pc, #112]
-    ldr	r5, [pc, #112]
-    str	r5, [r6, #0]
-    bl	MA_PreSend
-    cmp	r0, #0
-    beq	MABIOS_PPPDisconnect+0x6c
-    bl	SetInternalRecvBuffer
-    ldr	r4, [pc, #100]
-    ldr	r0, [r6, #0]
-    mov	r1, #34
-    mov	r2, #0
-    bl	MA_CreatePacket
-    strh	r0, [r4, #0]
-    mov	r0, r5
-    sub	r0, #48
-    ldrh	r2, [r4, #0]
-    mov	r1, r5
-    mov	r3, #3
-    bl	MA_InitIoBuffer
-    ldr	r0, [pc, #76]
-    add	r4, r5, r0
-    ldr	r2, [pc, #76]
-    add	r1, r5, r2
-    ldrb	r0, [r1, #0]
-    mov	r0, #34
-    strb	r0, [r1, #0]
-    ldrh	r1, [r4, #2]
-    mov	r0, #32
-    ldrh	r2, [r4, #2]
-    orr	r0, r1
-    strh	r0, [r4, #2]
-    ldrb	r0, [r4, #4]
-    mov	r0, #1
-    strb	r0, [r4, #4]
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #1
-    ldr	r2, [pc, #52]
-    add	r1, r5, r2
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r4, #12]
-    strh	r0, [r4, #12]
-    mov	r0, #2
-    bl	MA_SetTimeoutCount
-    ldr	r0, [r4, #64]
-    mov	r1, #2
-    orr	r0, r1
-    str	r0, [r4, #64]
-    pop	{r4, r5, r6}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word tmppPacket
-    .word gMA+0x218
-    .word tmpPacketLen
-    .word 0xfffffde8
-    .word 0xfffffe2c
-    .word 0xfffffdf0
-.size MABIOS_PPPDisconnect, .-MABIOS_PPPDisconnect
-");
-#endif
+    gMA.condition |= CONDITION_UNK_5;
+    gMA.cmd_cur = MACMD_PPPCONNECT;
+    gMA.buffer_recv_unk = data_recv;
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MABIOS_TCPConnect
-MABIOS_TCPConnect:
-    push	{r4, r5, r6, r7, lr}
-    sub	sp, #4
-    mov	r7, r0
-    mov	r5, r1
-    mov	r0, sp
-    strh	r2, [r0, #0]
-    ldr	r4, [pc, #176]
-    ldr	r6, [pc, #180]
-    str	r6, [r4, #0]
-    bl	MA_PreSend
-    cmp	r0, #0
-    beq	MABIOS_TCPConnect+0xb8
-    ldr	r0, [pc, #172]
-    add	r1, r6, r0
-    mov	r2, #142
-    lsl	r2, r2, #1
-    add	r0, r6, r2
-    str	r7, [r0, #0]
-    ldrh	r2, [r1, #2]
-    mov	r0, #32
-    ldrh	r3, [r1, #2]
-    mov	r3, #0
-    orr	r0, r2
-    strh	r0, [r1, #2]
-    ldr	r0, [pc, #152]
-    add	r1, r6, r0
-    ldrb	r0, [r1, #0]
-    mov	r0, #35
-    strb	r0, [r1, #0]
-    ldr	r0, [pc, #144]
-    str	r3, [r0, #0]
-    ldr	r7, [pc, #144]
-    mov	r3, r4
-    mov	r2, r0
-    ldr	r1, [r3, #0]
-    ldr	r0, [r2, #0]
-    add	r1, r1, r0
-    ldrb	r0, [r5, #0]
-    strb	r0, [r1, #6]
-    add	r5, #1
-    ldr	r0, [r2, #0]
-    add	r0, #1
-    str	r0, [r2, #0]
-    cmp	r0, #3
-    ble	MABIOS_TCPConnect+0x46
-    ldr	r1, [r4, #0]
-    mov	r0, sp
-    ldrb	r0, [r0, #1]
-    strb	r0, [r1, #10]
-    ldr	r1, [r4, #0]
-    mov	r0, sp
-    ldrb	r0, [r0, #0]
-    strb	r0, [r1, #11]
-    ldr	r0, [r4, #0]
-    mov	r1, #35
-    mov	r2, #6
-    bl	MA_CreatePacket
-    strh	r0, [r7, #0]
-    ldr	r6, [pc, #92]
-    mov	r1, r6
-    add	r1, #48
-    ldrh	r2, [r7, #0]
-    mov	r0, r6
-    mov	r3, #3
-    bl	MA_InitIoBuffer
-    ldr	r1, [pc, #80]
-    add	r5, r6, r1
-    ldrb	r0, [r5, #4]
-    mov	r0, #1
-    strb	r0, [r5, #4]
-    ldrb	r0, [r5, #5]
-    lsl	r0, r0, #1
-    ldr	r2, [pc, #72]
-    add	r1, r6, r2
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r5, #12]
-    mov	r4, #0
-    strh	r0, [r5, #12]
-    mov	r0, #2
-    bl	MA_SetTimeoutCount
-    ldr	r1, [pc, #56]
-    add	r0, r6, r1
-    strb	r4, [r0, #0]
-    ldr	r0, [r5, #64]
-    mov	r1, #2
-    orr	r0, r1
-    str	r0, [r5, #64]
-    add	sp, #4
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word tmppPacket
-    .word gMA+0x218
-    .word 0xfffffde8
-    .word 0xfffffe2c
-    .word i
-    .word tmpPacketLen
-    .word gMA+0x1e8
-    .word 0xfffffe18
-    .word 0xfffffe20
-    .word 0xfffffe6b
-.size MABIOS_TCPConnect, .-MABIOS_TCPConnect
-");
-#endif
+    userIDLength = MAU_strlen(userid);
+    passwordLength = MAU_strlen(password);
+    dataLen = userIDLength + passwordLength + 10;
+    *pData++ = userIDLength;
+    for (; userIDLength; userIDLength--) *pData++ = *userid++;
+    *pData++ = passwordLength;
+    for (; passwordLength; passwordLength--) *pData++ = *password++;
+    for (i = 0; i < 4; i++) *pData++ = *dns1++;
+    for (i = 0; i < 4; i++) *pData++ = *dns2++;
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_PPPCONNECT, dataLen);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MABIOS_TCPDisconnect
-MABIOS_TCPDisconnect:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, r8
-    push	{r7}
-    mov	r5, r0
-    lsl	r1, r1, #24
-    lsr	r1, r1, #24
-    mov	r8, r1
-    ldr	r7, [pc, #124]
-    ldr	r6, [pc, #124]
-    str	r6, [r7, #0]
-    bl	MA_PreSend
-    cmp	r0, #0
-    beq	MABIOS_TCPDisconnect+0x82
-    ldr	r0, [pc, #116]
-    add	r4, r6, r0
-    mov	r1, #142
-    lsl	r1, r1, #1
-    add	r0, r6, r1
-    str	r5, [r0, #0]
-    ldrh	r1, [r4, #2]
-    mov	r0, #32
-    ldrh	r2, [r4, #2]
-    orr	r0, r1
-    strh	r0, [r4, #2]
-    ldr	r2, [pc, #100]
-    add	r1, r6, r2
-    ldrb	r0, [r1, #0]
-    mov	r0, #36
-    strb	r0, [r1, #0]
-    ldr	r0, [r7, #0]
-    mov	r1, r8
-    strb	r1, [r0, #6]
-    ldr	r5, [pc, #88]
-    ldr	r0, [r7, #0]
-    mov	r1, #36
-    mov	r2, #1
-    bl	MA_CreatePacket
-    strh	r0, [r5, #0]
-    mov	r0, r6
-    sub	r0, #48
-    ldrh	r2, [r5, #0]
-    mov	r1, r6
-    mov	r3, #3
-    bl	MA_InitIoBuffer
-    ldrb	r0, [r4, #4]
-    mov	r0, #1
-    strb	r0, [r4, #4]
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #1
-    ldr	r2, [pc, #52]
-    add	r1, r6, r2
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r4, #12]
-    strh	r0, [r4, #12]
-    mov	r0, #2
-    bl	MA_SetTimeoutCount
-    ldr	r0, [r4, #64]
-    mov	r1, #2
-    orr	r0, r1
-    str	r0, [r4, #64]
-    pop	{r3}
-    mov	r8, r3
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word tmppPacket
-    .word gMA+0x218
-    .word 0xfffffde8
-    .word 0xfffffe2c
-    .word tmpPacketLen
-    .word 0xfffffdf0
-.size MABIOS_TCPDisconnect, .-MABIOS_TCPDisconnect
-");
-#endif
+    gMA.unk_4 = 1;  // MAGIC
+    gMA.unk_12 = gMA.timer[gMA.sio_mode];
+    MA_SetTimeoutCount(TIMEOUT_30);
+    gMA.status |= STATUS_UNK_1;
+}
+
+void MABIOS_PPPDisconnect(void)
+{
+    tmppPacket = gMA.buffer_packet_send;
+    if (!MA_PreSend()) return;
+
+    SetInternalRecvBuffer();
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_PPPDISCONNECT, 0);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
+
+    gMA.cmd_cur = MACMD_PPPDISCONNECT;
+    gMA.condition |= CONDITION_UNK_5;
+    gMA.unk_4 = 1;  // MAGIC
+    gMA.unk_12 = gMA.timer[gMA.sio_mode];
+    MA_SetTimeoutCount(TIMEOUT_30);
+    gMA.status |= STATUS_UNK_1;
+}
+
+void MABIOS_TCPConnect(u8 *data_recv, u8 *ip, u16 port)
+{
+    tmppPacket = gMA.buffer_packet_send;
+    if (!MA_PreSend()) return;
+
+    gMA.buffer_recv_unk = data_recv;
+    gMA.condition |= CONDITION_UNK_5;
+    gMA.cmd_cur = MACMD_TCPCONNECT;
+
+    for (i = 0; i < 4; i++) {
+        *(u8 *)(tmppPacket + i + MAPROT_HEADER_SIZE) = *ip++;
+    }
+    tmppPacket[MAPROT_HEADER_SIZE + 4 + 0] = ((u8 *)&port)[1];
+    tmppPacket[MAPROT_HEADER_SIZE + 4 + 1] = ((u8 *)&port)[0];
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TCPCONNECT, 6);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
+
+    gMA.unk_4 = 1;
+    gMA.unk_12 = gMA.timer[gMA.sio_mode];
+    MA_SetTimeoutCount(TIMEOUT_30);
+    gMA.unk_83 = 0;
+    gMA.status |= STATUS_UNK_1;
+}
+
+void MABIOS_TCPDisconnect(u8 *data_recv, u8 socket)
+{
+    tmppPacket = gMA.buffer_packet_send;
+    if (!MA_PreSend()) return;
+
+    gMA.buffer_recv_unk = data_recv;
+    gMA.condition |= CONDITION_UNK_5;
+    gMA.cmd_cur = MACMD_TCPDISCONNECT;
+
+    tmppPacket[MAPROT_HEADER_SIZE + 0] = socket;
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TCPDISCONNECT, 1);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
+
+    gMA.unk_4 = 1;  // MAGIC
+    gMA.unk_12 = gMA.timer[gMA.sio_mode];
+    MA_SetTimeoutCount(TIMEOUT_30);
+    gMA.status |= STATUS_UNK_1;
+}
 
 #if 0
 #else
