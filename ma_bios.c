@@ -31,6 +31,7 @@
 #define MACMD_TCPDISCONNECT 0x24
 #define MACMD_UDPCONNECT 0x25
 #define MACMD_UDPDISCONNECT 0x26
+#define MACMD_DNSREQUEST 0x28
 
 #define MAPROT_HEADER_SIZE 6
 #define MAPROT_FOOTER_SIZE 4
@@ -928,113 +929,37 @@ void MABIOS_UDPDisconnect(u8 *data_recv, u8 socket)
     gMA.status |= STATUS_UNK_1;
 }
 
-#if 0
-#else
-asm("
-.lcomm serverNameLen.122, 0x4
+void MABIOS_DNSRequest(u8 *data_recv, char *addr)
+{
+    static int serverNameLen;
+    u8 bVar1;
 
-.align 2
-.thumb_func
-.global MABIOS_DNSRequest
-MABIOS_DNSRequest:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, r8
-    push	{r7}
-    mov	r7, r0
-    mov	r5, r1
-    ldr	r4, [pc, #168]
-    ldr	r6, [pc, #168]
-    str	r6, [r4, #0]
-    bl	MA_PreSend
-    cmp	r0, #0
-    beq	MABIOS_DNSRequest+0xa8
-    ldr	r0, [pc, #160]
-    add	r1, r6, r0
-    mov	r2, #142
-    lsl	r2, r2, #1
-    add	r0, r6, r2
-    str	r7, [r0, #0]
-    ldrh	r2, [r1, #2]
-    mov	r0, #32
-    ldrh	r3, [r1, #2]
-    mov	r3, #0
-    orr	r0, r2
-    strh	r0, [r1, #2]
-    ldr	r0, [pc, #140]
-    add	r1, r6, r0
-    ldrb	r0, [r1, #0]
-    mov	r0, #40
-    strb	r0, [r1, #0]
-    ldr	r0, [pc, #136]
-    str	r3, [r0, #0]
-    ldrb	r2, [r5, #0]
-    mov	r7, r0
-    ldr	r1, [pc, #132]
-    mov	r8, r1
-    cmp	r2, #0
-    beq	MABIOS_DNSRequest+0x62
-    mov	r6, r4
-    mov	r3, r7
-    ldr	r0, [r6, #0]
-    ldr	r1, [r3, #0]
-    add	r0, r0, r1
-    strb	r2, [r0, #6]
-    add	r5, #1
-    add	r1, #1
-    str	r1, [r3, #0]
-    ldrb	r2, [r5, #0]
-    cmp	r2, #0
-    bne	MABIOS_DNSRequest+0x4e
-    ldr	r0, [r4, #0]
-    ldrh	r2, [r7, #0]
-    mov	r1, #40
-    bl	MA_CreatePacket
-    mov	r2, r8
-    strh	r0, [r2, #0]
-    ldr	r5, [pc, #88]
-    mov	r1, r5
-    add	r1, #48
-    ldrh	r2, [r2, #0]
-    mov	r0, r5
-    mov	r3, #3
-    bl	MA_InitIoBuffer
-    ldr	r0, [pc, #76]
-    add	r4, r5, r0
-    ldrb	r0, [r4, #4]
-    mov	r0, #1
-    strb	r0, [r4, #4]
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #1
-    ldr	r2, [pc, #68]
-    add	r1, r5, r2
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r4, #12]
-    strh	r0, [r4, #12]
-    mov	r0, #2
-    bl	MA_SetTimeoutCount
-    ldr	r0, [r4, #64]
-    mov	r1, #2
-    orr	r0, r1
-    str	r0, [r4, #64]
-    pop	{r3}
-    mov	r8, r3
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word tmppPacket
-    .word gMA+0x218
-    .word 0xfffffde8
-    .word 0xfffffe2c
-    .word serverNameLen.122
-    .word tmpPacketLen
-    .word gMA+0x1e8
-    .word 0xfffffe18
-    .word 0xfffffe20
-.size MABIOS_DNSRequest, .-MABIOS_DNSRequest
-");
+    tmppPacket = gMA.buffer_packet_send;
+    if (!MA_PreSend()) return;
+
+    gMA.buffer_recv_unk = data_recv;
+    gMA.condition |= CONDITION_UNK_5;
+    gMA.cmd_cur = MACMD_DNSREQUEST;
+
+    serverNameLen = 0;
+    while (*addr != '\0') {
+#if NONMATCHING
+        tmppPacket[MAPROT_HEADER_SIZE + serverNameLen++] = *addr++;
+#else
+        u8 *p = tmppPacket;
+        int n = serverNameLen;
+        *(u8 *)(p + n + MAPROT_HEADER_SIZE) = *addr++;
+        serverNameLen = n + 1;
 #endif
+    }
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DNSREQUEST, serverNameLen);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
+
+    gMA.unk_4 = 1;  // MAGIC
+    gMA.unk_12 = gMA.timer[gMA.sio_mode];
+    MA_SetTimeoutCount(TIMEOUT_30);
+    gMA.status |= STATUS_UNK_1;
+}
 
 #if 0
 #else
