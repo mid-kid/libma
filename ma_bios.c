@@ -1058,37 +1058,13 @@ static u16 MA_CalcCheckSum(u8 *data, u16 size)
     return sum;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_CancelRequest
-MA_CancelRequest:
-    ldr	r1, [pc, #32]
-    ldrh	r2, [r1, #2]
-    mov	r0, #32
-    ldrh	r3, [r1, #2]
-    orr	r0, r2
-    strh	r0, [r1, #2]
-    ldr	r0, [r1, #64]
-    mov	r2, #128
-    lsl	r2, r2, #5
-    orr	r0, r2
-    str	r0, [r1, #64]
-    ldrh	r0, [r1, #12]
-    ldr	r0, [pc, #12]
-    strh	r0, [r1, #12]
-    ldrb	r0, [r1, #4]
-    mov	r0, #3
-    strb	r0, [r1, #4]
-    bx	lr
-.align 2
-    .word gMA
-    .word 0x00005ff9
-.size MA_CancelRequest, .-MA_CancelRequest
-");
-#endif
+void MA_CancelRequest(void)
+{
+    gMA.condition |= CONDITION_UNK_5;
+    gMA.status |= STATUS_UNK_12;
+    gMA.unk_12 = 0x5ff9;  // MAGIC
+    gMA.unk_4 = 3;  // MAGIC
+}
 
 #if 0
 #else
