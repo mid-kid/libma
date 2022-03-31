@@ -22,6 +22,7 @@
 #define MACMD_DATA 0x15
 #define MACMD_REINIT 0x16
 #define MACMD_CHECKSTATUS 0x17
+#define MACMD_CHANGECLOCK 0x18
 
 #define MAPROT_HEADER_SIZE 6
 #define MAPROT_FOOTER_SIZE 4
@@ -717,79 +718,24 @@ void MABIOS_CheckStatus2(u8 *data_recv)
     gMA.status |= STATUS_UNK_1;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MABIOS_ChangeClock
-MABIOS_ChangeClock:
-    push	{r4, r5, r6, r7, lr}
-    lsl	r0, r0, #24
-    lsr	r5, r0, #24
-    ldr	r6, [pc, #116]
-    ldr	r7, [pc, #116]
-    str	r7, [r6, #0]
-    bl	MA_PreSend
-    cmp	r0, #0
-    beq	MABIOS_ChangeClock+0x74
-    bl	SetInternalRecvBuffer
-    ldr	r0, [pc, #104]
-    add	r4, r7, r0
-    ldrh	r1, [r4, #2]
-    mov	r0, #32
-    ldrh	r2, [r4, #2]
-    orr	r0, r1
-    strh	r0, [r4, #2]
-    ldr	r2, [pc, #96]
-    add	r1, r7, r2
-    ldrb	r0, [r1, #0]
-    mov	r0, #24
-    strb	r0, [r1, #0]
-    ldr	r0, [r6, #0]
-    strb	r5, [r0, #6]
-    ldr	r5, [pc, #84]
-    ldr	r0, [r6, #0]
-    mov	r1, #24
-    mov	r2, #1
-    bl	MA_CreatePacket
-    strh	r0, [r5, #0]
-    mov	r0, r7
-    sub	r0, #48
-    ldrh	r2, [r5, #0]
-    mov	r1, r7
-    mov	r3, #3
-    bl	MA_InitIoBuffer
-    ldrb	r0, [r4, #4]
-    mov	r0, #1
-    strb	r0, [r4, #4]
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #1
-    ldr	r2, [pc, #52]
-    add	r1, r7, r2
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r4, #12]
-    strh	r0, [r4, #12]
-    mov	r0, #2
-    bl	MA_SetTimeoutCount
-    ldr	r0, [r4, #64]
-    mov	r1, #2
-    orr	r0, r1
-    str	r0, [r4, #64]
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word tmppPacket
-    .word gMA+0x218
-    .word 0xfffffde8
-    .word 0xfffffe2c
-    .word tmpPacketLen
-    .word 0xfffffdf0
-.size MABIOS_ChangeClock, .-MABIOS_ChangeClock
-");
-#endif
+void MABIOS_ChangeClock(u8 mode)
+{
+    tmppPacket = gMA.buffer_packet_send;
+    if (!MA_PreSend()) return;
+
+    SetInternalRecvBuffer();
+    gMA.condition |= CONDITION_UNK_5;
+    gMA.cmd_cur = MACMD_CHANGECLOCK;
+
+    tmppPacket[MAPROT_HEADER_SIZE] = mode;
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHANGECLOCK, 1);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
+
+    gMA.unk_4 = 1;  // MAGIC
+    gMA.unk_12 = gMA.timer[gMA.sio_mode];
+    MA_SetTimeoutCount(TIMEOUT_30);
+    gMA.status |= STATUS_UNK_1;
+}
 
 #if 0
 #else
