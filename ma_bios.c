@@ -1066,41 +1066,14 @@ void MA_CancelRequest(void)
     gMA.unk_4 = 3;  // MAGIC
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_BiosStop
-MA_BiosStop:
-    ldr	r2, [pc, #40]
-    ldrh	r1, [r2, #2]
-    mov	r0, #32
-    ldrh	r3, [r2, #2]
-    mov	r3, #0
-    orr	r0, r1
-    strh	r0, [r2, #2]
-    ldr	r0, [r2, #64]
-    mov	r1, #128
-    lsl	r1, r1, #4
-    orr	r0, r1
-    str	r0, [r2, #64]
-    ldrh	r0, [r2, #12]
-    strh	r3, [r2, #12]
-    ldrb	r0, [r2, #4]
-    mov	r0, #3
-    strb	r0, [r2, #4]
-    ldr	r0, [r2, #64]
-    ldr	r1, [pc, #8]
-    and	r0, r1
-    str	r0, [r2, #64]
-    bx	lr
-.align 2
-    .word gMA
-    .word 0xffffefff
-.size MA_BiosStop, .-MA_BiosStop
-");
-#endif
+void MA_BiosStop(void)
+{
+    gMA.condition |= CONDITION_UNK_5;
+    gMA.status |= STATUS_UNK_11;
+    gMA.unk_12 = 0;
+    gMA.unk_4 = 3;
+    gMA.status &= ~STATUS_UNK_12;
+}
 
 #if 0
 #else
