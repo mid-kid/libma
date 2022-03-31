@@ -23,6 +23,7 @@
 #define MACMD_REINIT 0x16
 #define MACMD_CHECKSTATUS 0x17
 #define MACMD_CHANGECLOCK 0x18
+#define MACMD_EEPROM_READ 0x19
 
 #define MAPROT_HEADER_SIZE 6
 #define MAPROT_FOOTER_SIZE 4
@@ -727,7 +728,7 @@ void MABIOS_ChangeClock(u8 mode)
     gMA.condition |= CONDITION_UNK_5;
     gMA.cmd_cur = MACMD_CHANGECLOCK;
 
-    tmppPacket[MAPROT_HEADER_SIZE] = mode;
+    tmppPacket[MAPROT_HEADER_SIZE + 0] = mode;
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHANGECLOCK, 1);
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
 
@@ -737,97 +738,25 @@ void MABIOS_ChangeClock(u8 mode)
     gMA.status |= STATUS_UNK_1;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MABIOS_EEPROM_Read
-MABIOS_EEPROM_Read:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, r9
-    mov	r6, r8
-    push	{r6, r7}
-    mov	r5, r0
-    lsl	r1, r1, #24
-    lsr	r1, r1, #24
-    mov	r8, r1
-    lsl	r2, r2, #24
-    lsr	r2, r2, #24
-    mov	r9, r2
-    ldr	r7, [pc, #132]
-    ldr	r6, [pc, #132]
-    str	r6, [r7, #0]
-    bl	MA_PreSend
-    cmp	r0, #0
-    beq	MABIOS_EEPROM_Read+0x90
-    ldr	r0, [pc, #124]
-    add	r4, r6, r0
-    mov	r1, #142
-    lsl	r1, r1, #1
-    add	r0, r6, r1
-    str	r5, [r0, #0]
-    ldrh	r1, [r4, #2]
-    mov	r0, #32
-    ldrh	r2, [r4, #2]
-    orr	r0, r1
-    strh	r0, [r4, #2]
-    ldr	r2, [pc, #108]
-    add	r1, r6, r2
-    ldrb	r0, [r1, #0]
-    mov	r0, #25
-    strb	r0, [r1, #0]
-    ldr	r0, [r7, #0]
-    mov	r1, r8
-    strb	r1, [r0, #6]
-    ldr	r0, [r7, #0]
-    mov	r2, r9
-    strb	r2, [r0, #7]
-    ldr	r5, [pc, #88]
-    ldr	r0, [r7, #0]
-    mov	r1, #25
-    mov	r2, #2
-    bl	MA_CreatePacket
-    strh	r0, [r5, #0]
-    mov	r0, r6
-    sub	r0, #48
-    ldrh	r2, [r5, #0]
-    mov	r1, r6
-    mov	r3, #3
-    bl	MA_InitIoBuffer
-    ldrb	r0, [r4, #4]
-    mov	r0, #1
-    strb	r0, [r4, #4]
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #1
-    ldr	r2, [pc, #56]
-    add	r1, r6, r2
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r4, #12]
-    strh	r0, [r4, #12]
-    mov	r0, #2
-    bl	MA_SetTimeoutCount
-    ldr	r0, [r4, #64]
-    mov	r1, #2
-    orr	r0, r1
-    str	r0, [r4, #64]
-    pop	{r3, r4}
-    mov	r8, r3
-    mov	r9, r4
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word tmppPacket
-    .word gMA+0x218
-    .word 0xfffffde8
-    .word 0xfffffe2c
-    .word tmpPacketLen
-    .word 0xfffffdf0
-.size MABIOS_EEPROM_Read, .-MABIOS_EEPROM_Read
-");
-#endif
+void MABIOS_EEPROM_Read(u8 *data_recv, u8 offset, u8 size)
+{
+    tmppPacket = gMA.buffer_packet_send;
+    if (!MA_PreSend()) return;
+
+    gMA.buffer_recv_unk = data_recv;
+    gMA.condition |= CONDITION_UNK_5;
+    gMA.cmd_cur = MACMD_EEPROM_READ;
+
+    tmppPacket[MAPROT_HEADER_SIZE + 0] = offset;
+    tmppPacket[MAPROT_HEADER_SIZE + 1] = size;
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_EEPROM_READ, 2);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
+
+    gMA.unk_4 = 1;  // MAGIC
+    gMA.unk_12 = gMA.timer[gMA.sio_mode];
+    MA_SetTimeoutCount(TIMEOUT_30);
+    gMA.status |= STATUS_UNK_1;
+}
 
 #if 0
 #else
