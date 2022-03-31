@@ -359,7 +359,7 @@ void MA_SetError(u8 error)
     gMA.error = error;
     gMA.unk_4 = 0;
     gMA.iobuf_packet_send.unk_0 = 0;
-    gMA.unk_504.unk_0 = 0;
+    gMA.iobuf_packet_recv.unk_0 = 0;
     gMA.condition |= CONDITION_UNK_1;
     gMA.condition &= ~CONDITION_UNK_5;
     gMA.unk_97 = 0;
@@ -1070,85 +1070,26 @@ void MA_BiosStop(void)
 {
     gMA.condition |= CONDITION_UNK_5;
     gMA.status |= STATUS_UNK_11;
-    gMA.unk_12 = 0;
-    gMA.unk_4 = 3;
+    gMA.unk_12 = 0;  // MAGIC
+    gMA.unk_4 = 3;  // MAGIC
     gMA.status &= ~STATUS_UNK_12;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_SendRetry
-MA_SendRetry:
-    push	{lr}
-    ldr	r0, [pc, #16]
-    ldr	r1, [r0, #12]
-    ldrh	r2, [r0, #2]
-    mov	r3, #3
-    bl	MA_InitIoBuffer
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA+0x1e8
-.size MA_SendRetry, .-MA_SendRetry
-");
-#endif
+void MA_SendRetry(void)
+{
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.iobuf_packet_send.writeptr, gMA.iobuf_packet_send.size, 3);
+}
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_RecvRetry
-MA_RecvRetry:
-    push	{r4, r5, lr}
-    ldr	r4, [pc, #72]
-    ldr	r0, [pc, #72]
-    add	r5, r4, r0
-    ldr	r1, [r4, #12]
-    mov	r0, r4
-    mov	r2, #0
-    mov	r3, #1
-    bl	MA_InitIoBuffer
-    ldr	r1, [pc, #60]
-    add	r0, r4, r1
-    mov	r2, #0
-    strb	r2, [r0, #0]
-    ldr	r0, [r5, #64]
-    mov	r1, #9
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrb	r0, [r5, #4]
-    mov	r0, #2
-    strb	r0, [r5, #4]
-    mov	r1, r4
-    sub	r1, #16
-    ldrh	r0, [r1, #0]
-    mov	r0, #0
-    strh	r2, [r1, #0]
-    ldr	r1, [pc, #32]
-    add	r2, r4, r1
-    ldrb	r1, [r2, #0]
-    strb	r0, [r2, #0]
-    ldr	r1, [pc, #28]
-    add	r2, r4, r1
-    ldrb	r1, [r2, #0]
-    strb	r0, [r2, #0]
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA+0x1f8
-    .word 0xfffffe08
-    .word 0xfffffe5a
-    .word 0xfffffe58
-    .word 0xfffffe59
-.size MA_RecvRetry, .-MA_RecvRetry
-");
-#endif
+void MA_RecvRetry(void)
+{
+    MA_InitIoBuffer(&gMA.iobuf_packet_recv, gMA.iobuf_packet_recv.writeptr, 0, 1);
+    gMA.unk_82 = 0;
+    gMA.status &= ~STATUS_UNK_3;
+    gMA.unk_4 = 2;
+    gMA.iobuf_packet_send.unk_0 = 0;
+    gMA.unk_80 = 0;
+    gMA.unk_81 = 0;
+}
 
 #if 0
 #else

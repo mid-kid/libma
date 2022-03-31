@@ -71,7 +71,10 @@ typedef struct {
     u8 _74[2];
     vu8 unk_76;
     vu8 unk_77;
-    u8 _78[5];
+    u8 _78[2];
+    vu8 unk_80;
+    vu8 unk_81;
+    u8 unk_82;
     u8 unk_83;
     u8 _84[8];
     vu8 unk_92;
@@ -89,7 +92,7 @@ typedef struct {
     u8 _482[2];
     void *unk_484;
     MA_IOBUF iobuf_packet_send;
-    MA_IOBUF unk_504;
+    MA_IOBUF iobuf_packet_recv;
     u8 _520[16];
     u8 buffer_packet_send[32];
     u8 _568[236];
