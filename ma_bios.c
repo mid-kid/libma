@@ -62,7 +62,7 @@ static void SetInternalRecvBuffer(void);
 static void MA_SetInterval(int index);
 static void MA_SetTimeoutCount(int index);
 static int MA_PreSend(void);
-static void MA_InitIoBuffer(MA_IOBUF *buffer, u8 *mem, u16 size, u16 unk);
+static void MA_InitIoBuffer(MA_IOBUF *buffer, vu8 *mem, u16 size, u16 unk);
 //static void MA_StartSioTransmit();
 //static void MA_SetTransmitData();
 //static void MA_IsSupportedHardware();
@@ -394,7 +394,7 @@ static int MA_PreSend(void)
     return TRUE;
 }
 
-static void MA_InitIoBuffer(MA_IOBUF *buffer, u8 *mem, u16 size, u16 unk)
+static void MA_InitIoBuffer(MA_IOBUF *buffer, vu8 *mem, u16 size, u16 unk)
 {
     buffer->unk_0 = unk;
     buffer->readptr = mem;
