@@ -1091,131 +1091,50 @@ void MA_RecvRetry(void)
     gMA.unk_81 = 0;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MA_IntrTimer_SIOSend:
-    push	{r4, r5, lr}
-    ldr	r4, [pc, #24]
-    mov	r0, #244
-    lsl	r0, r0, #1
-    add	r5, r4, r0
-    ldrh	r0, [r5, #0]
-    cmp	r0, #2
-    beq	MA_IntrTimer_SIOSend+0x40
-    cmp	r0, #2
-    bgt	MA_IntrTimer_SIOSend+0x20
-    cmp	r0, #1
-    beq	MA_IntrTimer_SIOSend+0x26
-    b	MA_IntrTimer_SIOSend+0x6e
-.align 2
-    .word gMA
+static void MA_IntrTimer_SIOSend(void)
+{
+    switch (gMA.iobuf_packet_send.unk_0) {  // MAGIC
+    case 1:
+        MA_SetTransmitData(&gMA.iobuf_packet_send);
+        gMA.iobuf_packet_send.unk_0 = 2;
+        gMA.unk_12 = -1967;  // MAGIC
+        break;
 
-    cmp	r0, #3
-    beq	MA_IntrTimer_SIOSend+0x68
-    b	MA_IntrTimer_SIOSend+0x6e
-    mov	r0, r5
-    bl	MA_SetTransmitData
-    ldrh	r0, [r5, #0]
-    mov	r0, #2
-    strh	r0, [r5, #0]
-    ldrh	r0, [r4, #12]
-    ldr	r0, [pc, #4]
-    strh	r0, [r4, #12]
-    b	MA_IntrTimer_SIOSend+0x6e
-.align 2
-    .word 0x0000f851
+    case 2:
+        MA_InitIoBuffer(&gMA.iobuf_packet_send, (u8 *)MaPacketData_Start, sizeof(MaPacketData_Start) - 2, 3);
+        gMA.unk_12 = gMA.timer[gMA.sio_mode];
+        MA_SetTransmitData(&gMA.iobuf_packet_send);
+        break;
 
-    ldr	r1, [pc, #32]
-    mov	r0, r5
-    mov	r2, #18
-    mov	r3, #3
-    bl	MA_InitIoBuffer
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #1
-    mov	r1, r4
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r4, #12]
-    strh	r0, [r4, #12]
-    mov	r0, r5
-    bl	MA_SetTransmitData
-    b	MA_IntrTimer_SIOSend+0x6e
-.align 2
-    .word MaPacketData_Start
+    case 3:
+        MA_SetTransmitData(&gMA.iobuf_packet_send);
+        break;
+    }
+}
 
-    mov	r0, r5
-    bl	MA_SetTransmitData
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.size MA_IntrTimer_SIOSend, .-MA_IntrTimer_SIOSend
-");
-#endif
+static void MA_IntrTimer_SIORecv(void)
+{
+    switch (gMA.iobuf_packet_recv.unk_0) {  // MAGIC
+    case 0:
+        break;
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MA_IntrTimer_SIORecv:
-    push	{lr}
-    ldr	r1, [pc, #20]
-    mov	r2, #252
-    lsl	r2, r2, #1
-    add	r0, r1, r2
-    ldrh	r0, [r0, #0]
-    cmp	r0, #4
-    bgt	MA_IntrTimer_SIORecv+0x1c
-    cmp	r0, #1
-    bge	MA_IntrTimer_SIORecv+0x22
-    b	MA_IntrTimer_SIORecv+0x6a
-.align 2
-    .word gMA
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+        if (gMA.sio_mode == MA_SIO_BYTE) {
+            MA_InitIoBuffer(&gMA.iobuf_recv, (u8 *)MaPacketData_PreStart, 1, 0);
+        } else {
+            MA_InitIoBuffer(&gMA.iobuf_recv, (u8 *)MaPacketData_PreStart, 4, 0);
+        }
+        MA_SetTransmitData(&gMA.iobuf_recv);
+        break;
 
-    cmp	r0, #5
-    beq	MA_IntrTimer_SIORecv+0x60
-    b	MA_IntrTimer_SIORecv+0x6a
-    ldrb	r0, [r1, #5]
-    cmp	r0, #0
-    bne	MA_IntrTimer_SIORecv+0x40
-    mov	r2, #130
-    lsl	r2, r2, #2
-    add	r0, r1, r2
-    ldr	r1, [pc, #12]
-    mov	r2, #1
-    mov	r3, #0
-    bl	MA_InitIoBuffer
-    b	MA_IntrTimer_SIORecv+0x50
-.align 2
-    .word MaPacketData_PreStart
-
-    mov	r2, #130
-    lsl	r2, r2, #2
-    add	r0, r1, r2
-    ldr	r1, [pc, #16]
-    mov	r2, #4
-    mov	r3, #0
-    bl	MA_InitIoBuffer
-    ldr	r0, [pc, #8]
-    bl	MA_SetTransmitData
-    b	MA_IntrTimer_SIORecv+0x6a
-.align 2
-    .word MaPacketData_PreStart
-    .word gMA+0x208
-
-    mov	r2, #130
-    lsl	r2, r2, #2
-    add	r0, r1, r2
-    bl	MA_SetTransmitData
-    pop	{r0}
-    bx	r0
-.size MA_IntrTimer_SIORecv, .-MA_IntrTimer_SIORecv
-");
-#endif
+    case 5:
+        MA_SetTransmitData(&gMA.iobuf_recv);
+        break;
+    }
+}
 
 #if 0
 #else

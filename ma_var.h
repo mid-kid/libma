@@ -93,7 +93,7 @@ typedef struct {
     void *unk_484;
     MA_IOBUF iobuf_packet_send;
     MA_IOBUF iobuf_packet_recv;
-    u8 _520[16];
+    MA_IOBUF iobuf_recv;
     u8 buffer_packet_send[32];
     u8 _568[236];
     u8 buffer_recv[4];
