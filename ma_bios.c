@@ -244,19 +244,19 @@ void MABIOS_Init(void)
     gMA.unk_76 = 0;
     gMA.unk_77 = 0;
 
-    gMA.buffer_recv_size = sizeof(gMA.buffer_recv);
-    gMA.buffer_recv_ptr = gMA.buffer_recv;
-    gMA.unk_480 = sizeof(gMA.unk_212);
-    gMA.unk_484 = gMA.unk_212;
+    gMA.buffer_recv.size = sizeof(gMA.buffer_recv_data);
+    gMA.buffer_recv.data = gMA.buffer_recv_data;
+    gMA.buffer_unk_480.size = sizeof(gMA.unk_212);
+    gMA.buffer_unk_480.data = gMA.unk_212;
 
     *(vu16 *)REG_IME = 1;
 }
 
 static void SetInternalRecvBuffer(void)
 {
-    gMA.buffer_recv_size = sizeof(gMA.buffer_recv);
-    gMA.buffer_recv_ptr = gMA.buffer_recv;
-    gMA.buffer_recv_unk = &gMA.buffer_recv_size;
+    gMA.buffer_recv.size = sizeof(gMA.buffer_recv_data);
+    gMA.buffer_recv.data = gMA.buffer_recv_data;
+    gMA.buffer_recv_ptr = &gMA.buffer_recv;
 }
 
 static void MA_SetInterval(int index)
@@ -619,12 +619,12 @@ void MABIOS_WaitCall(void)
     gMA.status |= STATUS_UNK_1;
 }
 
-void MABIOS_Data(u8 *data_recv, u8 *data_send, u8 size, u8 socket)
+void MABIOS_Data(MA_BUF *data_recv, u8 *data_send, u8 size, u8 socket)
 {
     tmppPacket = gMA.buffer_packet_send;
     if (!MA_PreSend()) return;
 
-    gMA.buffer_recv_unk = data_recv;
+    gMA.buffer_recv_ptr = data_recv;
     gMA.condition |= CONDITION_UNK_5;
     gMA.cmd_cur = MACMD_DATA;
 
@@ -647,12 +647,12 @@ void MABIOS_Data(u8 *data_recv, u8 *data_send, u8 size, u8 socket)
     gMA.status |= STATUS_UNK_1;
 }
 
-static void MABIOS_Data2(u8 *data_recv, u8 *data_send, u8 size)
+static void MABIOS_Data2(MA_BUF *data_recv, u8 *data_send, u8 size)
 {
     tmppPacket = gMA.buffer_packet_send;
     if (!MA_PreSend()) return;
 
-    gMA.buffer_recv_unk = data_recv;
+    gMA.buffer_recv_ptr = data_recv;
     gMA.condition |= CONDITION_UNK_5;
     gMA.cmd_cur = MACMD_DATA;
 
@@ -693,12 +693,12 @@ void MABIOS_ReInit(void)
     gMA.status |= STATUS_UNK_1;
 }
 
-void MABIOS_CheckStatus(u8 *data_recv)
+void MABIOS_CheckStatus(MA_BUF *data_recv)
 {
     tmppPacket = gMA.buffer_packet_send;
     if (!MA_PreSend()) return;
 
-    gMA.buffer_recv_unk = data_recv;
+    gMA.buffer_recv_ptr = data_recv;
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHECKSTATUS, 0);
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
 
@@ -710,12 +710,12 @@ void MABIOS_CheckStatus(u8 *data_recv)
     MA_SetTimeoutCount(TIMEOUT_30);
 }
 
-void MABIOS_CheckStatus2(u8 *data_recv)
+void MABIOS_CheckStatus2(MA_BUF *data_recv)
 {
     tmppPacket = gMA.buffer_packet_send;
     if (!(gMA.status & STATUS_UNK_0) || gMA.status & STATUS_UNK_2) return;
 
-    gMA.buffer_recv_unk = data_recv;
+    gMA.buffer_recv_ptr = data_recv;
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHECKSTATUS, 0);
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send, tmpPacketLen, 3);
 
@@ -747,12 +747,12 @@ void MABIOS_ChangeClock(u8 mode)
     gMA.status |= STATUS_UNK_1;
 }
 
-void MABIOS_EEPROM_Read(u8 *data_recv, u8 offset, u8 size)
+void MABIOS_EEPROM_Read(MA_BUF *data_recv, u8 offset, u8 size)
 {
     tmppPacket = gMA.buffer_packet_send;
     if (!MA_PreSend()) return;
 
-    gMA.buffer_recv_unk = data_recv;
+    gMA.buffer_recv_ptr = data_recv;
     gMA.condition |= CONDITION_UNK_5;
     gMA.cmd_cur = MACMD_EEPROM_READ;
 
@@ -767,12 +767,12 @@ void MABIOS_EEPROM_Read(u8 *data_recv, u8 offset, u8 size)
     gMA.status |= STATUS_UNK_1;
 }
 
-void MABIOS_EEPROM_Write(u8 *data_recv, u8 offset, u8 *data_send, u8 size)
+void MABIOS_EEPROM_Write(MA_BUF *data_recv, u8 offset, u8 *data_send, u8 size)
 {
     tmppPacket = gMA.buffer_packet_send;
     if (!MA_PreSend()) return;
 
-    gMA.buffer_recv_unk = data_recv;
+    gMA.buffer_recv_ptr = data_recv;
     gMA.condition |= CONDITION_UNK_5;
     gMA.cmd_cur = MACMD_EEPROM_WRITE;
 
@@ -795,7 +795,7 @@ void MABIOS_EEPROM_Write(u8 *data_recv, u8 offset, u8 *data_send, u8 size)
     gMA.status |= STATUS_UNK_1;
 }
 
-void MABIOS_PPPConnect(u8 *data_recv, char *userid, char *password, u8 *dns1, u8 *dns2)
+void MABIOS_PPPConnect(MA_BUF *data_recv, char *userid, char *password, u8 *dns1, u8 *dns2)
 {
     static u8 *pData;
     static int dataLen;
@@ -808,7 +808,7 @@ void MABIOS_PPPConnect(u8 *data_recv, char *userid, char *password, u8 *dns1, u8
 
     gMA.condition |= CONDITION_UNK_5;
     gMA.cmd_cur = MACMD_PPPCONNECT;
-    gMA.buffer_recv_unk = data_recv;
+    gMA.buffer_recv_ptr = data_recv;
 
     userIDLength = MAU_strlen(userid);
     passwordLength = MAU_strlen(password);
@@ -845,12 +845,12 @@ void MABIOS_PPPDisconnect(void)
     gMA.status |= STATUS_UNK_1;
 }
 
-void MABIOS_TCPConnect(u8 *data_recv, u8 *ip, u16 port)
+void MABIOS_TCPConnect(MA_BUF *data_recv, u8 *ip, u16 port)
 {
     tmppPacket = gMA.buffer_packet_send;
     if (!MA_PreSend()) return;
 
-    gMA.buffer_recv_unk = data_recv;
+    gMA.buffer_recv_ptr = data_recv;
     gMA.condition |= CONDITION_UNK_5;
     gMA.cmd_cur = MACMD_TCPCONNECT;
 
@@ -869,12 +869,12 @@ void MABIOS_TCPConnect(u8 *data_recv, u8 *ip, u16 port)
     gMA.status |= STATUS_UNK_1;
 }
 
-void MABIOS_TCPDisconnect(u8 *data_recv, u8 socket)
+void MABIOS_TCPDisconnect(MA_BUF *data_recv, u8 socket)
 {
     tmppPacket = gMA.buffer_packet_send;
     if (!MA_PreSend()) return;
 
-    gMA.buffer_recv_unk = data_recv;
+    gMA.buffer_recv_ptr = data_recv;
     gMA.condition |= CONDITION_UNK_5;
     gMA.cmd_cur = MACMD_TCPDISCONNECT;
 
@@ -888,12 +888,12 @@ void MABIOS_TCPDisconnect(u8 *data_recv, u8 socket)
     gMA.status |= STATUS_UNK_1;
 }
 
-void MABIOS_UDPConnect(u8 *data_recv, u8 *ip, u16 port)
+void MABIOS_UDPConnect(MA_BUF *data_recv, u8 *ip, u16 port)
 {
     tmppPacket = gMA.buffer_packet_send;
     if (!MA_PreSend()) return;
 
-    gMA.buffer_recv_unk = data_recv;
+    gMA.buffer_recv_ptr = data_recv;
     gMA.condition |= CONDITION_UNK_5;
     gMA.cmd_cur = MACMD_UDPCONNECT;
 
@@ -911,12 +911,12 @@ void MABIOS_UDPConnect(u8 *data_recv, u8 *ip, u16 port)
     gMA.status |= STATUS_UNK_1;
 }
 
-void MABIOS_UDPDisconnect(u8 *data_recv, u8 socket)
+void MABIOS_UDPDisconnect(MA_BUF *data_recv, u8 socket)
 {
     tmppPacket = gMA.buffer_packet_send;
     if (!MA_PreSend()) return;
 
-    gMA.buffer_recv_unk = data_recv;
+    gMA.buffer_recv_ptr = data_recv;
     gMA.condition |= CONDITION_UNK_5;
     gMA.cmd_cur = MACMD_UDPDISCONNECT;
 
@@ -930,7 +930,7 @@ void MABIOS_UDPDisconnect(u8 *data_recv, u8 socket)
     gMA.status |= STATUS_UNK_1;
 }
 
-void MABIOS_DNSRequest(u8 *data_recv, char *addr)
+void MABIOS_DNSRequest(MA_BUF *data_recv, char *addr)
 {
     static int serverNameLen;
     u8 bVar1;
@@ -938,7 +938,7 @@ void MABIOS_DNSRequest(u8 *data_recv, char *addr)
     tmppPacket = gMA.buffer_packet_send;
     if (!MA_PreSend()) return;
 
-    gMA.buffer_recv_unk = data_recv;
+    gMA.buffer_recv_ptr = data_recv;
     gMA.condition |= CONDITION_UNK_5;
     gMA.cmd_cur = MACMD_DNSREQUEST;
 
@@ -1136,123 +1136,36 @@ static void MA_IntrTimer_SIORecv(void)
     }
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MA_IntrTimer_SIOIdle:
-    push	{r4, r5, lr}
-    ldr	r1, [pc, #152]
-    mov	r2, r1
-    add	r2, #97
-    ldrb	r0, [r2, #0]
-    mov	r4, r1
-    cmp	r0, #0
-    beq	MA_IntrTimer_SIOIdle+0x1c
-    ldrb	r0, [r2, #0]
-    cmp	r0, #6
-    beq	MA_IntrTimer_SIOIdle+0x1c
-    ldrb	r0, [r2, #0]
-    cmp	r0, #7
-    bne	MA_IntrTimer_SIOIdle+0xd6
-    ldr	r0, [r4, #64]
-    mov	r1, #1
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_IntrTimer_SIOIdle+0xd6
-    ldr	r0, [r4, #60]
-    add	r0, #1
-    str	r0, [r4, #60]
-    ldr	r0, [r4, #64]
-    mov	r1, #128
-    lsl	r1, r1, #2
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_IntrTimer_SIOIdle+0xae
-    ldrh	r1, [r4, #2]
-    mov	r0, #8
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_IntrTimer_SIOIdle+0x4e
-    ldr	r0, [r4, #64]
-    mov	r1, #128
-    lsl	r1, r1, #6
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_IntrTimer_SIOIdle+0xae
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #2
-    mov	r1, r4
-    add	r1, #36
-    add	r0, r0, r1
-    ldr	r1, [r4, #60]
-    ldr	r0, [r0, #0]
-    cmp	r1, r0
-    bls	MA_IntrTimer_SIOIdle+0xd6
-    mov	r5, #0
-    str	r5, [r4, #60]
-    mov	r0, #240
-    lsl	r0, r0, #1
-    add	r3, r4, r0
-    strh	r5, [r3, #0]
-    mov	r0, r4
-    add	r0, #212
-    str	r0, [r3, #4]
-    ldr	r0, [r4, #64]
-    mov	r1, #128
-    lsl	r1, r1, #6
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_IntrTimer_SIOIdle+0xa0
-    ldr	r1, [r4, #112]
-    ldr	r2, [r4, #116]
-    lsl	r2, r2, #24
-    lsr	r2, r2, #24
-    mov	r0, r3
-    bl	MABIOS_Data2
-    str	r5, [r4, #112]
-    str	r5, [r4, #116]
-    ldr	r0, [r4, #64]
-    mov	r1, #128
-    lsl	r1, r1, #3
-    orr	r0, r1
-    str	r0, [r4, #64]
-    b	MA_IntrTimer_SIOIdle+0xd6
-.align 2
-    .word gMA
+static void MA_IntrTimer_SIOIdle(void)
+{
+    if (gMA.unk_97 != 0 && gMA.unk_97 != 6 && gMA.unk_97 != 7) return;
+    if (!(gMA.status & STATUS_UNK_0)) return;
+    gMA.unk_60++;
 
-    mov	r0, r3
-    mov	r1, #0
-    mov	r2, #0
-    mov	r3, #255
-    bl	MABIOS_Data
-    b	MA_IntrTimer_SIOIdle+0xd6
-    ldrb	r0, [r4, #5]
-    lsl	r0, r0, #2
-    mov	r1, r4
-    add	r1, #20
-    add	r0, r0, r1
-    ldr	r1, [r4, #60]
-    ldr	r0, [r0, #0]
-    cmp	r1, r0
-    bls	MA_IntrTimer_SIOIdle+0xd6
-    mov	r1, #0
-    str	r1, [r4, #60]
-    mov	r2, #203
-    lsl	r2, r2, #2
-    add	r0, r4, r2
-    strh	r1, [r0, #0]
-    mov	r1, r4
-    add	r1, #84
-    str	r1, [r0, #4]
-    bl	MABIOS_CheckStatus2
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.size MA_IntrTimer_SIOIdle, .-MA_IntrTimer_SIOIdle
-");
-#endif
+    if (gMA.status & STATUS_UNK_9 &&
+            (!(gMA.condition & STATUS_UNK_3) || gMA.status & STATUS_UNK_13)) {
+        if (gMA.unk_60 > gMA.counter_p2p[gMA.sio_mode]) {
+            gMA.unk_60 = 0;
+            (&gMA.buffer_unk_480)->size = 0;
+            (&gMA.buffer_unk_480)->data = gMA.unk_212;
+            if (gMA.status & STATUS_UNK_13) {
+                MABIOS_Data2(&gMA.buffer_unk_480, gMA.unk_112, gMA.unk_112_size);
+                gMA.unk_112 = NULL;
+                gMA.unk_112_size = 0;
+                gMA.status = gMA.status | 0x400;
+            } else {
+                MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, 0xff);
+            }
+        }
+    } else {
+        if (gMA.unk_60 > gMA.counter_null[gMA.sio_mode]) {
+            gMA.unk_60 = 0;
+            (&gMA.buffer_recv)->size = 0;
+            (&gMA.buffer_recv)->data = &gMA.unk_84;
+            MABIOS_CheckStatus2(&gMA.buffer_recv);
+        }
+    }
+}
 
 #if 0
 #else

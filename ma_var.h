@@ -44,6 +44,11 @@ typedef struct {
 } MA_IOBUF;
 
 typedef struct {
+    u16 size;
+    void *data;
+} MA_BUF;
+
+typedef struct {
     vu8 error;
     u8 _1[1];
     vu16 condition;
@@ -61,7 +66,7 @@ typedef struct {
     u32 counter_p2p[MA_NUM_SIO_MODES];
     u32 counter_timeout200msec[MA_NUM_SIO_MODES];
     u32 counter_adapter[MA_NUM_SIO_MODES];
-    u32 unk_60;
+    vu32 unk_60;
     vu32 status;
     vu8 cmd_cur;
     vu8 unk_69;
@@ -76,7 +81,8 @@ typedef struct {
     vu8 unk_81;
     u8 unk_82;
     u8 unk_83;
-    u8 _84[8];
+    u8 unk_84[4];
+    u8 _88[4];
     vu8 unk_92;
     u8 _93[4];
     vu8 unk_97;
@@ -84,24 +90,23 @@ typedef struct {
     u8 sockets[NUM_SOCKETS];
     u8 _101[5];
     u8 ipaddr[4];
-    u8 _110[94];
+    u8 _110[2];
+    u8 *unk_112;
+    u32 unk_112_size;
+    u8 _120[84];
     u8 sockets_used[NUM_SOCKETS];
     u8 _206[6];
     u8 unk_212[268];
-    u16 unk_480;
-    u8 _482[2];
-    void *unk_484;
+    MA_BUF buffer_unk_480;
     MA_IOBUF iobuf_packet_send;
     MA_IOBUF iobuf_packet_recv;
     MA_IOBUF iobuf_recv;
     u8 buffer_packet_send[32];
     u8 _568[236];
-    u8 buffer_recv[4];
+    u8 buffer_recv_data[4];
     u8 _808[4];
-    u16 buffer_recv_size;
-    u8 _814[2];
-    void *buffer_recv_ptr;
-    void *buffer_recv_unk;
+    MA_BUF buffer_recv;
+    MA_BUF *buffer_recv_ptr;
     MA_IOBUF *iobuf_sio_tx;
     u8 _828[1064];
 } MA_VAR;
