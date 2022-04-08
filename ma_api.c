@@ -1,6 +1,58 @@
 #include "ma_api.h"
 #include "libma.h"
 
+#include "ma_var.h"
+
+//static void MA_SetApiError();
+//static void ApiValisStatusCheck();
+//static void MA_ApiPreExe();
+//static void MakeEndLineBuffer();
+//static void IsEndMultiLine();
+//static void InitPrevBuf();
+//static void ConcatPrevBuf();
+//static void MATASK_Stop();
+//static void MATASK_TCP_Cut();
+//static void MA_InitLibraryMain();
+//static void MATASK_InitLibrary();
+//static void MATASK_TCP_Connect();
+//static void MATASK_TCP_Disconnect();
+//static void MATASK_TCP_SendRecv();
+//static void MATASK_GetHostAddress();
+//static void EEPROMSumCheck();
+//static void EEPROMRegistrationCheck();
+//static void MATASK_TelServer();
+//static void MATASK_Tel();
+//static void MATASK_Receive();
+//static void MATASK_P2P();
+//static void MA_ConditionMain();
+//static void MATASK_Condition();
+//static void MATASK_Offline();
+//static void CheckSMTPResponse();
+//static void MATASK_SMTP_Connect();
+//static void MATASK_SMTP_Sender();
+//static void MATASK_SMTP_Send();
+//static void MATASK_SMTP_POP3_Quit();
+//static void CheckPOP3Response();
+//static void MATASK_POP3_Connect();
+//static void MATASK_POP3_Stat();
+//static void MATASK_POP3_List();
+//static void MATASK_POP3_Retr();
+//static void MATASK_POP3_Dele();
+//static void MATASK_POP3_Head();
+//static void ExtractServerName();
+//static void MA_HTTP_GetPost();
+//static void ConcatUserAgent();
+//static void GetRequestType();
+//static void CreateHttpRequestHeader();
+//static void HttpGetNextStep();
+//static void MATASK_HTTP_GetPost();
+//static void CopyEEPROMString();
+//static void CopyEEPROMData();
+//static void MATASK_GetEEPROMData();
+//static void MATASK_EEPROM_Read();
+//static void MATASK_EEPROM_Write();
+//static void ErrDetailHexConv();
+
 #if 0
 #else
 asm("
@@ -53,54 +105,13 @@ ResetApiCallFlag:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_TaskSet
-MA_TaskSet:
-    push	{r4, lr}
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    lsl	r1, r1, #24
-    lsr	r1, r1, #24
-    ldr	r2, [pc, #60]
-    mov	ip, r2
-    ldrb	r2, [r2, #5]
-    lsl	r2, r2, #1
-    mov	r3, ip
-    add	r3, #8
-    add	r2, r2, r3
-    ldrh	r2, [r2, #0]
-    mov	r4, ip
-    ldrh	r3, [r4, #12]
-    strh	r2, [r4, #12]
-    mov	r3, ip
-    add	r3, #97
-    ldrb	r2, [r3, #0]
-    strb	r0, [r3, #0]
-    mov	r2, ip
-    add	r2, #98
-    ldrb	r0, [r2, #0]
-    strb	r1, [r2, #0]
-    ldrb	r0, [r3, #0]
-    cmp	r0, #0
-    bne	MA_TaskSet+0x40
-    ldrh	r0, [r4, #2]
-    ldr	r1, [pc, #16]
-    and	r1, r0
-    ldrh	r0, [r4, #2]
-    strh	r1, [r4, #2]
-    pop	{r4}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-    .word 0x0000fffe
-.size MA_TaskSet, .-MA_TaskSet
-");
-#endif
+void MA_TaskSet(u8 unk_1, u8 unk_2)
+{
+    gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
+    gMA.task_unk_97 = unk_1;
+    gMA.task_unk_98 = unk_2;
+    if (gMA.task_unk_97 == 0) gMA.condition &= ~CONDITION_UNK_0;
+}
 
 #if 0
 #else

@@ -57,7 +57,7 @@ typedef struct {
     vu8 adapter_type;
     u8 _7[1];
     vs16 timer[MA_NUM_SIO_MODES];
-    vu16 unk_12;
+    vu16 timer_unk_12;
     vu16 unk_14;
     vu8 interval;
     u8 _17[3];
@@ -85,8 +85,8 @@ typedef struct {
     u8 _88[4];
     vu8 unk_92;
     u8 _93[4];
-    vu8 unk_97;
-    u8 _98[1];
+    vu8 task_unk_97;
+    vu8 task_unk_98;
     u8 sockets[NUM_SOCKETS];
     u8 _101[5];
     u8 ipaddr[4];
