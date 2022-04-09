@@ -2,6 +2,7 @@
 #include "libma.h"
 
 #include <stdlib.h>
+#include "ma_api.h"
 #include "ma_var.h"
 #include "ma_sub.h"
 
@@ -228,7 +229,7 @@ void MABIOS_Init(void)
     gMA.unk_4 = 0;
     gMA.adapter_type = -1;
 
-    MA_ChangeSIOMode(0);
+    MA_ChangeSIOMode(MA_SIO_BYTE);
     MA_SetInterval(0);
 
     gMA.unk_60 = 0;
@@ -339,7 +340,7 @@ void MA_SetError(u8 error)
 {
     if (error == MAAPIE_MA_NOT_FOUND) {
         gMA.unk_92 = 0;
-        MA_ChangeSIOMode(0);
+        MA_ChangeSIOMode(MA_SIO_BYTE);
         gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
         gMA.unk_60 = 0;
         gMA.unk_4 = 0;
@@ -362,7 +363,7 @@ void MA_SetError(u8 error)
     gMA.iobuf_packet_recv.unk_0 = 0;
     gMA.condition |= CONDITION_UNK_1;
     gMA.condition &= ~CONDITION_UNK_5;
-    gMA.task_unk_97 = 0;
+    gMA.task_unk_97 = TASK_UNK_97_00;
     gMA.condition &= ~CONDITION_UNK_0;
     gMA.condition &= ~CONDITION_UNK_2;
     gMA.iobuf_sio_tx = NULL;
@@ -1138,7 +1139,9 @@ static void MA_IntrTimer_SIORecv(void)
 
 static void MA_IntrTimer_SIOIdle(void)
 {
-    if (gMA.task_unk_97 != 0 && gMA.task_unk_97 != 6 && gMA.task_unk_97 != 7) return;  // MAGIC
+    if (gMA.task_unk_97 != TASK_UNK_97_00
+            && gMA.task_unk_97 != TASK_UNK_97_06
+            && gMA.task_unk_97 != TASK_UNK_97_07) return;  // MAGIC
     if (!(gMA.status & STATUS_UNK_0)) return;
     gMA.unk_60++;
 
@@ -1167,192 +1170,54 @@ static void MA_IntrTimer_SIOIdle(void)
     }
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MA_IntrTimer_SIOWaitTime:
-    push	{r4, r5, r6, r7, lr}
-    ldr	r5, [pc, #20]
-    ldr	r6, [r5, #64]
-    mov	r0, #128
-    lsl	r0, r0, #5
-    and	r6, r0
-    cmp	r6, #0
-    beq	MA_IntrTimer_SIOWaitTime+0x1c
-    bl	MABIOS_Start2
-    b	MA_IntrTimer_SIOWaitTime+0x160
-.align 2
-    .word gMA
+static void MA_IntrTimer_SIOWaitTime(void)
+{
+    if (gMA.status & STATUS_UNK_12) {
+        MABIOS_Start2();
+    } else if (gMA.status & STATUS_UNK_11) {
+        gMA.status &= ~STATUS_UNK_11;
+        gMA.condition &= ~CONDITION_UNK_5;
+        gMA.unk_4 = 0;
+        if (gMA.status & STATUS_UNK_14) {
+            MA_ChangeSIOMode(MA_SIO_BYTE);
+            gMA.unk_92 = 0;
+            MA_ChangeSIOMode(MA_SIO_BYTE);
+            gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
+            gMA.unk_60 = 0;
+            gMA.unk_4 = 0;
+            gMA.status &= ~STATUS_UNK_0;
+            gMA.status &= ~STATUS_UNK_9;
+            gMA.status &= ~STATUS_UNK_10;
+            gMA.status &= ~STATUS_UNK_13;
+            gMA.status &= ~STATUS_UNK_2;
+            gMA.condition &= ~CONDITION_UNK_3;
+            gMA.condition &= ~CONDITION_UNK_4;
 
-    ldr	r0, [r5, #64]
-    mov	r1, #128
-    lsl	r1, r1, #4
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_IntrTimer_SIOWaitTime+0x2a
-    b	MA_IntrTimer_SIOWaitTime+0x128
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #216]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #212]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    mov	r7, #0
-    strh	r0, [r5, #2]
-    ldrb	r0, [r5, #4]
-    strb	r7, [r5, #4]
-    ldr	r0, [r5, #64]
-    mov	r1, #128
-    lsl	r1, r1, #7
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_IntrTimer_SIOWaitTime+0x50
-    b	MA_IntrTimer_SIOWaitTime+0x160
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    mov	r0, r5
-    add	r0, #92
-    ldrb	r1, [r0, #0]
-    strb	r7, [r0, #0]
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    ldrb	r0, [r5, #5]
-    lsl	r0, r0, #1
-    mov	r1, r5
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r5, #12]
-    strh	r0, [r5, #12]
-    str	r6, [r5, #60]
-    ldrb	r0, [r5, #4]
-    strb	r7, [r5, #4]
-    ldr	r0, [r5, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #136]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #132]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #128]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #112]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #108]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    mov	r4, #255
-    mov	r0, r4
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    bl	MAU_Socket_Clear
-    ldrh	r0, [r5, #2]
-    and	r4, r0
-    ldrh	r0, [r5, #2]
-    strh	r4, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    mov	r0, r5
-    add	r0, #97
-    ldrb	r0, [r0, #0]
-    cmp	r0, #30
-    beq	MA_IntrTimer_SIOWaitTime+0x160
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #48]
-    and	r0, r1
-    str	r0, [r5, #64]
-    mov	r0, #38
-    bl	MA_SetError
-    str	r6, [r5, #60]
-    ldrb	r0, [r5, #4]
-    strb	r7, [r5, #4]
-    b	MA_IntrTimer_SIOWaitTime+0x160
-.align 2
-    .word 0xfffff7ff
-    .word 0x0000ffdf
-    .word 0xfffffdff
-    .word 0xfffffbff
-    .word 0xffffdfff
-    .word 0x0000fff7
-    .word 0x0000ffef
-    .word 0xffffbfff
+            gMA.condition &= 0xff;
+            gMA.condition = gMA.condition;
+            MAU_Socket_Clear();
+            gMA.condition &= 0xff;
+            gMA.condition = gMA.condition;
 
-    ldr	r2, [r5, #64]
-    mov	r0, #8
-    and	r2, r0
-    cmp	r2, #0
-    beq	MA_IntrTimer_SIOWaitTime+0x13e
-    ldrb	r0, [r5, #4]
-    mov	r0, #1
-    strb	r0, [r5, #4]
-    bl	MA_SendRetry
-    b	MA_IntrTimer_SIOWaitTime+0x160
-    ldrb	r0, [r5, #4]
-    strb	r2, [r5, #4]
-    mov	r1, #205
-    lsl	r1, r1, #2
-    add	r0, r5, r1
-    ldr	r1, [r0, #0]
-    mov	r3, #253
-    lsl	r3, r3, #1
-    add	r0, r5, r3
-    ldrh	r0, [r0, #0]
-    strh	r0, [r1, #0]
-    str	r2, [r5, #60]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #28]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldr	r2, [pc, #24]
-    ldrb	r0, [r2, #5]
-    lsl	r0, r0, #1
-    mov	r1, r2
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r2, #12]
-    strh	r0, [r2, #12]
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word 0x0000ffdf
-    .word gMA
-.size MA_IntrTimer_SIOWaitTime, .-MA_IntrTimer_SIOWaitTime
-");
-#endif
+            MA_TaskSet(0, 0);
+            if (gMA.task_unk_97 != TASK_UNK_97_1E) {
+                gMA.status &= ~STATUS_UNK_14;
+                MA_SetError(MAAPIE_TIMEOUT);
+                gMA.unk_60 = 0;
+                gMA.unk_4 = 0;
+            }
+        }
+    } else if (gMA.status & 8) {
+        gMA.unk_4 = 1;
+        MA_SendRetry();
+    } else {
+        gMA.unk_4 = 0;
+        gMA.buffer_recv_ptr->size = gMA.iobuf_packet_recv.size;
+        gMA.unk_60 = 0;
+        gMA.condition &= ~CONDITION_UNK_5;
+    }
+    gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
+}
 
 #if 0
 #else

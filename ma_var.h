@@ -27,6 +27,12 @@
 #define STATUS_UNK_11 (1 << 11)
 #define STATUS_UNK_12 (1 << 12)
 #define STATUS_UNK_13 (1 << 13)
+#define STATUS_UNK_14 (1 << 14)
+
+#define TASK_UNK_97_00 0x00
+#define TASK_UNK_97_06 0x06
+#define TASK_UNK_97_07 0x07
+#define TASK_UNK_97_1E 0x1e
 
 enum ma_sio_modes {
     MA_SIO_BYTE,
