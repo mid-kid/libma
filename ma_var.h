@@ -5,13 +5,8 @@
 
 #define NUM_SOCKETS 2
 
-#define CONDITION_UNK_0 (1 << 0)
-#define CONDITION_UNK_1 (1 << 1)
-#define CONDITION_UNK_2 (1 << 2)
-#define CONDITION_UNK_3 (1 << 3)
-#define CONDITION_UNK_4 (1 << 4)
-#define CONDITION_UNK_5 (1 << 5)
-#define CONDITION_UNK_6 (1 << 6)
+#define MA_CONDITION_UNK_5 (1 << 5)
+#define MA_CONDITION_UNK_6 (1 << 6)
 
 #define STATUS_UNK_0 (1 << 0)
 #define STATUS_UNK_1 (1 << 1)

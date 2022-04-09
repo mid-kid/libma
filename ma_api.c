@@ -110,7 +110,7 @@ void MA_TaskSet(u8 unk_1, u8 unk_2)
     gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
     gMA.task_unk_97 = unk_1;
     gMA.task_unk_98 = unk_2;
-    if (gMA.task_unk_97 == 0) gMA.condition &= ~CONDITION_UNK_0;
+    if (gMA.task_unk_97 == 0) gMA.condition &= ~MA_CONDITION_APIWAIT;
 }
 
 #if 0
@@ -13859,21 +13859,10 @@ MAAPI_Main:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MAAPI_GetConditionFlag
-MAAPI_GetConditionFlag:
-    ldr	r0, [pc, #4]
-    ldrh	r0, [r0, #2]
-    bx	lr
-.align 2
-    .word gMA
-.size MAAPI_GetConditionFlag, .-MAAPI_GetConditionFlag
-");
-#endif
+u16 MAAPI_GetConditionFlag(void)
+{
+    return gMA.condition;
+}
 
 #if 0
 #else
