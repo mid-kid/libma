@@ -2209,59 +2209,18 @@ MA_IntrTimer:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_Bios_disconnect
-MA_Bios_disconnect:
-    push	{r4, r5, r6, lr}
-    ldr	r6, [pc, #76]
-    ldrb	r0, [r6, #4]
-    mov	r4, #0
-    strb	r4, [r6, #4]
-    mov	r0, #244
-    lsl	r0, r0, #1
-    add	r5, r6, r0
-    ldrh	r0, [r5, #0]
-    strh	r4, [r5, #0]
-    mov	r1, #252
-    lsl	r1, r1, #1
-    add	r0, r6, r1
-    ldrh	r1, [r0, #0]
-    strh	r4, [r0, #0]
-    mov	r0, #16
-    bl	MA_SetError
-    ldr	r0, [r6, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r6, #64]
-    ldrh	r1, [r6, #2]
-    ldr	r0, [pc, #32]
-    and	r0, r1
-    ldrh	r1, [r6, #2]
-    strh	r0, [r6, #2]
-    ldr	r0, [r6, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r6, #64]
-    ldrh	r0, [r5, #0]
-    strh	r4, [r5, #0]
-    ldr	r0, [pc, #16]
-    str	r4, [r0, #0]
-    pop	{r4, r5, r6}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-    .word 0x0000ffdf
-    .word 0x0400010c
-.size MA_Bios_disconnect, .-MA_Bios_disconnect
-");
-#endif
+void MA_Bios_disconnect(void)
+{
+    gMA.unk_4 = 0;
+    gMA.iobuf_packet_send.unk_0 = 0;
+    gMA.iobuf_packet_recv.unk_0 = 0;
+    MA_SetError(MAAPIE_MA_NOT_FOUND);
+    gMA.status &= ~STATUS_UNK_0;
+    gMA.condition &= ~MA_CONDITION_UNK_5;
+    gMA.status &= ~STATUS_UNK_2;
+    gMA.iobuf_packet_send.unk_0 = 0;
+    *(vu32 *)REG_TM3CNT = 0;
+}
 
 #if 0
 #else
