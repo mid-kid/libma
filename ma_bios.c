@@ -1223,6 +1223,102 @@ static void MA_IntrTimer_SIOWaitTime(void)
 }
 
 #if 0
+void MA_ProcessCheckStatusResponse(u8 response)
+{
+    int iVar1;
+
+    iVar1 = 0;
+    switch (response) {  // MAGIC
+    case 5:
+    case 4:
+        break;
+
+    case 1:
+    case 0:
+        if (gMA.unk_92 != 0) {
+            if (gMA.status & STATUS_UNK_2) {
+                gMA.status = 0;
+                MA_SetError(MAAPIE_OFFLINE);
+            }
+            else {
+                gMA.status = 0;
+            }
+            gMA.unk_92 = 0;
+            MA_ChangeSIOMode(MA_SIO_BYTE);
+            gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
+            gMA.unk_60 = 0;
+            gMA.unk_4 = 0;
+            gMA.status &= ~STATUS_UNK_0;
+            gMA.status &= ~STATUS_UNK_9;
+            gMA.status &= ~STATUS_UNK_10;
+            gMA.status &= ~STATUS_UNK_13;
+            gMA.status &= ~STATUS_UNK_2;
+            gMA.condition &= ~MA_CONDITION_PTP_GET;
+            gMA.condition &= ~MA_CONDITION_CONNECT;
+
+            gMA.condition &= 0xff;
+            gMA.condition = gMA.condition;
+            MAU_Socket_Clear();
+            gMA.condition &= 0xff;
+            gMA.condition = gMA.condition;
+        }
+        break;
+
+    case 0xff:
+        iVar1 = 7;
+        if (gMA.unk_92 != 0) {
+            gMA.status &= STATUS_UNK_2;
+            if (gMA.status) {
+                gMA.status = 0;
+                MA_SetError(MAAPIE_OFFLINE);
+            }
+            gMA.unk_92 = 0;
+            MA_ChangeSIOMode(MA_SIO_BYTE);
+            gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
+            gMA.unk_60 = 0;
+            gMA.unk_4 = 0;
+            gMA.status &= ~STATUS_UNK_0;
+            gMA.status &= ~STATUS_UNK_9;
+            gMA.status &= ~STATUS_UNK_10;
+            gMA.status &= ~STATUS_UNK_13;
+            gMA.status &= ~STATUS_UNK_2;
+            gMA.condition &= ~MA_CONDITION_PTP_GET;
+            gMA.condition &= ~MA_CONDITION_CONNECT;
+
+            gMA.condition &= 0xff;
+            gMA.condition = gMA.condition;
+            MAU_Socket_Clear();
+            gMA.condition &= 0xff;
+            gMA.condition = gMA.condition;
+        }
+        break;
+    }
+
+    switch(gMA.unk_92) {  // MAGIC
+    case 3:
+        iVar1 = 1;
+        break;
+    case 4:
+        iVar1 = 4;
+        break;
+    case 5:
+        iVar1 = 5;
+        break;
+    case 7:
+        iVar1 = 2;
+        break;
+    case 8:
+        iVar1 = 3;
+        break;
+    }
+
+    gMA.condition &= 0xff;
+    gMA.condition |= (iVar1 << 8);
+    gMA.unk_4 = 0;
+    gMA.iobuf_packet_send.unk_0 = 0;
+    gMA.iobuf_packet_recv.unk_0 = 0;
+    gMA.status &= ~STATUS_UNK_2;
+}
 #else
 asm("
 .align 2
@@ -1514,8 +1610,18 @@ MA_ProcessCheckStatusResponse:
 ");
 #endif
 
-#if 0
+#if 0  // STATIC
+static void ConvertNegaErrToApiErr(void)
+{
+    static const u8 errTable[] = {
+        0x15, 0x16, 0x17, 0x13, 0x13
+    };
+
+    gMA.unk_102 = errTable[gMA.unk_81];
+    gMA.unk_104 = 0;
+}
 #else
+void ConvertNegaErrToApiErr(void);
 asm("
 .section .rodata
 .align 2
@@ -1550,99 +1656,34 @@ ConvertNegaErrToApiErr:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_DefaultNegaResProc
-MA_DefaultNegaResProc:
-    push	{lr}
-    ldr	r1, [pc, #24]
-    mov	r0, r1
-    add	r0, #80
-    ldrb	r0, [r0, #0]
-    sub	r0, #16
-    mov	r2, r1
-    cmp	r0, #24
-    bhi	MA_DefaultNegaResProc+0xda
-    lsl	r0, r0, #2
-    ldr	r1, [pc, #8]
-    add	r0, r0, r1
-    ldr	r0, [r0, #0]
-    mov	pc, r0
-.align 2
-    .word gMA
-    .word .L_MA_DefaultNegaResProc.0x24
-.L_MA_DefaultNegaResProc.0x24:
-    .word .L_MA_DefaultNegaResProc.0x24+0xb2
-    .word .L_MA_DefaultNegaResProc.0x24+0xb6
-    .word .L_MA_DefaultNegaResProc.0x24+0x64
-    .word .L_MA_DefaultNegaResProc.0x24+0xb6
-    .word .L_MA_DefaultNegaResProc.0x24+0xb2
-    .word .L_MA_DefaultNegaResProc.0x24+0xb2
-    .word .L_MA_DefaultNegaResProc.0x24+0xb6
-    .word .L_MA_DefaultNegaResProc.0x24+0xb2
-    .word .L_MA_DefaultNegaResProc.0x24+0xb2
-    .word .L_MA_DefaultNegaResProc.0x24+0xb2
-    .word .L_MA_DefaultNegaResProc.0x24+0xb2
-    .word .L_MA_DefaultNegaResProc.0x24+0xb6
-    .word .L_MA_DefaultNegaResProc.0x24+0xb6
-    .word .L_MA_DefaultNegaResProc.0x24+0xb6
-    .word .L_MA_DefaultNegaResProc.0x24+0xb6
-    .word .L_MA_DefaultNegaResProc.0x24+0xb6
-    .word .L_MA_DefaultNegaResProc.0x24+0xb6
-    .word .L_MA_DefaultNegaResProc.0x24+0xb2
-    .word .L_MA_DefaultNegaResProc.0x24+0xb6
-    .word .L_MA_DefaultNegaResProc.0x24+0xb2
-    .word .L_MA_DefaultNegaResProc.0x24+0xb6
-    .word .L_MA_DefaultNegaResProc.0x24+0xb6
-    .word .L_MA_DefaultNegaResProc.0x24+0xb6
-    .word .L_MA_DefaultNegaResProc.0x24+0xb6
-    .word .L_MA_DefaultNegaResProc.0x24+0xb2
+void MA_DefaultNegaResProc(void)
+{
+    switch(gMA.unk_80) {  // MAGIC
+    case 0x12:
+        switch(gMA.unk_81) {
+            case 0: gMA.unk_102 = 0x12; break;
+            case 1: gMA.unk_102 = 0x13; break;
+            case 2: gMA.unk_102 = 0x17; break;
+            case 3: gMA.unk_102 = 0x13; break;
+            case 4: gMA.unk_102 = 0x13; break;
+        }
+        gMA.unk_104 = 0;
+        break;
 
-    mov	r0, r2
-    add	r0, #81
-    ldrb	r0, [r0, #0]
-    cmp	r0, #4
-    bhi	MA_DefaultNegaResProc+0xcc
-    lsl	r0, r0, #2
-    ldr	r1, [pc, #4]
-    add	r0, r0, r1
-    ldr	r0, [r0, #0]
-    mov	pc, r0
-.align 2
-    .word .L_MA_DefaultNegaResProc.0xa0
-.L_MA_DefaultNegaResProc.0xa0:
-    .word .L_MA_DefaultNegaResProc.0xa0+0x14
-    .word .L_MA_DefaultNegaResProc.0xa0+0x24
-    .word .L_MA_DefaultNegaResProc.0xa0+0x1c
-    .word .L_MA_DefaultNegaResProc.0xa0+0x24
-    .word .L_MA_DefaultNegaResProc.0xa0+0x24
-
-    mov	r1, r2
-    add	r1, #102
-    mov	r0, #18
-    b	MA_DefaultNegaResProc+0xca
-    mov	r1, r2
-    add	r1, #102
-    mov	r0, #23
-    b	MA_DefaultNegaResProc+0xca
-    mov	r1, r2
-    add	r1, #102
-    mov	r0, #19
-    strb	r0, [r1, #0]
-    mov	r1, r2
-    add	r1, #104
-    mov	r0, #0
-    strh	r0, [r1, #0]
-    b	MA_DefaultNegaResProc+0xda
-    bl	ConvertNegaErrToApiErr
-    pop	{r0}
-    bx	r0
-.size MA_DefaultNegaResProc, .-MA_DefaultNegaResProc
-");
-#endif
+    case 0x10:
+    case 0x14:
+    case 0x15:
+    case 0x17:
+    case 0x18:
+    case 0x19:
+    case 0x1a:
+    case 0x21:
+    case 0x23:
+    case 0x28:
+        ConvertNegaErrToApiErr();
+        break;
+    }
+}
 
 #if 0
 #else

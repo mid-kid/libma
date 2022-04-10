@@ -89,7 +89,10 @@ typedef struct {
     vu8 task_unk_97;
     vu8 task_unk_98;
     u8 sockets[NUM_SOCKETS];
-    u8 _101[5];
+    u8 _101[1];
+    u8 unk_102;
+    u8 _103[1];
+    u16 unk_104;
     u8 ipaddr[4];
     u8 _110[2];
     u8 *unk_112;
