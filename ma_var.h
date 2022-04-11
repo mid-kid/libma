@@ -8,6 +8,10 @@
 #define MA_CONDITION_UNK_5 (1 << 5)
 #define MA_CONDITION_UNK_6 (1 << 6)
 
+#define MAAPIE_UNK_83 0x83
+#define MAAPIE_UNK_84 0x84
+#define MAAPIE_UNK_85 0x85
+
 #define STATUS_UNK_0 (1 << 0)
 #define STATUS_UNK_1 (1 << 1)
 #define STATUS_UNK_2 (1 << 2)
@@ -56,8 +60,8 @@ typedef struct {
     vu8 unk_4;
     vu8 sio_mode;
     vu8 adapter_type;
-    u8 _7[1];
-    vs16 timer[MA_NUM_SIO_MODES];
+    vu8 unk_7;
+    vu16 timer[MA_NUM_SIO_MODES];
     vu16 timer_unk_12;
     vu16 unk_14;
     vu8 interval;
@@ -72,9 +76,7 @@ typedef struct {
     vu8 cmd_cur;
     vu8 unk_69;
     u16 unk_70;
-    vu8 unk_72;
-    vu8 unk_73;
-    u8 _74[2];
+    vu8 siodata[4];
     vu8 unk_76;
     vu8 unk_77;
     u8 _78[2];

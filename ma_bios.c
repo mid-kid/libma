@@ -8,6 +8,10 @@
 
 #define MAPROT_REPLY 0x80
 
+#define MAPROT_ERR_F0 0xf0
+#define MAPROT_ERR_F1 0xf1
+#define MAPROT_ERR_F2 0xf2
+
 #define MATYPE_PROT_MASK 0xf0
 #define MATYPE_PROT_MASTER (MAPROT_REPLY | 0x0)
 #define MATYPE_PROT_SLAVE (MAPROT_REPLY | 0x8)
@@ -34,6 +38,7 @@
 #define MACMD_UDPDISCONNECT 0x26
 #define MACMD_DNSREQUEST 0x28
 #define MACMD_TESTMODE 0x3f
+#define MACMD_ERROR 0x6e
 
 #define MAPROT_HEADER_SIZE 6
 #define MAPROT_FOOTER_SIZE 4
@@ -240,8 +245,8 @@ void MABIOS_Init(void)
     gMA.cmd_cur = 0;
     gMA.unk_69 = 0;
     gMA.unk_70 = 0;
-    gMA.unk_72 = 0;
-    gMA.unk_73 = 0;
+    gMA.siodata[0] = 0;
+    gMA.siodata[1] = 0;
     gMA.unk_76 = 0;
     gMA.unk_77 = 0;
 
@@ -510,7 +515,6 @@ void MABIOS_Start(void)
     gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
-
     *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE |
         TMR_PRESCALER_1024CK | gMA.timer_unk_12;
 }
@@ -1610,51 +1614,15 @@ MA_ProcessCheckStatusResponse:
 ");
 #endif
 
-#if 0  // STATIC
 static void ConvertNegaErrToApiErr(void)
 {
-    static const u8 errTable[] = {
+    static const u8 errTable[] asm("errTable.174") = {
         0x15, 0x16, 0x17, 0x13, 0x13
     };
 
     gMA.unk_102 = errTable[gMA.unk_81];
     gMA.unk_104 = 0;
 }
-#else
-void ConvertNegaErrToApiErr(void);
-asm("
-.section .rodata
-.align 2
-.type errTable.174, object
-errTable.174:
-    .word 0x13171615
-    .word 0x00000013
-.section .text
-
-.align 2
-.thumb_func
-ConvertNegaErrToApiErr:
-    ldr	r2, [pc, #28]
-    ldr	r1, [pc, #32]
-    mov	r0, r2
-    add	r0, #81
-    ldrb	r0, [r0, #0]
-    add	r0, r0, r1
-    ldrb	r0, [r0, #0]
-    mov	r3, r2
-    add	r3, #102
-    mov	r1, #0
-    strb	r0, [r3, #0]
-    mov	r0, r2
-    add	r0, #104
-    strh	r1, [r0, #0]
-    bx	lr
-.align 2
-    .word gMA
-    .word errTable.174
-.size ConvertNegaErrToApiErr, .-ConvertNegaErrToApiErr
-");
-#endif
 
 void MA_DefaultNegaResProc(void)
 {
@@ -2222,521 +2190,171 @@ void MA_Bios_disconnect(void)
     *(vu32 *)REG_TM3CNT = 0;
 }
 
-#if 0
-#else
-asm("
-.lcomm dataLeft.192, 0x4
+static void MA_IntrSio_Send(void)
+{
+    static int dataLeft asm("dataLeft.192");
+    u8 error;
 
-.align 2
-.thumb_func
-MA_IntrSio_Send:
-    push	{r4, r5, r6, lr}
-    ldr	r1, [pc, #80]
-    mov	r2, #244
-    lsl	r2, r2, #1
-    add	r0, r1, r2
-    ldrh	r0, [r0, #0]
-    mov	r5, r1
-    cmp	r0, #1
-    bge	MA_IntrSio_Send+0x14
-    b	MA_IntrSio_Send+0x3f6
-    cmp	r0, #2
-    bgt	MA_IntrSio_Send+0x1a
-    b	MA_IntrSio_Send+0x3f6
-    cmp	r0, #3
-    beq	MA_IntrSio_Send+0x20
-    b	MA_IntrSio_Send+0x3f6
-    ldr	r0, [r5, #60]
-    add	r0, #1
-    str	r0, [r5, #60]
-    ldr	r2, [r5, #60]
-    ldrb	r0, [r5, #5]
-    lsl	r0, r0, #2
-    add	r1, #28
-    add	r0, r0, r1
-    ldr	r0, [r0, #0]
-    cmp	r2, r0
-    bls	MA_IntrSio_Send+0x5e
-    ldr	r0, [r5, #64]
-    mov	r1, #128
-    lsl	r1, r1, #5
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_IntrSio_Send+0x58
-    bl	MA_CancelRequest
-    ldr	r0, [r5, #64]
-    mov	r1, #128
-    lsl	r1, r1, #7
-    orr	r0, r1
-    str	r0, [r5, #64]
-    b	MA_IntrSio_Send+0x3f6
-.align 2
-    .word gMA
+    switch (gMA.iobuf_packet_send.unk_0) {
+        default:
+        case 1: return;
+        case 2: return;
+        case 3: break;
+    }
 
-    bl	MA_BiosStop
-    b	MA_IntrSio_Send+0x3f6
-    ldr	r2, [pc, #48]
-    mov	r3, #245
-    lsl	r3, r3, #1
-    add	r0, r5, r3
-    ldrh	r1, [r0, #0]
-    add	r3, #2
-    add	r0, r5, r3
-    ldrh	r0, [r0, #0]
-    sub	r1, r1, r0
-    str	r1, [r2, #0]
-    ldrb	r0, [r5, #5]
-    cmp	r0, #0
-    bne	MA_IntrSio_Send+0x98
-    cmp	r1, #1
-    bgt	MA_IntrSio_Send+0xc8
-    mov	r0, #1
-    sub	r0, r0, r1
-    mov	r1, r5
-    add	r1, #72
-    add	r0, r0, r1
-    ldr	r1, [pc, #12]
-    ldrb	r1, [r1, #0]
-    ldrb	r2, [r0, #0]
-    strb	r1, [r0, #0]
-    b	MA_IntrSio_Send+0xc8
-.align 2
-    .word dataLeft.192
-    .word 0x0400012a
+    if (++gMA.unk_60 > gMA.counter_timeout[gMA.sio_mode]) {
+        if (!(gMA.status & STATUS_UNK_12)) {
+            MA_CancelRequest();
+            gMA.status |= STATUS_UNK_14;
+            return;
+        }
+        MA_BiosStop();
+        return;
+    }
 
-    cmp	r1, #0
-    bne	MA_IntrSio_Send+0xc8
-    ldr	r0, [pc, #88]
-    ldrb	r1, [r0, #0]
-    mov	r0, r5
-    add	r0, #72
-    ldrb	r2, [r0, #0]
-    strb	r1, [r0, #0]
-    ldr	r0, [pc, #80]
-    ldrb	r0, [r0, #0]
-    mov	r2, r5
-    add	r2, #73
-    ldrb	r1, [r2, #0]
-    strb	r0, [r2, #0]
-    ldr	r0, [pc, #72]
-    ldrb	r0, [r0, #0]
-    add	r2, #1
-    ldrb	r1, [r2, #0]
-    strb	r0, [r2, #0]
-    ldr	r0, [pc, #68]
-    ldrb	r0, [r0, #0]
-    add	r2, #1
-    ldrb	r1, [r2, #0]
-    strb	r0, [r2, #0]
-    mov	r0, #245
-    lsl	r0, r0, #1
-    add	r1, r5, r0
-    mov	r2, #246
-    lsl	r2, r2, #1
-    add	r0, r5, r2
-    ldrh	r1, [r1, #0]
-    ldrh	r0, [r0, #0]
-    cmp	r1, r0
-    beq	MA_IntrSio_Send+0xde
-    b	MA_IntrSio_Send+0x3f6
-    mov	r0, r5
-    add	r0, #72
-    ldrb	r0, [r0, #0]
-    cmp	r0, #255
-    bne	MA_IntrSio_Send+0x108
-    mov	r0, r5
-    add	r0, #73
-    ldrb	r0, [r0, #0]
-    cmp	r0, #255
-    bne	MA_IntrSio_Send+0x108
-    mov	r0, #16
-    b	MA_IntrSio_Send+0x20a
-    lsl	r0, r0, #0
-    lsl	r3, r4, #4
-    lsl	r0, r0, #16
-    lsl	r2, r4, #4
-    lsl	r0, r0, #16
-    lsl	r1, r4, #4
-    lsl	r0, r0, #16
-    lsl	r0, r4, #4
-    lsl	r0, r0, #16
-    mov	r0, r5
-    add	r0, #72
-    ldrb	r0, [r0, #0]
-    bl	MA_IsSupportedHardware
-    cmp	r0, #0
-    bne	MA_IntrSio_Send+0x1d0
-    ldr	r0, [r5, #64]
-    mov	r1, #128
-    lsl	r1, r1, #5
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_IntrSio_Send+0x1d0
-    ldr	r0, [r5, #64]
-    mov	r1, #8
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_IntrSio_Send+0x18c
-    ldrh	r0, [r5, #14]
-    sub	r0, #1
-    ldrh	r1, [r5, #14]
-    strh	r0, [r5, #14]
-    ldrh	r0, [r5, #14]
-    mov	r6, r0
-    cmp	r6, #0
-    bne	MA_IntrSio_Send+0x192
-    ldrb	r0, [r5, #4]
-    mov	r0, #0
-    strb	r0, [r5, #4]
-    mov	r3, #244
-    lsl	r3, r3, #1
-    add	r4, r5, r3
-    ldrh	r0, [r4, #0]
-    strh	r6, [r4, #0]
-    mov	r1, #252
-    lsl	r1, r1, #1
-    add	r0, r5, r1
-    ldrh	r1, [r0, #0]
-    strh	r6, [r0, #0]
-    mov	r0, #16
-    bl	MA_SetError
-    ldr	r0, [r5, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #24]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldr	r0, [r5, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrh	r0, [r4, #0]
-    strh	r6, [r4, #0]
-    ldr	r0, [pc, #8]
-    str	r6, [r0, #0]
-    b	MA_IntrSio_Send+0x3f6
-.align 2
-    .word 0x0000ffdf
-    .word 0x0400010c
+    dataLeft = gMA.iobuf_packet_send.size - gMA.iobuf_packet_send.readcnt;
+    if (gMA.sio_mode == MA_SIO_BYTE) {
+        if (dataLeft < 2) {
+            gMA.siodata[1 - dataLeft] = *(vu8 *)(REG_SIODATA8);
+        }
+    } else {
+        if (dataLeft == 0) {
+            gMA.siodata[0] = *(vu8 *)(REG_SIODATA32 + 3);
+            gMA.siodata[1] = *(vu8 *)(REG_SIODATA32 + 2);
+            gMA.siodata[2] = *(vu8 *)(REG_SIODATA32 + 1);
+            gMA.siodata[3] = *(vu8 *)(REG_SIODATA32 + 0);
+        }
+    }
 
-    ldrh	r0, [r5, #14]
-    mov	r0, #2
-    strh	r0, [r5, #14]
-    ldr	r2, [pc, #48]
-    mov	r0, r2
-    add	r0, #73
-    ldrb	r0, [r0, #0]
-    ldrb	r1, [r2, #7]
-    mov	r4, #0
-    strb	r0, [r2, #7]
-    ldrh	r0, [r2, #12]
-    ldr	r0, [pc, #36]
-    strh	r0, [r2, #12]
-    ldr	r0, [r2, #64]
-    mov	r1, #8
-    orr	r0, r1
-    str	r0, [r2, #64]
-    ldrb	r0, [r2, #4]
-    mov	r0, #3
-    strb	r0, [r2, #4]
-    ldr	r3, [pc, #20]
-    str	r4, [r3, #0]
-    ldrh	r1, [r2, #12]
-    mov	r0, #195
-    lsl	r0, r0, #16
-    orr	r0, r1
-    str	r0, [r3, #0]
-    b	MA_IntrSio_Send+0x3f6
-.align 2
-    .word gMA
-    .word 0x0000f851
-    .word 0x0400010c
+    if (gMA.iobuf_packet_send.size != gMA.iobuf_packet_send.readcnt) return;
 
-    ldr	r1, [pc, #92]
-    mov	r0, r1
-    add	r0, #73
-    ldrb	r0, [r0, #0]
-    mov	r2, r0
-    mov	r5, r1
-    cmp	r2, #242
-    bne	MA_IntrSio_Send+0x260
-    ldr	r0, [r5, #64]
-    mov	r1, #128
-    lsl	r1, r1, #5
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_IntrSio_Send+0x260
-    ldrb	r0, [r5, #7]
-    strb	r2, [r5, #7]
-    ldr	r0, [r5, #64]
-    mov	r1, #8
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_IntrSio_Send+0x238
-    ldrh	r0, [r5, #14]
-    sub	r0, #1
-    ldrh	r1, [r5, #14]
-    strh	r0, [r5, #14]
-    ldrh	r0, [r5, #14]
-    cmp	r0, #0
-    bne	MA_IntrSio_Send+0x23e
-    mov	r0, #133
-    bl	MA_SetError
-    ldr	r0, [r5, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #24]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldr	r0, [r5, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    b	MA_IntrSio_Send+0x3f6
-.align 2
-    .word gMA
-    .word 0x0000ffdf
+    if (gMA.siodata[0] == 0xff && gMA.siodata[1] == 0xff) {
+        MA_SetError(MAAPIE_MA_NOT_FOUND);
+        gMA.status &= ~STATUS_UNK_0;
+        gMA.condition &= ~MA_CONDITION_UNK_5;
+        gMA.status &= ~STATUS_UNK_2;
+        return;
+    }
 
-    ldrh	r0, [r5, #14]
-    ldr	r0, [pc, #32]
-    strh	r0, [r5, #14]
-    mov	r0, r5
-    add	r0, #73
-    ldrb	r0, [r0, #0]
-    ldrb	r1, [r5, #7]
-    mov	r3, #0
-    strb	r0, [r5, #7]
-    ldrb	r0, [r5, #5]
-    lsl	r0, r0, #1
-    mov	r1, r5
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r5, #12]
-    b	MA_IntrSio_Send+0x348
-.align 2
-    .word 0x0000fffe
+    if (!MA_IsSupportedHardware(gMA.siodata[0]) && !(gMA.status & STATUS_UNK_12)) {
+        if (!(gMA.status & STATUS_UNK_3)) {
+            gMA.unk_14 = 2;
+        } else {
+            if (--gMA.unk_14 == 0) {
+                gMA.unk_4 = 0;
+                gMA.iobuf_packet_send.unk_0 = 0;
+                gMA.iobuf_packet_recv.unk_0 = 0;
+                MA_SetError(MAAPIE_MA_NOT_FOUND);
+                gMA.status &= ~STATUS_UNK_0;
+                gMA.condition &= ~MA_CONDITION_UNK_5;
+                gMA.status &= ~STATUS_UNK_2;
+                gMA.iobuf_packet_send.unk_0 = 0;
+                *(vu32 *)REG_TM3CNT = 0;
+                return;
+            }
+        }
 
-    mov	r2, r5
-    add	r2, #73
-    ldrb	r0, [r2, #0]
-    cmp	r0, #240
-    beq	MA_IntrSio_Send+0x270
-    ldrb	r0, [r2, #0]
-    cmp	r0, #241
-    bne	MA_IntrSio_Send+0x2f0
-    ldr	r0, [r5, #64]
-    mov	r1, #128
-    lsl	r1, r1, #5
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_IntrSio_Send+0x2f0
-    ldr	r0, [r5, #64]
-    mov	r1, #8
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_IntrSio_Send+0x2d4
-    ldrh	r0, [r5, #14]
-    sub	r0, #1
-    ldrh	r1, [r5, #14]
-    strh	r0, [r5, #14]
-    ldrh	r0, [r5, #14]
-    cmp	r0, #0
-    bne	MA_IntrSio_Send+0x2da
-    ldrb	r0, [r2, #0]
-    cmp	r0, #240
-    bne	MA_IntrSio_Send+0x2a2
-    mov	r0, #131
-    bl	MA_SetError
-    b	MA_IntrSio_Send+0x2a8
-    mov	r0, #132
-    bl	MA_SetError
-    ldr	r2, [pc, #32]
-    ldr	r0, [r2, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r2, #64]
-    ldrh	r1, [r2, #2]
-    ldr	r0, [pc, #24]
-    and	r0, r1
-    ldrh	r1, [r2, #2]
-    strh	r0, [r2, #2]
-    ldr	r0, [r2, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r2, #64]
-    b	MA_IntrSio_Send+0x3f6
-.align 2
-    .word gMA
-    .word 0x0000ffdf
+        gMA.unk_7 = gMA.siodata[1];
+        gMA.timer_unk_12 = -1967;  // MAGIC
+        gMA.status |= STATUS_UNK_3;
+        gMA.unk_4 = 3;
+        *(vu32 *)REG_TM3CNT = 0;
+        *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE |
+            TMR_PRESCALER_1024CK | gMA.timer_unk_12;
+        return;
+    }
 
-    ldrh	r0, [r5, #14]
-    mov	r0, #2
-    strh	r0, [r5, #14]
-    mov	r0, r5
-    add	r0, #73
-    ldrb	r0, [r0, #0]
-    ldrb	r1, [r5, #7]
-    mov	r3, #0
-    strb	r0, [r5, #7]
-    ldrh	r0, [r5, #12]
-    ldr	r0, [pc, #0]
-    b	MA_IntrSio_Send+0x348
-.align 2
-    .word 0x0000bffd
+    error = gMA.siodata[1];
+    if (error == MAPROT_ERR_F2 &&
+            !(gMA.status & STATUS_UNK_12)) {
+        gMA.unk_7 = error;
+        if (!(gMA.status & STATUS_UNK_3)) {
+            gMA.unk_14 = -2;
+        } else {
+            gMA.unk_14--;
+            if (gMA.unk_14 == 0) {
+                MA_SetError(MAAPIE_UNK_85);
+                gMA.status &= ~STATUS_UNK_0;
+                gMA.condition &= ~MA_CONDITION_UNK_5;
+                gMA.status &= ~STATUS_UNK_2;
+                return;
+            }
+        }
 
-    mov	r2, r5
-    add	r2, #73
-    ldrb	r1, [r2, #0]
-    mov	r0, r5
-    add	r0, #68
-    ldrb	r0, [r0, #0]
-    add	r0, #128
-    cmp	r1, r0
-    beq	MA_IntrSio_Send+0x370
-    ldrb	r0, [r2, #0]
-    cmp	r0, #238
-    beq	MA_IntrSio_Send+0x370
-    ldr	r0, [r5, #64]
-    mov	r1, #128
-    lsl	r1, r1, #5
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_IntrSio_Send+0x370
-    ldr	r0, [r5, #64]
-    mov	r1, #8
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_IntrSio_Send+0x332
-    ldrh	r0, [r5, #14]
-    sub	r0, #1
-    ldrh	r1, [r5, #14]
-    strh	r0, [r5, #14]
-    ldrh	r0, [r5, #14]
-    cmp	r0, #0
-    bne	MA_IntrSio_Send+0x338
-    bl	MA_Bios_disconnect
-    b	MA_IntrSio_Send+0x3f6
-    ldrh	r0, [r5, #14]
-    mov	r0, #2
-    strh	r0, [r5, #14]
-    mov	r0, r5
-    add	r0, #73
-    ldrb	r0, [r0, #0]
-    ldrb	r1, [r5, #7]
-    mov	r3, #0
-    strb	r0, [r5, #7]
-    ldrh	r0, [r5, #12]
-    ldr	r0, [pc, #32]
-    strh	r0, [r5, #12]
-    ldr	r0, [r5, #64]
-    mov	r1, #8
-    orr	r0, r1
-    str	r0, [r5, #64]
-    ldrb	r0, [r5, #4]
-    mov	r0, #3
-    strb	r0, [r5, #4]
-    ldr	r2, [pc, #16]
-    str	r3, [r2, #0]
-    ldrh	r1, [r5, #12]
-    mov	r0, #195
-    lsl	r0, r0, #16
-    orr	r0, r1
-    str	r0, [r2, #0]
-    b	MA_IntrSio_Send+0x3f6
-.align 2
-    .word 0x0000f851
-    .word 0x0400010c
+        gMA.unk_7 = gMA.siodata[1];
+        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
+        gMA.status |= STATUS_UNK_3;
+        gMA.unk_4 = 3;
+        *(vu32 *)REG_TM3CNT = 0;
+        *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE |
+            TMR_PRESCALER_1024CK | gMA.timer_unk_12;
+        return;
+    } else if ((gMA.siodata[1] == MAPROT_ERR_F0 ||
+                gMA.siodata[1] == MAPROT_ERR_F1) &&
+            !(gMA.status & STATUS_UNK_12)) {
+        if (gMA.status & STATUS_UNK_3) {
+            gMA.unk_14--;
+            if (gMA.unk_14 == 0) {
+                if (gMA.siodata[1] == MAPROT_ERR_F0) {
+                    MA_SetError(MAAPIE_UNK_83);
+                } else {
+                    MA_SetError(MAAPIE_UNK_84);
+                }
+                gMA.status &= ~STATUS_UNK_0;
+                gMA.condition &= ~MA_CONDITION_UNK_5;
+                gMA.status &= ~STATUS_UNK_2;
+                return;
+            }
+        } else {
+            gMA.unk_14 = 2;
+        }
 
-    mov	r0, r5
-    add	r0, #72
-    ldrb	r0, [r0, #0]
-    ldrb	r1, [r5, #6]
-    strb	r0, [r5, #6]
-    ldrb	r0, [r5, #5]
-    cmp	r0, #0
-    bne	MA_IntrSio_Send+0x398
-    mov	r2, #130
-    lsl	r2, r2, #2
-    add	r0, r5, r2
-    ldr	r1, [pc, #12]
-    mov	r2, #1
-    mov	r3, #0
-    bl	MA_InitIoBuffer
-    b	MA_IntrSio_Send+0x3a8
-.align 2
-    .word MaPacketData_PreStart
+        gMA.unk_7 = gMA.siodata[1];
+        gMA.timer_unk_12 = -16387;  // MAGIC
+        gMA.status |= STATUS_UNK_3;
+        gMA.unk_4 = 3;
+        *(vu32 *)REG_TM3CNT = 0;
+        *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE |
+            TMR_PRESCALER_1024CK | gMA.timer_unk_12;
+        return;
+    } else if ((gMA.siodata[1] != gMA.cmd_cur + MAPROT_REPLY &&
+                gMA.siodata[1] != MACMD_ERROR + MAPROT_REPLY) &&
+            !(gMA.status & STATUS_UNK_12)) {
+        if (!(gMA.status & STATUS_UNK_3)) {
+            gMA.unk_14 = 2;
+        } else {
+            gMA.unk_14--;
+            if (gMA.unk_14 == 0) {
+                MA_Bios_disconnect();
+                return;
+            }
+        }
 
-    mov	r3, #130
-    lsl	r3, r3, #2
-    add	r0, r5, r3
-    ldr	r1, [pc, #92]
-    mov	r2, #4
-    mov	r3, #0
-    bl	MA_InitIoBuffer
-    ldr	r4, [pc, #84]
-    ldr	r0, [pc, #88]
-    add	r5, r4, r0
-    mov	r1, #158
-    lsl	r1, r1, #1
-    add	r0, r4, r1
-    ldr	r0, [r0, #0]
-    ldr	r1, [r0, #4]
-    mov	r0, r4
-    mov	r2, #0
-    mov	r3, #1
-    bl	MA_InitIoBuffer
-    ldr	r2, [pc, #68]
-    add	r0, r4, r2
-    mov	r2, #0
-    strb	r2, [r0, #0]
-    ldr	r0, [r5, #64]
-    mov	r1, #9
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrb	r0, [r5, #4]
-    mov	r0, #2
-    strb	r0, [r5, #4]
-    mov	r1, r4
-    sub	r1, #16
-    ldrh	r0, [r1, #0]
-    mov	r0, #0
-    strh	r2, [r1, #0]
-    str	r2, [r5, #60]
-    ldr	r3, [pc, #36]
-    add	r2, r4, r3
-    ldrb	r1, [r2, #0]
-    strb	r0, [r2, #0]
-    ldr	r1, [pc, #32]
-    add	r2, r4, r1
-    ldrb	r1, [r2, #0]
-    strb	r0, [r2, #0]
-    pop	{r4, r5, r6}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word MaPacketData_PreStart
-    .word gMA+0x1f8
-    .word 0xfffffe08
-    .word 0xfffffe5a
-    .word 0xfffffe58
-    .word 0xfffffe59
-.size MA_IntrSio_Send, .-MA_IntrSio_Send
-");
-#endif
+        gMA.unk_7 = gMA.siodata[1];
+        gMA.timer_unk_12 = -1967;  // MAGIC
+        gMA.status |= STATUS_UNK_3;
+        gMA.unk_4 = 3;
+        *(vu32 *)REG_TM3CNT = 0;
+        *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE |
+            TMR_PRESCALER_1024CK | gMA.timer_unk_12;
+        return;
+    }
+
+    gMA.adapter_type = gMA.siodata[0];
+    if (gMA.sio_mode == MA_SIO_BYTE) {
+        MA_InitIoBuffer(&gMA.iobuf_recv, (u8 *)MaPacketData_PreStart, 1, 0);
+    } else {
+        MA_InitIoBuffer(&gMA.iobuf_recv, (u8 *)MaPacketData_PreStart, 4, 0);
+    }
+    MA_InitIoBuffer(&gMA.iobuf_packet_recv, gMA.buffer_recv_ptr->data, 0, 1);
+    gMA.unk_82 = 0;
+    gMA.status &= ~STATUS_UNK_3;
+    gMA.unk_4 = 2;
+    gMA.iobuf_packet_send.unk_0 = 0;
+    gMA.unk_60 = 0;
+    gMA.unk_80 = 0;
+    gMA.unk_81 = 0;
+}
 
 #if 0
 #else
