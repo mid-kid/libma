@@ -6,10 +6,15 @@
 #include "ma_var.h"
 #include "ma_sub.h"
 
+#define MAPROT_IDLE_SLAVE 0xd2
+#define MAPROT_IDLE_MASTER 0x4b
+#define MAPROT_MAGIC_1 0x99
+#define MAPROT_MAGIC_2 0x66
+
 #define MAPROT_REPLY 0x80
 
 #define MAPROT_ERR_F0 0xf0
-#define MAPROT_ERR_F1 0xf1
+#define MAPROT_ERR_CHECKSUM 0xf1
 #define MAPROT_ERR_F2 0xf2
 
 #define MATYPE_PROT_MASK 0xf0
@@ -68,7 +73,7 @@ static void SetInternalRecvBuffer(void);
 static void MA_SetInterval(int index);
 static void MA_SetTimeoutCount(int index);
 static int MA_PreSend(void);
-static void MA_InitIoBuffer(MA_IOBUF *buffer, vu8 *mem, u16 size, u16 unk);
+static void MA_InitIoBuffer(MA_IOBUF *buffer, vu8 *mem, u16 size, u16 state);
 //static void MA_StartSioTransmit();
 //static void MA_SetTransmitData();
 //static void MA_IsSupportedHardware();
@@ -237,18 +242,18 @@ void MABIOS_Init(void)
     MA_ChangeSIOMode(MA_SIO_BYTE);
     MA_SetInterval(0);
 
-    gMA.unk_60 = 0;
+    gMA.counter = 0;
     gMA.timer_unk_12 = 0;
     gMA.unk_14 = 0;
     gMA.status = 0;
     gMA.iobuf_sio_tx = NULL;
     gMA.cmd_cur = 0;
-    gMA.unk_69 = 0;
-    gMA.unk_70 = 0;
+    gMA.recv_cmd = 0;
+    gMA.recv_checksum = 0;
     gMA.siodata[0] = 0;
     gMA.siodata[1] = 0;
-    gMA.unk_76 = 0;
-    gMA.unk_77 = 0;
+    gMA.recv_footer[0] = 0;
+    gMA.recv_footer[1] = 0;
 
     gMA.buffer_recv.size = sizeof(gMA.buffer_recv_data);
     gMA.buffer_recv.data = gMA.buffer_recv_data;
@@ -347,7 +352,7 @@ void MA_SetError(u8 error)
         gMA.unk_92 = 0;
         MA_ChangeSIOMode(MA_SIO_BYTE);
         gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.unk_60 = 0;
+        gMA.counter = 0;
         gMA.unk_4 = 0;
         gMA.status &= ~STATUS_UNK_0;
         gMA.status &= ~STATUS_UNK_9;
@@ -366,8 +371,8 @@ void MA_SetError(u8 error)
 
     gMA.error = error;
     gMA.unk_4 = 0;
-    gMA.iobuf_packet_send.unk_0 = 0;
-    gMA.iobuf_packet_recv.unk_0 = 0;
+    gMA.iobuf_packet_send.state = 0;
+    gMA.iobuf_packet_recv.state = 0;
     gMA.condition |= MA_CONDITION_ERROR;
     gMA.condition &= ~MA_CONDITION_UNK_5;
     gMA.task_unk_97 = TASK_UNK_97_00;
@@ -396,20 +401,20 @@ static int MA_PreSend(void)
     gMA.condition &= ~MA_CONDITION_UNK_6;
     gMA.unk_14 = flag;
     gMA.status &= ~STATUS_UNK_3;
-    gMA.unk_60 = flag;
+    gMA.counter = flag;
     gMA.cmd_cur = 0;
-    gMA.unk_69 = 0;
+    gMA.recv_cmd = 0;
     return TRUE;
 }
 
-static void MA_InitIoBuffer(MA_IOBUF *buffer, vu8 *mem, u16 size, u16 unk)
+static void MA_InitIoBuffer(MA_IOBUF *buffer, vu8 *mem, u16 size, u16 state)
 {
-    buffer->unk_0 = unk;
+    buffer->state = state;
     buffer->readptr = mem;
     buffer->writeptr = mem;
     buffer->size = size;
     buffer->readcnt = 0;
-    buffer->writecnt = 0;
+    buffer->checksum = 0;
 }
 
 static void MA_StartSioTransmit(void)
@@ -940,7 +945,6 @@ void MABIOS_UDPDisconnect(MA_BUF *data_recv, u8 socket)
 void MABIOS_DNSRequest(MA_BUF *data_recv, char *addr)
 {
     static int serverNameLen;
-    u8 bVar1;
 
     tmppPacket = gMA.buffer_packet_send;
     if (!MA_PreSend()) return;
@@ -1090,20 +1094,20 @@ void MA_SendRetry(void)
 void MA_RecvRetry(void)
 {
     MA_InitIoBuffer(&gMA.iobuf_packet_recv, gMA.iobuf_packet_recv.writeptr, 0, 1);
-    gMA.unk_82 = 0;
+    gMA.recv_garbage_counter = 0;
     gMA.status &= ~STATUS_UNK_3;
     gMA.unk_4 = 2;
-    gMA.iobuf_packet_send.unk_0 = 0;
+    gMA.iobuf_packet_send.state = 0;
     gMA.unk_80 = 0;
     gMA.unk_81 = 0;
 }
 
 static void MA_IntrTimer_SIOSend(void)
 {
-    switch (gMA.iobuf_packet_send.unk_0) {  // MAGIC
+    switch (gMA.iobuf_packet_send.state) {  // MAGIC
     case 1:
         MA_SetTransmitData(&gMA.iobuf_packet_send);
-        gMA.iobuf_packet_send.unk_0 = 2;
+        gMA.iobuf_packet_send.state = 2;
         gMA.timer_unk_12 = -1967;  // MAGIC
         break;
 
@@ -1121,7 +1125,7 @@ static void MA_IntrTimer_SIOSend(void)
 
 static void MA_IntrTimer_SIORecv(void)
 {
-    switch (gMA.iobuf_packet_recv.unk_0) {  // MAGIC
+    switch (gMA.iobuf_packet_recv.state) {  // MAGIC
     case 0:
         break;
 
@@ -1130,15 +1134,15 @@ static void MA_IntrTimer_SIORecv(void)
     case 3:
     case 4:
         if (gMA.sio_mode == MA_SIO_BYTE) {
-            MA_InitIoBuffer(&gMA.iobuf_recv, (u8 *)MaPacketData_PreStart, 1, 0);
+            MA_InitIoBuffer(&gMA.iobuf_footer, (u8 *)MaPacketData_PreStart, 1, 0);
         } else {
-            MA_InitIoBuffer(&gMA.iobuf_recv, (u8 *)MaPacketData_PreStart, 4, 0);
+            MA_InitIoBuffer(&gMA.iobuf_footer, (u8 *)MaPacketData_PreStart, 4, 0);
         }
-        MA_SetTransmitData(&gMA.iobuf_recv);
+        MA_SetTransmitData(&gMA.iobuf_footer);
         break;
 
     case 5:
-        MA_SetTransmitData(&gMA.iobuf_recv);
+        MA_SetTransmitData(&gMA.iobuf_footer);
         break;
     }
 }
@@ -1149,12 +1153,12 @@ static void MA_IntrTimer_SIOIdle(void)
             && gMA.task_unk_97 != TASK_UNK_97_06
             && gMA.task_unk_97 != TASK_UNK_97_07) return;  // MAGIC
     if (!(gMA.status & STATUS_UNK_0)) return;
-    gMA.unk_60++;
+    gMA.counter++;
 
     if (gMA.status & STATUS_UNK_9 &&
             (!(gMA.condition & STATUS_UNK_3) || gMA.status & STATUS_UNK_13)) {
-        if (gMA.unk_60 > gMA.counter_p2p[gMA.sio_mode]) {
-            gMA.unk_60 = 0;
+        if (gMA.counter > gMA.counter_p2p[gMA.sio_mode]) {
+            gMA.counter = 0;
             (&gMA.buffer_unk_480)->size = 0;
             (&gMA.buffer_unk_480)->data = gMA.unk_212;
             if (gMA.status & STATUS_UNK_13) {
@@ -1167,8 +1171,8 @@ static void MA_IntrTimer_SIOIdle(void)
             }
         }
     } else {
-        if (gMA.unk_60 > gMA.counter_null[gMA.sio_mode]) {
-            gMA.unk_60 = 0;
+        if (gMA.counter > gMA.counter_null[gMA.sio_mode]) {
+            gMA.counter = 0;
             (&gMA.buffer_recv)->size = 0;
             (&gMA.buffer_recv)->data = &gMA.unk_84;
             MABIOS_CheckStatus2(&gMA.buffer_recv);
@@ -1190,7 +1194,7 @@ static void MA_IntrTimer_SIOWaitTime(void)
             gMA.unk_92 = 0;
             MA_ChangeSIOMode(MA_SIO_BYTE);
             gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-            gMA.unk_60 = 0;
+            gMA.counter = 0;
             gMA.unk_4 = 0;
             gMA.status &= ~STATUS_UNK_0;
             gMA.status &= ~STATUS_UNK_9;
@@ -1210,7 +1214,7 @@ static void MA_IntrTimer_SIOWaitTime(void)
             if (gMA.task_unk_97 != TASK_UNK_97_1E) {
                 gMA.status &= ~STATUS_UNK_14;
                 MA_SetError(MAAPIE_TIMEOUT);
-                gMA.unk_60 = 0;
+                gMA.counter = 0;
                 gMA.unk_4 = 0;
             }
         }
@@ -1220,7 +1224,7 @@ static void MA_IntrTimer_SIOWaitTime(void)
     } else {
         gMA.unk_4 = 0;
         gMA.buffer_recv_ptr->size = gMA.iobuf_packet_recv.size;
-        gMA.unk_60 = 0;
+        gMA.counter = 0;
         gMA.condition &= ~MA_CONDITION_UNK_5;
     }
     gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
@@ -1250,7 +1254,7 @@ void MA_ProcessCheckStatusResponse(u8 response)
             gMA.unk_92 = 0;
             MA_ChangeSIOMode(MA_SIO_BYTE);
             gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-            gMA.unk_60 = 0;
+            gMA.counter = 0;
             gMA.unk_4 = 0;
             gMA.status &= ~STATUS_UNK_0;
             gMA.status &= ~STATUS_UNK_9;
@@ -1279,7 +1283,7 @@ void MA_ProcessCheckStatusResponse(u8 response)
             gMA.unk_92 = 0;
             MA_ChangeSIOMode(MA_SIO_BYTE);
             gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-            gMA.unk_60 = 0;
+            gMA.counter = 0;
             gMA.unk_4 = 0;
             gMA.status &= ~STATUS_UNK_0;
             gMA.status &= ~STATUS_UNK_9;
@@ -1319,8 +1323,8 @@ void MA_ProcessCheckStatusResponse(u8 response)
     gMA.condition &= 0xff;
     gMA.condition |= (iVar1 << 8);
     gMA.unk_4 = 0;
-    gMA.iobuf_packet_send.unk_0 = 0;
-    gMA.iobuf_packet_recv.unk_0 = 0;
+    gMA.iobuf_packet_send.state = 0;
+    gMA.iobuf_packet_recv.state = 0;
     gMA.status &= ~STATUS_UNK_2;
 }
 #else
@@ -2180,37 +2184,42 @@ MA_IntrTimer:
 void MA_Bios_disconnect(void)
 {
     gMA.unk_4 = 0;
-    gMA.iobuf_packet_send.unk_0 = 0;
-    gMA.iobuf_packet_recv.unk_0 = 0;
+    gMA.iobuf_packet_send.state = 0;
+    gMA.iobuf_packet_recv.state = 0;
     MA_SetError(MAAPIE_MA_NOT_FOUND);
     gMA.status &= ~STATUS_UNK_0;
     gMA.condition &= ~MA_CONDITION_UNK_5;
     gMA.status &= ~STATUS_UNK_2;
-    gMA.iobuf_packet_send.unk_0 = 0;
+    gMA.iobuf_packet_send.state = 0;
     *(vu32 *)REG_TM3CNT = 0;
+}
+
+static inline int MA_IntrSio_Timeout(void)
+{
+    if (++gMA.counter > gMA.counter_timeout[gMA.sio_mode]) {
+        if (!(gMA.status & STATUS_UNK_12)) {
+            MA_CancelRequest();
+            gMA.status |= STATUS_UNK_14;
+        } else {
+            MA_BiosStop();
+        }
+        return TRUE;
+    }
+    return FALSE;
 }
 
 static void MA_IntrSio_Send(void)
 {
     static int dataLeft asm("dataLeft.192");
-    u8 error;
 
-    switch (gMA.iobuf_packet_send.unk_0) {
+    switch (gMA.iobuf_packet_send.state) {
         default:
         case 1: return;
         case 2: return;
         case 3: break;
     }
 
-    if (++gMA.unk_60 > gMA.counter_timeout[gMA.sio_mode]) {
-        if (!(gMA.status & STATUS_UNK_12)) {
-            MA_CancelRequest();
-            gMA.status |= STATUS_UNK_14;
-            return;
-        }
-        MA_BiosStop();
-        return;
-    }
+    if (MA_IntrSio_Timeout()) return;
 
     dataLeft = gMA.iobuf_packet_send.size - gMA.iobuf_packet_send.readcnt;
     if (gMA.sio_mode == MA_SIO_BYTE) {
@@ -2242,13 +2251,13 @@ static void MA_IntrSio_Send(void)
         } else {
             if (--gMA.unk_14 == 0) {
                 gMA.unk_4 = 0;
-                gMA.iobuf_packet_send.unk_0 = 0;
-                gMA.iobuf_packet_recv.unk_0 = 0;
+                gMA.iobuf_packet_send.state = 0;
+                gMA.iobuf_packet_recv.state = 0;
                 MA_SetError(MAAPIE_MA_NOT_FOUND);
                 gMA.status &= ~STATUS_UNK_0;
                 gMA.condition &= ~MA_CONDITION_UNK_5;
                 gMA.status &= ~STATUS_UNK_2;
-                gMA.iobuf_packet_send.unk_0 = 0;
+                gMA.iobuf_packet_send.state = 0;
                 *(vu32 *)REG_TM3CNT = 0;
                 return;
             }
@@ -2264,10 +2273,9 @@ static void MA_IntrSio_Send(void)
         return;
     }
 
-    error = gMA.siodata[1];
-    if (error == MAPROT_ERR_F2 &&
+    if (gMA.siodata[1] == MAPROT_ERR_F2 &&
             !(gMA.status & STATUS_UNK_12)) {
-        gMA.unk_7 = error;
+        gMA.unk_7 = MAPROT_ERR_F2;
         if (!(gMA.status & STATUS_UNK_3)) {
             gMA.unk_14 = -2;
         } else {
@@ -2290,7 +2298,7 @@ static void MA_IntrSio_Send(void)
             TMR_PRESCALER_1024CK | gMA.timer_unk_12;
         return;
     } else if ((gMA.siodata[1] == MAPROT_ERR_F0 ||
-                gMA.siodata[1] == MAPROT_ERR_F1) &&
+                gMA.siodata[1] == MAPROT_ERR_CHECKSUM) &&
             !(gMA.status & STATUS_UNK_12)) {
         if (gMA.status & STATUS_UNK_3) {
             gMA.unk_14--;
@@ -2342,459 +2350,174 @@ static void MA_IntrSio_Send(void)
 
     gMA.adapter_type = gMA.siodata[0];
     if (gMA.sio_mode == MA_SIO_BYTE) {
-        MA_InitIoBuffer(&gMA.iobuf_recv, (u8 *)MaPacketData_PreStart, 1, 0);
+        MA_InitIoBuffer(&gMA.iobuf_footer, (u8 *)MaPacketData_PreStart, 1, 0);
     } else {
-        MA_InitIoBuffer(&gMA.iobuf_recv, (u8 *)MaPacketData_PreStart, 4, 0);
+        MA_InitIoBuffer(&gMA.iobuf_footer, (u8 *)MaPacketData_PreStart, 4, 0);
     }
     MA_InitIoBuffer(&gMA.iobuf_packet_recv, gMA.buffer_recv_ptr->data, 0, 1);
-    gMA.unk_82 = 0;
+    gMA.recv_garbage_counter = 0;
     gMA.status &= ~STATUS_UNK_3;
     gMA.unk_4 = 2;
-    gMA.iobuf_packet_send.unk_0 = 0;
-    gMA.unk_60 = 0;
+    gMA.iobuf_packet_send.state = 0;
+    gMA.counter = 0;
     gMA.unk_80 = 0;
     gMA.unk_81 = 0;
 }
 
-#if 0
-#else
-asm("
-.lcomm recvByte.196, 0x1
-.lcomm amari.197, 0x4
+static void MA_IntrSio_Recv(u8 byte)
+{
+    static u8 recvByte asm("recvByte.196");
+    static int amari asm("amari.197");
 
-.align 2
-.thumb_func
-MA_IntrSio_Recv:
-    push	{r4, r5, r6, lr}
-    lsl	r0, r0, #24
-    lsr	r6, r0, #24
-    ldr	r1, [pc, #16]
-    ldrb	r0, [r1, #5]
-    mov	r5, r1
-    cmp	r0, #0
-    bne	MA_IntrSio_Recv+0x24
-    ldr	r0, [pc, #8]
-    ldr	r1, [pc, #12]
-    b	MA_IntrSio_Recv+0x2a
-.align 2
-    .word gMA
-    .word recvByte.196
-    .word 0x0400012a
+    if (gMA.sio_mode == MA_SIO_BYTE) {
+        recvByte = *(vu8 *)REG_SIODATA8;
+    } else {
+        recvByte = *(vu8 *)(REG_SIODATA32 + 3 - byte);
+    }
 
-    ldr	r0, [pc, #36]
-    ldr	r1, [pc, #40]
-    sub	r1, r1, r6
-    ldrb	r1, [r1, #0]
-    strb	r1, [r0, #0]
-    mov	r4, r0
-    mov	r1, #252
-    lsl	r1, r1, #1
-    add	r0, r5, r1
-    ldrh	r0, [r0, #0]
-    sub	r0, #1
-    cmp	r0, #4
-    bls	MA_IntrSio_Recv+0x40
-    b	MA_IntrSio_Recv+0x372
-    lsl	r0, r0, #2
-    ldr	r1, [pc, #16]
-    add	r0, r0, r1
-    ldr	r0, [r0, #0]
-    mov	pc, r0
-.align 2
-    .word recvByte.196
-    .word 0x04000123
-    .word .L_MA_IntrSio_Recv.0x58
-.L_MA_IntrSio_Recv.0x58:
-    .word .L_MA_IntrSio_Recv.0x58+0x14
-    .word .L_MA_IntrSio_Recv.0x58+0xb8
-    .word .L_MA_IntrSio_Recv.0x58+0x184
-    .word .L_MA_IntrSio_Recv.0x58+0x208
-    .word .L_MA_IntrSio_Recv.0x58+0x2c0
+    switch(gMA.iobuf_packet_recv.state) {  // MAGIC
+    case 1:
+        // Wait for handshake
+        switch (gMA.iobuf_packet_recv.readcnt) {
+        case 0:
+            // Handshake may only start from the first byte in a MA_SIO_WORD
+            //   serial transaction.
+            if (byte != 0) break;
 
-    mov	r2, #254
-    lsl	r2, r2, #1
-    add	r3, r5, r2
-    ldrh	r0, [r3, #0]
-    cmp	r0, #0
-    beq	MA_IntrSio_Recv+0x7e
-    cmp	r0, #1
-    beq	MA_IntrSio_Recv+0xe0
-    b	MA_IntrSio_Recv+0x372
-    cmp	r6, #0
-    beq	MA_IntrSio_Recv+0x84
-    b	MA_IntrSio_Recv+0x372
-    ldr	r0, [r5, #60]
-    add	r0, #1
-    str	r0, [r5, #60]
-    ldr	r2, [r5, #60]
-    ldrb	r0, [r5, #5]
-    lsl	r0, r0, #2
-    mov	r1, r5
-    add	r1, #28
-    add	r0, r0, r1
-    ldr	r0, [r0, #0]
-    cmp	r2, r0
-    bls	MA_IntrSio_Recv+0xac
-    ldr	r0, [r5, #64]
-    mov	r1, #128
-    lsl	r1, r1, #5
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_IntrSio_Recv+0xaa
-    b	MA_IntrSio_Recv+0x200
-    b	MA_IntrSio_Recv+0x210
-    ldrb	r0, [r4, #0]
-    cmp	r0, #153
-    bne	MA_IntrSio_Recv+0xbc
-    ldrh	r0, [r3, #0]
-    add	r0, #1
-    ldrh	r1, [r3, #0]
-    strh	r0, [r3, #0]
-    b	MA_IntrSio_Recv+0x372
-    cmp	r0, #210
-    bne	MA_IntrSio_Recv+0xc2
-    b	MA_IntrSio_Recv+0x372
-    mov	r4, r5
-    add	r4, #82
-    ldrb	r0, [r4, #0]
-    add	r0, #1
-    strb	r0, [r4, #0]
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #20
-    bhi	MA_IntrSio_Recv+0xd6
-    b	MA_IntrSio_Recv+0x372
-    mov	r0, #16
-    bl	MA_SetError
-    strb	r6, [r4, #0]
-    b	MA_IntrSio_Recv+0x372
-    ldrb	r0, [r4, #0]
-    cmp	r0, #102
-    bne	MA_IntrSio_Recv+0xfa
-    mov	r0, #252
-    lsl	r0, r0, #1
-    add	r1, r5, r0
-    ldrh	r0, [r1, #0]
-    mov	r2, #0
-    mov	r0, #2
-    strh	r0, [r1, #0]
-    ldrh	r0, [r3, #0]
-    strh	r2, [r3, #0]
-    b	MA_IntrSio_Recv+0x100
-    mov	r0, #16
-    bl	MA_SetError
-    ldr	r0, [pc, #8]
-    add	r0, #82
-    mov	r1, #0
-    strb	r1, [r0, #0]
-    b	MA_IntrSio_Recv+0x372
-.align 2
-    .word gMA
+            // If we time out, stop trying to receive
+            if (MA_IntrSio_Timeout()) break;
 
-    mov	r1, #254
-    lsl	r1, r1, #1
-    add	r2, r5, r1
-    ldrh	r0, [r2, #0]
-    mov	r1, r0
-    cmp	r1, #1
-    beq	MA_IntrSio_Recv+0x160
-    cmp	r1, #1
-    bgt	MA_IntrSio_Recv+0x128
-    cmp	r1, #0
-    beq	MA_IntrSio_Recv+0x132
-    b	MA_IntrSio_Recv+0x160
-    cmp	r1, #2
-    beq	MA_IntrSio_Recv+0x13e
-    cmp	r1, #3
-    beq	MA_IntrSio_Recv+0x150
-    b	MA_IntrSio_Recv+0x160
-    ldrb	r0, [r4, #0]
-    mov	r2, r5
-    add	r2, #69
-    ldrb	r1, [r2, #0]
-    strb	r0, [r2, #0]
-    b	MA_IntrSio_Recv+0x160
-    ldrh	r1, [r2, #0]
-    mov	r0, #3
-    sub	r0, r0, r1
-    mov	r2, #253
-    lsl	r2, r2, #1
-    add	r1, r5, r2
-    add	r0, r0, r1
-    mov	r1, #0
-    b	MA_IntrSio_Recv+0x15e
-    ldrh	r0, [r2, #0]
-    sub	r0, r1, r0
-    mov	r3, #253
-    lsl	r3, r3, #1
-    add	r1, r5, r3
-    add	r0, r0, r1
-    ldrb	r1, [r4, #0]
-    strb	r1, [r0, #0]
-    mov	r0, #254
-    lsl	r0, r0, #1
-    add	r3, r5, r0
-    ldrh	r0, [r3, #0]
-    add	r0, #1
-    ldrh	r1, [r3, #0]
-    strh	r0, [r3, #0]
-    mov	r2, #255
-    lsl	r2, r2, #1
-    add	r1, r5, r2
-    ldrb	r2, [r4, #0]
-    ldrh	r0, [r1, #0]
-    add	r0, r0, r2
-    ldrh	r2, [r1, #0]
-    strh	r0, [r1, #0]
-    ldrh	r0, [r3, #0]
-    mov	r6, r0
-    cmp	r6, #4
-    beq	MA_IntrSio_Recv+0x188
-    b	MA_IntrSio_Recv+0x372
-    mov	r0, #253
-    lsl	r0, r0, #1
-    add	r4, r5, r0
-    ldrh	r0, [r4, #0]
-    mov	r2, r0
-    cmp	r2, #0
-    bne	MA_IntrSio_Recv+0x1a2
-    mov	r1, #252
-    lsl	r1, r1, #1
-    add	r0, r5, r1
-    ldrh	r1, [r0, #0]
-    strh	r6, [r0, #0]
-    b	MA_IntrSio_Recv+0x25a
-    ldrb	r0, [r5, #5]
-    cmp	r0, #0
-    beq	MA_IntrSio_Recv+0x1b6
-    ldr	r1, [pc, #20]
-    ldrh	r0, [r4, #0]
-    mov	r2, #3
-    and	r2, r0
-    str	r2, [r1, #0]
-    cmp	r2, #0
-    bne	MA_IntrSio_Recv+0x1c4
-    ldrh	r0, [r4, #0]
-    ldrh	r1, [r3, #0]
-    strh	r0, [r3, #0]
-    b	MA_IntrSio_Recv+0x1ce
-.align 2
-    .word amari.197
+            // When the first magic byte is received, try to receive the second
+            if (recvByte == MAPROT_MAGIC_1) {
+                gMA.iobuf_packet_recv.readcnt++;
+                break;
+            }
 
-    sub	r0, r2, #4
-    ldrh	r1, [r4, #0]
-    sub	r1, r1, r0
-    ldrh	r0, [r3, #0]
-    strh	r1, [r3, #0]
-    mov	r2, #252
-    lsl	r2, r2, #1
-    add	r0, r5, r2
-    ldrh	r1, [r0, #0]
-    mov	r1, #3
-    strh	r1, [r0, #0]
-    b	MA_IntrSio_Recv+0x372
-    ldr	r0, [r5, #60]
-    add	r0, #1
-    str	r0, [r5, #60]
-    ldr	r2, [r5, #60]
-    ldrb	r0, [r5, #5]
-    lsl	r0, r0, #2
-    mov	r1, r5
-    add	r1, #28
-    add	r0, r0, r1
-    ldr	r0, [r0, #0]
-    cmp	r2, r0
-    bls	MA_IntrSio_Recv+0x216
-    ldr	r0, [r5, #64]
-    mov	r1, #128
-    lsl	r1, r1, #5
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_IntrSio_Recv+0x210
-    bl	MA_CancelRequest
-    ldr	r0, [r5, #64]
-    mov	r1, #128
-    lsl	r1, r1, #7
-    orr	r0, r1
-    str	r0, [r5, #64]
-    b	MA_IntrSio_Recv+0x372
-    bl	MA_BiosStop
-    b	MA_IntrSio_Recv+0x372
-    mov	r3, #128
-    lsl	r3, r3, #2
-    add	r2, r5, r3
-    ldr	r0, [r2, #0]
-    ldrb	r1, [r4, #0]
-    strb	r1, [r0, #0]
-    add	r0, #1
-    str	r0, [r2, #0]
-    mov	r0, #254
-    lsl	r0, r0, #1
-    add	r3, r5, r0
-    ldrh	r0, [r3, #0]
-    sub	r0, #1
-    ldrh	r1, [r3, #0]
-    strh	r0, [r3, #0]
-    mov	r2, #255
-    lsl	r2, r2, #1
-    add	r1, r5, r2
-    ldrb	r2, [r4, #0]
-    ldrh	r0, [r1, #0]
-    add	r0, r0, r2
-    ldrh	r2, [r1, #0]
-    strh	r0, [r1, #0]
-    ldrh	r0, [r3, #0]
-    mov	r2, r0
-    cmp	r2, #0
-    beq	MA_IntrSio_Recv+0x24e
-    b	MA_IntrSio_Recv+0x372
-    mov	r0, #252
-    lsl	r0, r0, #1
-    add	r1, r5, r0
-    ldrh	r0, [r1, #0]
-    mov	r0, #4
-    strh	r0, [r1, #0]
-    ldrh	r0, [r3, #0]
-    strh	r2, [r3, #0]
-    b	MA_IntrSio_Recv+0x372
-    mov	r1, #254
-    lsl	r1, r1, #1
-    add	r2, r5, r1
-    ldrh	r1, [r2, #0]
-    mov	r0, #1
-    sub	r0, r0, r1
-    mov	r6, r5
-    add	r6, #70
-    add	r0, r0, r6
-    ldrb	r1, [r4, #0]
-    strb	r1, [r0, #0]
-    ldrh	r0, [r2, #0]
-    add	r0, #1
-    ldrh	r1, [r2, #0]
-    strh	r0, [r2, #0]
-    ldrh	r0, [r2, #0]
-    cmp	r0, #2
-    bne	MA_IntrSio_Recv+0x372
-    mov	r2, #130
-    lsl	r2, r2, #2
-    add	r0, r5, r2
-    mov	r3, #202
-    lsl	r3, r3, #2
-    add	r4, r5, r3
-    mov	r1, r4
-    mov	r2, #4
-    mov	r3, #0
-    bl	MA_InitIoBuffer
-    mov	r0, #129
-    strb	r0, [r4, #0]
-    mov	r1, #255
-    lsl	r1, r1, #1
-    add	r0, r5, r1
-    ldrh	r1, [r0, #0]
-    ldrh	r0, [r6, #0]
-    cmp	r0, r1
-    beq	MA_IntrSio_Recv+0x2d0
-    ldr	r0, [r5, #64]
-    mov	r1, #128
-    lsl	r1, r1, #5
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_IntrSio_Recv+0x2d0
-    ldr	r2, [pc, #16]
-    add	r1, r5, r2
-    mov	r0, #241
-    strb	r0, [r1, #0]
-    ldr	r0, [r5, #64]
-    mov	r1, #16
-    orr	r0, r1
-    str	r0, [r5, #64]
-    b	MA_IntrSio_Recv+0x2e0
-    lsl	r0, r0, #0
-    lsl	r1, r5, #12
-    lsl	r0, r0, #0
-    ldr	r2, [pc, #52]
-    mov	r0, r2
-    add	r0, #69
-    ldrb	r1, [r0, #0]
-    ldr	r3, [pc, #48]
-    add	r0, r2, r3
-    strb	r1, [r0, #0]
-    mov	r5, r2
-    ldr	r1, [pc, #44]
-    add	r0, r5, r1
-    mov	r2, #0
-    strb	r2, [r0, #0]
-    ldr	r3, [pc, #40]
-    add	r0, r5, r3
-    strb	r2, [r0, #0]
-    mov	r0, #252
-    lsl	r0, r0, #1
-    add	r1, r5, r0
-    ldrh	r0, [r1, #0]
-    mov	r0, #5
-    strh	r0, [r1, #0]
-    mov	r1, #254
-    lsl	r1, r1, #1
-    add	r0, r5, r1
-    ldrh	r1, [r0, #0]
-    strh	r2, [r0, #0]
-    b	MA_IntrSio_Recv+0x372
-.align 2
-    .word gMA
-    .word 0x00000329
-    .word 0x0000032b
-    .word 0x0000032a
+            // Adapter is still busy, keep waiting
+            if (recvByte == MAPROT_IDLE_SLAVE) break;
 
-    mov	r2, #254
-    lsl	r2, r2, #1
-    add	r3, r5, r2
-    ldrh	r0, [r3, #0]
-    mov	r1, r5
-    add	r1, #76
-    add	r0, r0, r1
-    ldrb	r1, [r4, #0]
-    ldrb	r2, [r0, #0]
-    strb	r1, [r0, #0]
-    ldrh	r0, [r3, #0]
-    add	r0, #1
-    ldrh	r1, [r3, #0]
-    strh	r0, [r3, #0]
-    ldrb	r0, [r5, #5]
-    cmp	r0, #0
-    bne	MA_IntrSio_Recv+0x340
-    ldrh	r0, [r3, #0]
-    cmp	r0, #2
-    beq	MA_IntrSio_Recv+0x34c
-    ldrb	r0, [r5, #5]
-    cmp	r0, #1
-    bne	MA_IntrSio_Recv+0x372
-    ldrh	r0, [r3, #0]
-    cmp	r0, #4
-    bne	MA_IntrSio_Recv+0x372
-    ldr	r2, [r5, #64]
-    mov	r0, #16
-    and	r2, r0
-    cmp	r2, #0
-    beq	MA_IntrSio_Recv+0x366
-    ldr	r0, [r5, #64]
-    mov	r1, #17
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    bl	MA_RecvRetry
-    b	MA_IntrSio_Recv+0x372
-    ldr	r0, [r5, #64]
-    mov	r1, #64
-    orr	r0, r1
-    str	r0, [r5, #64]
-    ldrb	r0, [r5, #4]
-    strb	r2, [r5, #4]
-    pop	{r4, r5, r6}
-    pop	{r0}
-    bx	r0
-.size MA_IntrSio_Recv, .-MA_IntrSio_Recv
-");
-#endif
+            // Allow up to 20 garbage bytes to be received
+            if (++gMA.recv_garbage_counter <= 20) break;
+            MA_SetError(MAAPIE_MA_NOT_FOUND);
+            gMA.recv_garbage_counter = 0;
+            break;
+
+        case 1:
+            // Try to receive the second magic byte
+            if (recvByte == MAPROT_MAGIC_2) {
+                gMA.iobuf_packet_recv.state = 2;
+                gMA.iobuf_packet_recv.readcnt = 0;
+            } else {
+                MA_SetError(MAAPIE_MA_NOT_FOUND);
+            }
+            gMA.recv_garbage_counter = 0;
+            break;
+        }
+        break;
+
+    case 2:
+        // Parse the header
+        switch (gMA.iobuf_packet_recv.readcnt) {
+        case 0:  // Command
+            gMA.recv_cmd = recvByte;
+            break;
+
+        case 1:  // Unused
+            break;
+
+        case 2:  // Size (high byte, assume 0)
+            ((u8 *)&gMA.iobuf_packet_recv.size)[3 - gMA.iobuf_packet_recv.readcnt] = 0;
+            break;
+
+        case 3:  // Size (low byte)
+            ((u8 *)&gMA.iobuf_packet_recv.size)[3 - gMA.iobuf_packet_recv.readcnt] = recvByte;
+            break;
+        }
+
+        // Read until we get 4 bytes
+        gMA.iobuf_packet_recv.readcnt += 1;
+        gMA.iobuf_packet_recv.checksum += recvByte;
+        if (gMA.iobuf_packet_recv.readcnt != 4) break;
+
+        // If the packet is empty, skip to the end
+        if (gMA.iobuf_packet_recv.size == 0) {
+            gMA.iobuf_packet_recv.state = 4;
+            gMA.iobuf_packet_recv.readcnt = 0;
+            break;
+        }
+
+        // When using MA_SIO_WORD mode, a multiple of 4 bytes should be read
+        if (gMA.sio_mode == MA_SIO_BYTE) {
+            gMA.iobuf_packet_recv.readcnt = gMA.iobuf_packet_recv.size;
+        } else {
+            amari = gMA.iobuf_packet_recv.size % 4;
+            if (amari == 0) {
+                gMA.iobuf_packet_recv.readcnt = gMA.iobuf_packet_recv.size;
+            } else {
+                gMA.iobuf_packet_recv.readcnt =
+                    gMA.iobuf_packet_recv.size + (4 - amari);
+            }
+        }
+
+        gMA.iobuf_packet_recv.state = 3;
+        break;
+
+    case 3:
+        if (MA_IntrSio_Timeout()) break;
+
+        // Read the packet body
+        *gMA.iobuf_packet_recv.readptr++ = recvByte;
+        gMA.iobuf_packet_recv.readcnt--;
+        gMA.iobuf_packet_recv.checksum += recvByte;
+        if (gMA.iobuf_packet_recv.readcnt != 0) break;
+
+        gMA.iobuf_packet_recv.state = 4;
+        gMA.iobuf_packet_recv.readcnt = 0;
+        break;
+
+    case 4:
+        // Read the checksum
+        ((u8 *)&gMA.recv_checksum)[1 - gMA.iobuf_packet_recv.readcnt] = recvByte;
+        gMA.iobuf_packet_recv.readcnt++;
+        if (gMA.iobuf_packet_recv.readcnt != 2) break;
+
+        // Initialize the recv_footer buffer
+        MA_InitIoBuffer(&gMA.iobuf_footer, gMA.buffer_footer, sizeof(gMA.buffer_footer), 0);
+        gMA.buffer_footer[0] = MATYPE_PROT_MASTER | MATYPE_GBA;
+        if (gMA.recv_checksum != gMA.iobuf_packet_recv.checksum &&
+                !(gMA.status & STATUS_UNK_12)) {
+            gMA.buffer_footer[1] = MAPROT_ERR_CHECKSUM;
+            gMA.status |= STATUS_UNK_4;
+        } else {
+            gMA.buffer_footer[1] = gMA.recv_cmd;
+        }
+        gMA.buffer_footer[3] = 0;
+        gMA.buffer_footer[2] = 0;
+
+        gMA.iobuf_packet_recv.state = 5;
+        gMA.iobuf_packet_recv.readcnt = 0;
+        break;
+
+    case 5:
+        gMA.recv_footer[gMA.iobuf_packet_recv.readcnt] = recvByte;
+        gMA.iobuf_packet_recv.readcnt++;
+
+        // Wait until enough bytes have been read depending on the mode
+        if (!((gMA.sio_mode == MA_SIO_BYTE && gMA.iobuf_packet_recv.readcnt == 2) ||
+              (gMA.sio_mode == MA_SIO_WORD && gMA.iobuf_packet_recv.readcnt == 4))) {
+            break;
+        }
+
+        // Retry if the checksum failed
+        if (gMA.status & STATUS_UNK_4) {
+            gMA.status &= ~STATUS_UNK_4;
+            MA_RecvRetry();
+        } else {
+            gMA.status |= STATUS_UNK_6;
+            gMA.unk_4 = 0;
+        }
+    }
+}
 
 #if 0
 #else

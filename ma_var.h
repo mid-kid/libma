@@ -40,10 +40,10 @@ enum ma_sio_modes {
 };
 
 typedef struct {
-    vu16 unk_0;
+    vu16 state;
     vu16 size;
     vu16 readcnt;
-    vu16 writecnt;
+    vu16 checksum;
     vu8 *readptr;
     vu8 *writeptr;
 } MA_IOBUF;
@@ -71,18 +71,16 @@ typedef struct {
     u32 counter_p2p[MA_NUM_SIO_MODES];
     u32 counter_timeout200msec[MA_NUM_SIO_MODES];
     u32 counter_adapter[MA_NUM_SIO_MODES];
-    vu32 unk_60;
+    vu32 counter;
     vu32 status;
     vu8 cmd_cur;
-    vu8 unk_69;
-    u16 unk_70;
+    vu8 recv_cmd;
+    u16 recv_checksum;
     vu8 siodata[4];
-    vu8 unk_76;
-    vu8 unk_77;
-    u8 _78[2];
+    vu8 recv_footer[4];
     vu8 unk_80;
     vu8 unk_81;
-    u8 unk_82;
+    u8 recv_garbage_counter;
     u8 unk_83;
     u8 unk_84[4];
     u8 _88[4];
@@ -106,11 +104,11 @@ typedef struct {
     MA_BUF buffer_unk_480;
     MA_IOBUF iobuf_packet_send;
     MA_IOBUF iobuf_packet_recv;
-    MA_IOBUF iobuf_recv;
+    MA_IOBUF iobuf_footer;
     u8 buffer_packet_send[32];
     u8 _568[236];
     u8 buffer_recv_data[4];
-    u8 _808[4];
+    u8 buffer_footer[4];
     MA_BUF buffer_recv;
     MA_BUF *buffer_recv_ptr;
     MA_IOBUF *iobuf_sio_tx;
