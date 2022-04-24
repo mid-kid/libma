@@ -1231,6 +1231,7 @@ static void MA_IntrTimer_SIOWaitTime(void)
 }
 
 #if 0
+
 void MA_ProcessCheckStatusResponse(u8 response)
 {
     int iVar1;
@@ -1327,6 +1328,7 @@ void MA_ProcessCheckStatusResponse(u8 response)
     gMA.iobuf_packet_recv.state = 0;
     gMA.status &= ~STATUS_UNK_2;
 }
+
 #else
 asm("
 .align 2
@@ -1659,6 +1661,7 @@ void MA_DefaultNegaResProc(void)
 
 #if 0
 #else
+void MA_ProcessRecvPacket(u8 cmd);
 asm("
 .lcomm pPacket.181, 0x4
 
@@ -2052,134 +2055,62 @@ MA_ProcessRecvPacket:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.lcomm saveSioMode.185, 0x1
+void MA_IntrTimer(void)
+{
+    static u8 saveSioMode asm("saveSioMode.185");
 
-.align 2
-.thumb_func
-.global MA_IntrTimer
-MA_IntrTimer:
-    push	{r4, r5, r6, lr}
-    ldr	r4, [pc, #88]
-    ldr	r0, [r4, #64]
-    mov	r2, #128
-    orr	r0, r2
-    str	r0, [r4, #64]
-    ldr	r6, [pc, #80]
-    ldrb	r0, [r4, #4]
-    strb	r0, [r6, #0]
-    ldr	r5, [pc, #80]
-    mov	r0, #0
-    str	r0, [r5, #0]
-    ldr	r0, [r4, #64]
-    mov	r1, #2
-    and	r0, r1
-    mov	r3, r4
-    cmp	r0, #0
-    beq	MA_IntrTimer+0x44
-    ldr	r0, [r4, #64]
-    add	r1, #254
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_IntrTimer+0x44
-    ldr	r0, [r4, #64]
-    mov	r1, #32
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_IntrTimer+0x44
-    ldr	r0, [pc, #44]
-    ldrh	r1, [r0, #0]
-    mov	r0, r2
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_IntrTimer+0x6c
-    ldr	r2, [pc, #28]
-    ldrh	r1, [r3, #12]
-    mov	r0, #195
-    lsl	r0, r0, #16
-    orr	r0, r1
-    str	r0, [r2, #0]
-    ldr	r0, [r3, #64]
-    mov	r1, #129
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r3, #64]
-    b	MA_IntrTimer+0xee
-.align 2
-    .word gMA
-    .word saveSioMode.185
-    .word 0x0400010c
-    .word 0x04000128
+    gMA.status |= STATUS_UNK_7;
+    saveSioMode = gMA.unk_4;
+    *(vu32 *)REG_TM3CNT = 0;
 
-    bl	MAAPI_Main
-    ldrb	r1, [r4, #4]
-    ldrb	r0, [r6, #0]
-    cmp	r0, r1
-    bne	MA_IntrTimer+0x8c
-    ldr	r0, [r4, #64]
-    mov	r1, #64
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_IntrTimer+0xa2
-    mov	r0, r4
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    bl	MA_ProcessRecvPacket
-    ldr	r0, [r4, #64]
-    mov	r1, #129
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r4, #64]
-    ldrh	r1, [r4, #12]
-    mov	r0, #195
-    lsl	r0, r0, #16
-    orr	r0, r1
-    str	r0, [r5, #0]
-    b	MA_IntrTimer+0xee
-    ldrb	r0, [r4, #4]
-    cmp	r0, #1
-    beq	MA_IntrTimer+0xc8
-    cmp	r0, #1
-    bgt	MA_IntrTimer+0xb2
-    cmp	r0, #0
-    beq	MA_IntrTimer+0xbc
-    b	MA_IntrTimer+0xd2
-    cmp	r0, #2
-    beq	MA_IntrTimer+0xce
-    cmp	r0, #3
-    beq	MA_IntrTimer+0xc2
-    b	MA_IntrTimer+0xd2
-    bl	MA_IntrTimer_SIOIdle
-    b	MA_IntrTimer+0xd2
-    bl	MA_IntrTimer_SIOWaitTime
-    b	MA_IntrTimer+0xd2
-    bl	MA_IntrTimer_SIOSend
-    b	MA_IntrTimer+0xd2
-    bl	MA_IntrTimer_SIORecv
-    bl	MA_StartSioTransmit
-    ldr	r3, [pc, #28]
-    ldr	r2, [pc, #28]
-    ldrh	r1, [r2, #12]
-    mov	r0, #195
-    lsl	r0, r0, #16
-    orr	r0, r1
-    str	r0, [r3, #0]
-    ldr	r0, [r2, #64]
-    mov	r1, #129
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r2, #64]
-    pop	{r4, r5, r6}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word 0x0400010c
-    .word gMA
-.size MA_IntrTimer, .-MA_IntrTimer
-");
-#endif
+    if (!(gMA.status & STATUS_UNK_1) || gMA.status & STATUS_UNK_8 ||
+            gMA.status & STATUS_UNK_5 || *(vu16 *)REG_SIOCNT & SIO_START) {
+        *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE |
+            TMR_PRESCALER_1024CK | gMA.timer_unk_12;
+        gMA.status &= ~STATUS_UNK_7;
+        return;
+    }
+
+    MAAPI_Main();
+
+    if (saveSioMode != gMA.unk_4) {
+        gMA.status &= ~STATUS_UNK_7;
+        *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE |
+            TMR_PRESCALER_1024CK | gMA.timer_unk_12;
+        return;
+    }
+
+    if (gMA.status & STATUS_UNK_6) {
+        MA_ProcessRecvPacket(gMA.recv_cmd);
+        gMA.status &= ~STATUS_UNK_7;
+        *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE |
+            TMR_PRESCALER_1024CK | gMA.timer_unk_12;
+        return;
+    }
+
+    switch (gMA.unk_4) {
+    case 0:
+        MA_IntrTimer_SIOIdle();
+        break;
+
+    case 3:
+        MA_IntrTimer_SIOWaitTime();
+        break;
+
+    case 1:
+        MA_IntrTimer_SIOSend();
+        break;
+
+    case 2:
+        MA_IntrTimer_SIORecv();
+        break;
+    }
+    MA_StartSioTransmit();
+
+    *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE |
+        TMR_PRESCALER_1024CK | gMA.timer_unk_12;
+    gMA.status &= ~STATUS_UNK_7;
+}
 
 static inline int MA_IntrSio_Timeout(void)
 {
