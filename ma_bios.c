@@ -250,8 +250,8 @@ void MABIOS_Init(void)
     gMA.cmd_cur = 0;
     gMA.recv_cmd = 0;
     gMA.recv_checksum = 0;
-    gMA.siodata[0] = 0;
-    gMA.siodata[1] = 0;
+    gMA.send_footer[0] = 0;
+    gMA.send_footer[1] = 0;
     gMA.recv_footer[0] = 0;
     gMA.recv_footer[1] = 0;
 
@@ -2181,19 +2181,6 @@ MA_IntrTimer:
 ");
 #endif
 
-void MA_Bios_disconnect(void)
-{
-    gMA.unk_4 = 0;
-    gMA.iobuf_packet_send.state = 0;
-    gMA.iobuf_packet_recv.state = 0;
-    MA_SetError(MAAPIE_MA_NOT_FOUND);
-    gMA.status &= ~STATUS_UNK_0;
-    gMA.condition &= ~MA_CONDITION_UNK_5;
-    gMA.status &= ~STATUS_UNK_2;
-    gMA.iobuf_packet_send.state = 0;
-    *(vu32 *)REG_TM3CNT = 0;
-}
-
 static inline int MA_IntrSio_Timeout(void)
 {
     if (++gMA.counter > gMA.counter_timeout[gMA.sio_mode]) {
@@ -2208,11 +2195,34 @@ static inline int MA_IntrSio_Timeout(void)
     return FALSE;
 }
 
+static inline void MA_Bios_Error(void)
+{
+    gMA.status &= ~STATUS_UNK_0;
+    gMA.condition &= ~MA_CONDITION_UNK_5;
+    gMA.status &= ~STATUS_UNK_2;
+}
+
+static inline void MA_Bios_disconnect_inline(void)
+{
+    gMA.unk_4 = 0;
+    gMA.iobuf_packet_send.state = 0;
+    gMA.iobuf_packet_recv.state = 0;
+    MA_SetError(MAAPIE_MA_NOT_FOUND);
+    MA_Bios_Error();
+    gMA.iobuf_packet_send.state = 0;
+    *(vu32 *)REG_TM3CNT = 0;
+}
+
+void MA_Bios_disconnect(void)
+{
+    MA_Bios_disconnect_inline();
+}
+
 static void MA_IntrSio_Send(void)
 {
     static int dataLeft asm("dataLeft.192");
 
-    switch (gMA.iobuf_packet_send.state) {
+    switch (gMA.iobuf_packet_send.state) {  // MAGIC
         default:
         case 1: return;
         case 2: return;
@@ -2224,46 +2234,40 @@ static void MA_IntrSio_Send(void)
     dataLeft = gMA.iobuf_packet_send.size - gMA.iobuf_packet_send.readcnt;
     if (gMA.sio_mode == MA_SIO_BYTE) {
         if (dataLeft < 2) {
-            gMA.siodata[1 - dataLeft] = *(vu8 *)(REG_SIODATA8);
+            gMA.send_footer[1 - dataLeft] = *(vu8 *)(REG_SIODATA8);
         }
     } else {
         if (dataLeft == 0) {
-            gMA.siodata[0] = *(vu8 *)(REG_SIODATA32 + 3);
-            gMA.siodata[1] = *(vu8 *)(REG_SIODATA32 + 2);
-            gMA.siodata[2] = *(vu8 *)(REG_SIODATA32 + 1);
-            gMA.siodata[3] = *(vu8 *)(REG_SIODATA32 + 0);
+            gMA.send_footer[0] = *(vu8 *)(REG_SIODATA32 + 3);
+            gMA.send_footer[1] = *(vu8 *)(REG_SIODATA32 + 2);
+            gMA.send_footer[2] = *(vu8 *)(REG_SIODATA32 + 1);
+            gMA.send_footer[3] = *(vu8 *)(REG_SIODATA32 + 0);
         }
     }
 
+    // Process only the packet footer (everything has been sent)
     if (gMA.iobuf_packet_send.size != gMA.iobuf_packet_send.readcnt) return;
 
-    if (gMA.siodata[0] == 0xff && gMA.siodata[1] == 0xff) {
+    // Pull up behavior on SI (pin always high) means nothing is connected
+    if (gMA.send_footer[0] == 0xff && gMA.send_footer[1] == 0xff) {
         MA_SetError(MAAPIE_MA_NOT_FOUND);
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.condition &= ~MA_CONDITION_UNK_5;
-        gMA.status &= ~STATUS_UNK_2;
+        MA_Bios_Error();
         return;
     }
 
-    if (!MA_IsSupportedHardware(gMA.siodata[0]) && !(gMA.status & STATUS_UNK_12)) {
-        if (!(gMA.status & STATUS_UNK_3)) {
-            gMA.unk_14 = 2;
-        } else {
+    // Check if the adapter hardware is supported
+    if (!MA_IsSupportedHardware(gMA.send_footer[0]) &&
+            !(gMA.status & STATUS_UNK_12)) {
+        if (gMA.status & STATUS_UNK_3) {
             if (--gMA.unk_14 == 0) {
-                gMA.unk_4 = 0;
-                gMA.iobuf_packet_send.state = 0;
-                gMA.iobuf_packet_recv.state = 0;
-                MA_SetError(MAAPIE_MA_NOT_FOUND);
-                gMA.status &= ~STATUS_UNK_0;
-                gMA.condition &= ~MA_CONDITION_UNK_5;
-                gMA.status &= ~STATUS_UNK_2;
-                gMA.iobuf_packet_send.state = 0;
-                *(vu32 *)REG_TM3CNT = 0;
+                MA_Bios_disconnect_inline();
                 return;
             }
+        } else {
+            gMA.unk_14 = 2;
         }
 
-        gMA.unk_7 = gMA.siodata[1];
+        gMA.unk_7 = gMA.send_footer[1];
         gMA.timer_unk_12 = -1967;  // MAGIC
         gMA.status |= STATUS_UNK_3;
         gMA.unk_4 = 3;
@@ -2273,23 +2277,22 @@ static void MA_IntrSio_Send(void)
         return;
     }
 
-    if (gMA.siodata[1] == MAPROT_ERR_F2 &&
+    // Check if the adapter returned an unknown protocol error
+    if (gMA.send_footer[1] == MAPROT_ERR_F2 &&
             !(gMA.status & STATUS_UNK_12)) {
         gMA.unk_7 = MAPROT_ERR_F2;
-        if (!(gMA.status & STATUS_UNK_3)) {
-            gMA.unk_14 = -2;
-        } else {
-            gMA.unk_14--;
-            if (gMA.unk_14 == 0) {
+
+        if (gMA.status & STATUS_UNK_3) {
+            if (--gMA.unk_14 == 0) {
                 MA_SetError(MAAPIE_UNK_85);
-                gMA.status &= ~STATUS_UNK_0;
-                gMA.condition &= ~MA_CONDITION_UNK_5;
-                gMA.status &= ~STATUS_UNK_2;
+                MA_Bios_Error();
                 return;
             }
+        } else {
+            gMA.unk_14 = -2;
         }
 
-        gMA.unk_7 = gMA.siodata[1];
+        gMA.unk_7 = gMA.send_footer[1];
         gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
         gMA.status |= STATUS_UNK_3;
         gMA.unk_4 = 3;
@@ -2297,27 +2300,27 @@ static void MA_IntrSio_Send(void)
         *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE |
             TMR_PRESCALER_1024CK | gMA.timer_unk_12;
         return;
-    } else if ((gMA.siodata[1] == MAPROT_ERR_F0 ||
-                gMA.siodata[1] == MAPROT_ERR_CHECKSUM) &&
+    }
+
+    // Check if the adapter supports the command and didn't fail the checksum
+    if ((gMA.send_footer[1] == MAPROT_ERR_F0 ||
+                gMA.send_footer[1] == MAPROT_ERR_CHECKSUM) &&
             !(gMA.status & STATUS_UNK_12)) {
         if (gMA.status & STATUS_UNK_3) {
-            gMA.unk_14--;
-            if (gMA.unk_14 == 0) {
-                if (gMA.siodata[1] == MAPROT_ERR_F0) {
+            if (--gMA.unk_14 == 0) {
+                if (gMA.send_footer[1] == MAPROT_ERR_F0) {
                     MA_SetError(MAAPIE_UNK_83);
                 } else {
                     MA_SetError(MAAPIE_UNK_84);
                 }
-                gMA.status &= ~STATUS_UNK_0;
-                gMA.condition &= ~MA_CONDITION_UNK_5;
-                gMA.status &= ~STATUS_UNK_2;
+                MA_Bios_Error();
                 return;
             }
         } else {
             gMA.unk_14 = 2;
         }
 
-        gMA.unk_7 = gMA.siodata[1];
+        gMA.unk_7 = gMA.send_footer[1];
         gMA.timer_unk_12 = -16387;  // MAGIC
         gMA.status |= STATUS_UNK_3;
         gMA.unk_4 = 3;
@@ -2325,20 +2328,22 @@ static void MA_IntrSio_Send(void)
         *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE |
             TMR_PRESCALER_1024CK | gMA.timer_unk_12;
         return;
-    } else if ((gMA.siodata[1] != gMA.cmd_cur + MAPROT_REPLY &&
-                gMA.siodata[1] != MACMD_ERROR + MAPROT_REPLY) &&
+    }
+
+    // Make sure the adapter received the correct command, or an error command
+    if (!(gMA.send_footer[1] == gMA.cmd_cur + MAPROT_REPLY ||
+                gMA.send_footer[1] == MACMD_ERROR + MAPROT_REPLY) &&
             !(gMA.status & STATUS_UNK_12)) {
-        if (!(gMA.status & STATUS_UNK_3)) {
-            gMA.unk_14 = 2;
-        } else {
-            gMA.unk_14--;
-            if (gMA.unk_14 == 0) {
+        if (gMA.status & STATUS_UNK_3) {
+            if (--gMA.unk_14 == 0) {
                 MA_Bios_disconnect();
                 return;
             }
+        } else {
+            gMA.unk_14 = 2;
         }
 
-        gMA.unk_7 = gMA.siodata[1];
+        gMA.unk_7 = gMA.send_footer[1];
         gMA.timer_unk_12 = -1967;  // MAGIC
         gMA.status |= STATUS_UNK_3;
         gMA.unk_4 = 3;
@@ -2348,7 +2353,8 @@ static void MA_IntrSio_Send(void)
         return;
     }
 
-    gMA.adapter_type = gMA.siodata[0];
+    // Initialize the reception of the reply packet
+    gMA.adapter_type = gMA.send_footer[0];
     if (gMA.sio_mode == MA_SIO_BYTE) {
         MA_InitIoBuffer(&gMA.iobuf_footer, (u8 *)MaPacketData_PreStart, 1, 0);
     } else {

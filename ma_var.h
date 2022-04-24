@@ -76,7 +76,7 @@ typedef struct {
     vu8 cmd_cur;
     vu8 recv_cmd;
     u16 recv_checksum;
-    vu8 siodata[4];
+    vu8 send_footer[4];
     vu8 recv_footer[4];
     vu8 unk_80;
     vu8 unk_81;
