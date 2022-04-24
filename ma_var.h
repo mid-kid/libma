@@ -57,7 +57,7 @@ typedef struct {
     vu8 error;
     u8 _1[1];
     vu16 condition;
-    vu8 unk_4;
+    vu8 intr_sio_mode;
     vu8 sio_mode;
     vu8 adapter_type;
     vu8 unk_7;
