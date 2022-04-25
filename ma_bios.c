@@ -35,6 +35,7 @@
 #define MACMD_CHANGECLOCK 0x18
 #define MACMD_EEPROM_READ 0x19
 #define MACMD_EEPROM_WRITE 0x1a
+#define MACMD_UNK_1F 0x1f
 #define MACMD_PPPCONNECT 0x21
 #define MACMD_PPPDISCONNECT 0x22
 #define MACMD_TCPCONNECT 0x23
@@ -1232,7 +1233,7 @@ static void MA_IntrTimer_SIOWaitTime(void)
 
 #if 0
 
-void MA_ProcessCheckStatusResponse(u8 response)
+void MA_ProcessCheckStatusResponse(u7 response)
 {
     int iVar1;
 
@@ -1330,6 +1331,7 @@ void MA_ProcessCheckStatusResponse(u8 response)
 }
 
 #else
+void MA_ProcessCheckStatusResponse(u8 response);
 asm("
 .align 2
 .thumb_func
@@ -1623,7 +1625,11 @@ MA_ProcessCheckStatusResponse:
 static void ConvertNegaErrToApiErr(void)
 {
     static const u8 errTable[] asm("errTable.174") = {
-        0x15, 0x16, 0x17, 0x13, 0x13
+        MAAPIE_SYSTEM,
+        MAAPIE_CANNOT_EXECUTE_LOW,
+        MAAPIE_ILLEGAL_PARAMETER_LOW,
+        MAAPIE_CONNECT,
+        MAAPIE_CONNECT
     };
 
     gMA.unk_102 = errTable[gMA.unk_81];
@@ -1632,428 +1638,124 @@ static void ConvertNegaErrToApiErr(void)
 
 void MA_DefaultNegaResProc(void)
 {
-    switch(gMA.unk_80) {  // MAGIC
-    case 0x12:
-        switch(gMA.unk_81) {
-            case 0: gMA.unk_102 = 0x12; break;
-            case 1: gMA.unk_102 = 0x13; break;
-            case 2: gMA.unk_102 = 0x17; break;
-            case 3: gMA.unk_102 = 0x13; break;
-            case 4: gMA.unk_102 = 0x13; break;
+    switch(gMA.unk_80) {
+    case MACMD_TEL:
+        switch(gMA.unk_81) {  // MAGIC
+            case 0: gMA.unk_102 = MAAPIE_BUSY; break;
+            case 1: gMA.unk_102 = MAAPIE_CONNECT; break;
+            case 2: gMA.unk_102 = MAAPIE_ILLEGAL_PARAMETER_LOW; break;
+            case 3: gMA.unk_102 = MAAPIE_CONNECT; break;
+            case 4: gMA.unk_102 = MAAPIE_CONNECT; break;
         }
         gMA.unk_104 = 0;
         break;
 
-    case 0x10:
-    case 0x14:
-    case 0x15:
-    case 0x17:
-    case 0x18:
-    case 0x19:
-    case 0x1a:
-    case 0x21:
-    case 0x23:
-    case 0x28:
+    case MACMD_START:
+    case MACMD_WAITCALL:
+    case MACMD_DATA:
+    case MACMD_CHECKSTATUS:
+    case MACMD_CHANGECLOCK:
+    case MACMD_EEPROM_READ:
+    case MACMD_EEPROM_WRITE:
+    case MACMD_PPPCONNECT:
+    case MACMD_TCPCONNECT:
+    case MACMD_DNSREQUEST:
         ConvertNegaErrToApiErr();
         break;
     }
 }
 
-#if 0
-#else
-void MA_ProcessRecvPacket(u8 cmd);
-asm("
-.lcomm pPacket.181, 0x4
+static void MA_ProcessRecvPacket(u8 cmd)
+{
+    static u8 *pPacket asm("pPacket.181");
 
-.align 2
-.thumb_func
-MA_ProcessRecvPacket:
-    push	{r4, r5, lr}
-    lsl	r0, r0, #24
-    lsr	r4, r0, #24
-    ldr	r5, [pc, #44]
-    mov	r0, #1
-    str	r0, [r5, #0]
-    ldr	r2, [pc, #40]
-    ldr	r0, [pc, #44]
-    str	r0, [r2, #0]
-    ldr	r1, [pc, #44]
-    add	r3, r0, r1
-    ldr	r0, [r3, #64]
-    mov	r1, #128
-    lsl	r1, r1, #5
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_ProcessRecvPacket+0x48
-    ldr	r0, [r3, #64]
-    ldr	r1, [pc, #28]
-    and	r0, r1
-    str	r0, [r3, #64]
-    bl	MA_BiosStop
-    mov	r0, #0
-    str	r0, [r5, #0]
-    b	MA_ProcessRecvPacket+0x3a8
-.align 2
-    .word i
-    .word pPacket.181
-    .word gMA+0x218
-    .word 0xfffffde8
-    .word 0xffffefff
+    i = 1;
+    pPacket = gMA.buffer_packet_send;
+    if (gMA.status & STATUS_UNK_12) {
+        gMA.status &= ~STATUS_UNK_12;
+        MA_BiosStop();
+        i = 0;
+    } else {
+        switch(cmd) {
+        case MAPROT_REPLY | MACMD_START:
+            MA_SetInterval(0);
+            gMA.status |= STATUS_UNK_0;
+            break;
 
-    mov	r0, r4
-    sub	r0, #144
-    cmp	r0, #94
-    bls	MA_ProcessRecvPacket+0x52
-    b	MA_ProcessRecvPacket+0x394
-    lsl	r0, r0, #2
-    ldr	r1, [pc, #4]
-    add	r0, r0, r1
-    ldr	r0, [r0, #0]
-    mov	pc, r0
-.align 2
-    .word .L_MA_ProcessRecvPacket.0x60
-.L_MA_ProcessRecvPacket.0x60:
-    .word .L_MA_ProcessRecvPacket.0x60+0x17c
-    .word .L_MA_ProcessRecvPacket.0x60+0x194
-    .word .L_MA_ProcessRecvPacket.0x60+0x208
-    .word .L_MA_ProcessRecvPacket.0x60+0x21c
-    .word .L_MA_ProcessRecvPacket.0x60+0x208
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x258
-    .word .L_MA_ProcessRecvPacket.0x60+0x2a4
-    .word .L_MA_ProcessRecvPacket.0x60+0x278
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x234
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x334
-    .word .L_MA_ProcessRecvPacket.0x60+0x2bc
+        case MAPROT_REPLY | MACMD_END:
+            gMA.status &= ~STATUS_UNK_2;
+            gMA.status &= ~STATUS_UNK_9;
+            gMA.status &= ~STATUS_UNK_10;
+            gMA.status &= ~STATUS_UNK_13;
+            gMA.condition &= ~MA_CONDITION_CONNECT;
 
-    mov	r0, #0
-    bl	MA_SetInterval
-    ldr	r0, [pc, #12]
-    ldr	r1, [r0, #64]
-    mov	r2, #1
-    orr	r1, r2
-    str	r1, [r0, #64]
-    b	MA_ProcessRecvPacket+0x3a8
-.align 2
-    .word gMA
+            if (gMA.task_unk_97 != 2 && gMA.task_unk_97 != 9) {  // MAGIC
+                gMA.intr_sio_mode = 3;  // MAGIC
+                gMA.timer_unk_12 = -0x4003;  // MAGIC
+                i = 0;
+            }
+            break;
 
-    ldr	r2, [pc, #84]
-    ldr	r0, [r2, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r2, #64]
-    ldr	r0, [r2, #64]
-    ldr	r1, [pc, #76]
-    and	r0, r1
-    str	r0, [r2, #64]
-    ldr	r0, [r2, #64]
-    ldr	r1, [pc, #72]
-    and	r0, r1
-    str	r0, [r2, #64]
-    ldr	r0, [r2, #64]
-    ldr	r1, [pc, #68]
-    and	r0, r1
-    str	r0, [r2, #64]
-    ldrh	r1, [r2, #2]
-    ldr	r0, [pc, #64]
-    and	r0, r1
-    ldrh	r1, [r2, #2]
-    strh	r0, [r2, #2]
-    mov	r1, r2
-    add	r1, #97
-    ldrb	r0, [r1, #0]
-    cmp	r0, #2
-    bne	MA_ProcessRecvPacket+0x22e
-    b	MA_ProcessRecvPacket+0x3a8
-    ldrb	r0, [r1, #0]
-    cmp	r0, #9
-    bne	MA_ProcessRecvPacket+0x236
-    b	MA_ProcessRecvPacket+0x3a8
-    ldrb	r0, [r2, #4]
-    mov	r0, #3
-    strb	r0, [r2, #4]
-    ldrh	r0, [r2, #12]
-    ldr	r0, [pc, #32]
-    strh	r0, [r2, #12]
-    ldr	r1, [pc, #32]
-    mov	r0, #0
-    str	r0, [r1, #0]
-    b	MA_ProcessRecvPacket+0x3a8
-.align 2
-    .word gMA
-    .word 0xfffffdff
-    .word 0xfffffbff
-    .word 0xffffdfff
-    .word 0x0000ffef
-    .word 0x0000bffd
-    .word i
+        case MAPROT_REPLY | MACMD_TEL:
+        case MAPROT_REPLY | MACMD_WAITCALL:
+            gMA.condition |= MA_CONDITION_CONNECT;
+            break;
 
-    ldr	r1, [pc, #12]
-    ldrh	r2, [r1, #2]
-    mov	r0, #16
-    ldrh	r3, [r1, #2]
-    orr	r0, r2
-    strh	r0, [r1, #2]
-    b	MA_ProcessRecvPacket+0x3a8
-.align 2
-    .word gMA
+        case MAPROT_REPLY | MACMD_OFFLINE:
+            gMA.condition &= ~MA_CONDITION_CONNECT;
+            break;
 
-    ldr	r1, [pc, #12]
-    ldrh	r2, [r1, #2]
-    ldr	r0, [pc, #12]
-    and	r0, r2
-    ldrh	r2, [r1, #2]
-    strh	r0, [r1, #2]
-    b	MA_ProcessRecvPacket+0x3a8
-.align 2
-    .word gMA
-    .word 0x0000ffef
+        case MAPROT_REPLY | MACMD_UNK_1F:
+            gMA.buffer_recv_ptr->size = gMA.iobuf_packet_recv.size;
+            gMA.condition |= MA_CONDITION_UNK_6;
+            break;
 
-    ldr	r3, [pc, #28]
-    mov	r2, #205
-    lsl	r2, r2, #2
-    add	r0, r3, r2
-    ldr	r1, [r0, #0]
-    mov	r2, #253
-    lsl	r2, r2, #1
-    add	r0, r3, r2
-    ldrh	r0, [r0, #0]
-    strh	r0, [r1, #0]
-    ldrh	r1, [r3, #2]
-    mov	r0, #64
-    ldrh	r2, [r3, #2]
-    orr	r0, r1
-    strh	r0, [r3, #2]
-    b	MA_ProcessRecvPacket+0x3a8
-.align 2
-    .word gMA
+        case MAPROT_REPLY | MACMD_REINIT:
+            MA_ChangeSIOMode(MA_SIO_BYTE);
+            gMA.intr_sio_mode = 3;  // MAGIC
+            gMA.timer_unk_12 = -0x2002;  // MAGIC
+            i = 0;
+            break;
 
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    ldr	r1, [pc, #16]
-    ldrb	r0, [r1, #4]
-    mov	r2, #0
-    mov	r0, #3
-    strb	r0, [r1, #4]
-    ldrh	r0, [r1, #12]
-    ldr	r0, [pc, #8]
-    b	MA_ProcessRecvPacket+0x2ee
-.align 2
-    .word gMA
-    .word 0x0000dffe
+        case MAPROT_REPLY | MACMD_CHANGECLOCK:
+            MA_ChangeSIOMode(pPacket[6]);
+            gMA.intr_sio_mode = 3;  // MAGIC
+            gMA.timer_unk_12 = -0x3d8;  // MAGIC
+            i = 0;
+            break;
 
-    ldr	r0, [r2, #0]
-    ldrb	r0, [r0, #6]
-    bl	MA_ChangeSIOMode
-    ldr	r1, [pc, #20]
-    ldrb	r0, [r1, #4]
-    mov	r2, #0
-    mov	r0, #3
-    strb	r0, [r1, #4]
-    ldrh	r0, [r1, #12]
-    ldr	r0, [pc, #12]
-    strh	r0, [r1, #12]
-    ldr	r0, [pc, #12]
-    str	r2, [r0, #0]
-    b	MA_ProcessRecvPacket+0x3a8
-.align 2
-    .word gMA
-    .word 0x0000fc28
-    .word i
+        case MAPROT_REPLY | MACMD_CHECKSTATUS:
+            MA_ProcessCheckStatusResponse(gMA.iobuf_packet_recv.writeptr[0]);
+            break;
 
-    ldr	r0, [pc, #16]
-    mov	r3, #129
-    lsl	r3, r3, #2
-    add	r0, r0, r3
-    ldr	r0, [r0, #0]
-    ldrb	r0, [r0, #0]
-    bl	MA_ProcessCheckStatusResponse
-    b	MA_ProcessRecvPacket+0x3a8
-.align 2
-    .word gMA
+        case MAPROT_REPLY | MACMD_ERROR:
+            gMA.unk_80 = gMA.iobuf_packet_recv.writeptr[0];
+            gMA.unk_81 = gMA.iobuf_packet_recv.writeptr[1];
 
-    ldr	r0, [pc, #100]
-    mov	ip, r0
-    mov	r0, #129
-    lsl	r0, r0, #2
-    add	r0, ip
-    ldr	r1, [r0, #0]
-    ldrb	r2, [r1, #0]
-    mov	r0, ip
-    add	r0, #80
-    ldrb	r3, [r0, #0]
-    mov	r4, #0
-    strb	r2, [r0, #0]
-    ldrb	r1, [r1, #1]
-    mov	r3, ip
-    add	r3, #81
-    ldrb	r2, [r3, #0]
-    strb	r1, [r3, #0]
-    ldrb	r0, [r0, #0]
-    cmp	r0, #35
-    bne	MA_ProcessRecvPacket+0x3a8
-    mov	r1, ip
-    add	r1, #83
-    ldrb	r0, [r1, #0]
-    add	r0, #1
-    strb	r0, [r1, #0]
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #5
-    beq	MA_ProcessRecvPacket+0x3a8
-    mov	r1, ip
-    ldrh	r0, [r1, #12]
-    ldr	r0, [pc, #44]
-    strh	r0, [r1, #12]
-    ldr	r0, [r1, #64]
-    mov	r1, #8
-    orr	r0, r1
-    mov	r2, ip
-    str	r0, [r2, #64]
-    ldrb	r0, [r2, #4]
-    mov	r0, #3
-    strb	r0, [r2, #4]
-    ldr	r0, [pc, #28]
-    str	r4, [r0, #0]
-    ldr	r2, [pc, #28]
-    str	r4, [r2, #0]
-    mov	r3, ip
-    ldrh	r1, [r3, #12]
-    mov	r0, #195
-    lsl	r0, r0, #16
-    orr	r0, r1
-    str	r0, [r2, #0]
-    b	MA_ProcessRecvPacket+0x3a8
-.align 2
-    .word gMA
-    .word 0x0000bffd
-    .word i
-    .word 0x0400010c
+            if (gMA.unk_80 == MACMD_TCPCONNECT && ++gMA.unk_83 != 5) {
+                gMA.timer_unk_12 = -0x4003;  // MAGIC
+                gMA.status |= STATUS_UNK_3;
+                gMA.intr_sio_mode = 3;  // MAGIC
+                i = 0;
+                *(vu32 *)REG_TM3CNT = 0;
+                *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE |
+                    TMR_PRESCALER_1024CK | gMA.timer_unk_12;
+            }
+            break;
 
-    ldr	r2, [pc, #64]
-    mov	r1, #205
-    lsl	r1, r1, #2
-    add	r0, r2, r1
-    ldr	r1, [r0, #0]
-    mov	r3, #253
-    lsl	r3, r3, #1
-    add	r0, r2, r3
-    ldrh	r0, [r0, #0]
-    strh	r0, [r1, #0]
-    ldr	r2, [pc, #44]
-    ldr	r0, [r2, #64]
-    mov	r1, #65
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r2, #64]
-    ldr	r0, [pc, #36]
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    bne	MA_ProcessRecvPacket+0x3cc
-    ldrb	r0, [r2, #4]
-    mov	r0, #0
-    strb	r0, [r2, #4]
-    ldrh	r1, [r2, #2]
-    ldr	r0, [pc, #24]
-    and	r0, r1
-    ldrh	r1, [r2, #2]
-    strh	r0, [r2, #2]
-    mov	r0, #0
-    str	r0, [r2, #60]
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-    .word i
-    .word 0x0000ffdf
-.size MA_ProcessRecvPacket, .-MA_ProcessRecvPacket
-");
-#endif
+        default:
+            gMA.buffer_recv_ptr->size = gMA.iobuf_packet_recv.size;
+            break;
+        }
+    }
+
+    gMA.status &= ~STATUS_UNK_6;
+    if (i == 1) {
+        gMA.intr_sio_mode = 0;  // MAGIC
+        gMA.condition &= ~MA_CONDITION_UNK_5;
+    }
+    gMA.counter = 0;
+}
 
 void MA_IntrTimer(void)
 {
