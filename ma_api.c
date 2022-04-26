@@ -53,31 +53,11 @@
 //static void MATASK_EEPROM_Write();
 //static void ErrDetailHexConv();
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global SetApiCallFlag
-SetApiCallFlag:
-    ldr	r2, [pc, #20]
-    ldrh	r1, [r2, #0]
-    ldr	r0, [pc, #20]
-    and	r0, r1
-    strh	r0, [r2, #0]
-    ldr	r2, [pc, #20]
-    ldr	r0, [r2, #64]
-    mov	r1, #32
-    orr	r0, r1
-    str	r0, [r2, #64]
-    bx	lr
-.align 2
-    .word 0x04000200
-    .word 0x0000ff3f
-    .word gMA
-.size SetApiCallFlag, .-SetApiCallFlag
-");
-#endif
+void SetApiCallFlag(void)
+{
+    *(vu16 *)REG_IE &= ~TIMER3_INTR_FLAG & ~SIO_INTR_FLAG;
+    gMA.status |= STATUS_UNK_5;
+}
 
 #if 0
 #else
