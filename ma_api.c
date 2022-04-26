@@ -59,31 +59,11 @@ void SetApiCallFlag(void)
     gMA.status |= STATUS_UNK_5;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global ResetApiCallFlag
-ResetApiCallFlag:
-    ldr	r2, [pc, #20]
-    ldr	r0, [r2, #64]
-    mov	r1, #33
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r2, #64]
-    ldr	r2, [pc, #12]
-    ldrh	r0, [r2, #0]
-    mov	r1, #192
-    orr	r0, r1
-    strh	r0, [r2, #0]
-    bx	lr
-.align 2
-    .word gMA
-    .word 0x04000200
-.size ResetApiCallFlag, .-ResetApiCallFlag
-");
-#endif
+void ResetApiCallFlag(void)
+{
+    gMA.status &= ~STATUS_UNK_5;
+    *(vu16 *)REG_IE |= TIMER3_INTR_FLAG | SIO_INTR_FLAG;
+}
 
 void MA_TaskSet(u8 unk_1, u8 unk_2)
 {
