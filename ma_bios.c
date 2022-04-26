@@ -1231,26 +1231,18 @@ static void MA_IntrTimer_SIOWaitTime(void)
     gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
 }
 
-#if 0
-
-void MA_ProcessCheckStatusResponse(u7 response)
+int MA_ProcessCheckStatusResponse(u8 response)
 {
-    int iVar1;
+    int condition = 0;
 
-    iVar1 = 0;
     switch (response) {  // MAGIC
-    case 5:
-    case 4:
-        break;
-
-    case 1:
-    case 0:
+    case 0xff:
+        condition = MA_CONDITION_LOST;
         if (gMA.unk_92 != 0) {
             if (gMA.status & STATUS_UNK_2) {
                 gMA.status = 0;
                 MA_SetError(MAAPIE_OFFLINE);
-            }
-            else {
+            } else {
                 gMA.status = 0;
             }
             gMA.unk_92 = 0;
@@ -1274,13 +1266,14 @@ void MA_ProcessCheckStatusResponse(u7 response)
         }
         break;
 
-    case 0xff:
-        iVar1 = 7;
+    case 0:
+    case 1:
         if (gMA.unk_92 != 0) {
-            gMA.status &= STATUS_UNK_2;
-            if (gMA.status) {
+            if (gMA.status & STATUS_UNK_2) {
                 gMA.status = 0;
                 MA_SetError(MAAPIE_OFFLINE);
+            } else {
+                gMA.status = condition;
             }
             gMA.unk_92 = 0;
             MA_ChangeSIOMode(MA_SIO_BYTE);
@@ -1301,326 +1294,38 @@ void MA_ProcessCheckStatusResponse(u7 response)
             gMA.condition &= 0xff;
             gMA.condition = gMA.condition;
         }
-        break;
-    }
 
-    switch(gMA.unk_92) {  // MAGIC
-    case 3:
-        iVar1 = 1;
-        break;
-    case 4:
-        iVar1 = 4;
-        break;
     case 5:
-        iVar1 = 5;
-        break;
-    case 7:
-        iVar1 = 2;
-        break;
-    case 8:
-        iVar1 = 3;
+    case 4:
+        switch(gMA.unk_92) {  // MAGIC
+        case 3:
+            condition = MA_CONDITION_PPP;
+            break;
+        case 4:
+            condition = MA_CONDITION_SMTP;
+            break;
+        case 5:
+            condition = MA_CONDITION_POP3;
+            break;
+        case 7:
+            condition = MA_CONDITION_P2P_SEND;
+            break;
+        case 8:
+            condition = MA_CONDITION_P2P_RECV;
+            break;
+        }
         break;
     }
 
-    gMA.condition &= 0xff;
-    gMA.condition |= (iVar1 << 8);
+    gMA.condition &= ~MA_CONDITION_MASK;
+    gMA.condition |= condition << MA_CONDITION_SHIFT;
     gMA.intr_sio_mode = 0;
     gMA.iobuf_packet_send.state = 0;
     gMA.iobuf_packet_recv.state = 0;
     gMA.status &= ~STATUS_UNK_2;
+
+    return condition;
 }
-
-#else
-void MA_ProcessCheckStatusResponse(u8 response);
-asm("
-.align 2
-.thumb_func
-.global MA_ProcessCheckStatusResponse
-MA_ProcessCheckStatusResponse:
-    push	{r4, r5, r6, lr}
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    mov	r6, #0
-    cmp	r0, #5
-    bgt	MA_ProcessCheckStatusResponse+0x48
-    cmp	r0, #4
-    blt	MA_ProcessCheckStatusResponse+0x12
-    b	MA_ProcessCheckStatusResponse+0x1b4
-    cmp	r0, #1
-    ble	MA_ProcessCheckStatusResponse+0x18
-    b	MA_ProcessCheckStatusResponse+0x212
-    cmp	r0, #0
-    bge	MA_ProcessCheckStatusResponse+0x1e
-    b	MA_ProcessCheckStatusResponse+0x212
-    ldr	r2, [pc, #36]
-    mov	r0, r2
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    cmp	r0, #0
-    bne	MA_ProcessCheckStatusResponse+0x2c
-    b	MA_ProcessCheckStatusResponse+0x1b4
-    mov	r3, r2
-    ldr	r0, [r3, #64]
-    mov	r1, #4
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_ProcessCheckStatusResponse+0x124
-    mov	r0, #0
-    str	r0, [r3, #64]
-    mov	r0, #35
-    bl	MA_SetError
-    b	MA_ProcessCheckStatusResponse+0x126
-.align 2
-    .word gMA
-
-    cmp	r0, #255
-    beq	MA_ProcessCheckStatusResponse+0x4e
-    b	MA_ProcessCheckStatusResponse+0x212
-    mov	r6, #7
-    ldr	r2, [pc, #32]
-    mov	r0, r2
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    cmp	r0, #0
-    bne	MA_ProcessCheckStatusResponse+0x5e
-    b	MA_ProcessCheckStatusResponse+0x212
-    ldr	r1, [r2, #64]
-    mov	r0, #4
-    and	r1, r0
-    cmp	r1, #0
-    beq	MA_ProcessCheckStatusResponse+0x78
-    mov	r0, #0
-    str	r0, [r2, #64]
-    mov	r0, #35
-    bl	MA_SetError
-    b	MA_ProcessCheckStatusResponse+0x7a
-.align 2
-    .word gMA
-
-    str	r1, [r2, #64]
-    ldr	r5, [pc, #144]
-    mov	r0, r5
-    add	r0, #92
-    ldrb	r1, [r0, #0]
-    mov	r4, #0
-    strb	r4, [r0, #0]
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    ldrb	r0, [r5, #5]
-    lsl	r0, r0, #1
-    mov	r1, r5
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r5, #12]
-    mov	r1, #0
-    strh	r0, [r5, #12]
-    str	r4, [r5, #60]
-    ldrb	r0, [r5, #4]
-    strb	r1, [r5, #4]
-    ldr	r0, [r5, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #92]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #88]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #84]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #72]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #64]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    mov	r4, #255
-    mov	r0, r4
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    bl	MAU_Socket_Clear
-    ldrh	r0, [r5, #2]
-    and	r4, r0
-    ldrh	r0, [r5, #2]
-    strh	r4, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    b	MA_ProcessCheckStatusResponse+0x212
-.align 2
-    .word gMA
-    .word 0xfffffdff
-    .word 0xfffffbff
-    .word 0xffffdfff
-    .word 0x0000fff7
-    .word 0x0000ffef
-
-    str	r6, [r2, #64]
-    ldr	r5, [pc, #164]
-    mov	r0, r5
-    add	r0, #92
-    ldrb	r1, [r0, #0]
-    mov	r4, #0
-    strb	r4, [r0, #0]
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    ldrb	r0, [r5, #5]
-    lsl	r0, r0, #1
-    mov	r1, r5
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r5, #12]
-    mov	r1, #0
-    strh	r0, [r5, #12]
-    str	r4, [r5, #60]
-    ldrb	r0, [r5, #4]
-    strb	r1, [r5, #4]
-    ldr	r0, [r5, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #112]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #108]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #104]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #92]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #84]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    mov	r4, #255
-    mov	r0, r4
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    bl	MAU_Socket_Clear
-    ldrh	r0, [r5, #2]
-    and	r4, r0
-    ldrh	r0, [r5, #2]
-    strh	r4, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldr	r0, [pc, #20]
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    sub	r0, #3
-    cmp	r0, #5
-    bhi	MA_ProcessCheckStatusResponse+0x212
-    lsl	r0, r0, #2
-    ldr	r1, [pc, #32]
-    add	r0, r0, r1
-    ldr	r0, [r0, #0]
-    mov	pc, r0
-.align 2
-    .word gMA
-    .word 0xfffffdff
-    .word 0xfffffbff
-    .word 0xffffdfff
-    .word 0x0000fff7
-    .word 0x0000ffef
-    .word .L_MA_ProcessCheckStatusResponse.0x1e8
-.L_MA_ProcessCheckStatusResponse.0x1e8:
-    .word .L_MA_ProcessCheckStatusResponse.0x1e8+0x18
-    .word .L_MA_ProcessCheckStatusResponse.0x1e8+0x1c
-    .word .L_MA_ProcessCheckStatusResponse.0x1e8+0x20
-    .word .L_MA_ProcessCheckStatusResponse.0x1e8+0x2a
-    .word .L_MA_ProcessCheckStatusResponse.0x1e8+0x24
-    .word .L_MA_ProcessCheckStatusResponse.0x1e8+0x28
-
-    mov	r6, #1
-    b	MA_ProcessCheckStatusResponse+0x212
-    mov	r6, #4
-    b	MA_ProcessCheckStatusResponse+0x212
-    mov	r6, #5
-    b	MA_ProcessCheckStatusResponse+0x212
-    mov	r6, #2
-    b	MA_ProcessCheckStatusResponse+0x212
-    mov	r6, #3
-    ldr	r4, [pc, #68]
-    ldrh	r1, [r4, #2]
-    mov	r0, #255
-    and	r0, r1
-    ldrh	r1, [r4, #2]
-    mov	r2, #0
-    mov	r3, #0
-    strh	r0, [r4, #2]
-    lsl	r0, r6, #8
-    ldrh	r1, [r4, #2]
-    orr	r0, r1
-    ldrh	r1, [r4, #2]
-    strh	r0, [r4, #2]
-    ldrb	r0, [r4, #4]
-    strb	r2, [r4, #4]
-    mov	r1, #244
-    lsl	r1, r1, #1
-    add	r0, r4, r1
-    ldrh	r1, [r0, #0]
-    strh	r3, [r0, #0]
-    mov	r1, #252
-    lsl	r1, r1, #1
-    add	r0, r4, r1
-    ldrh	r1, [r0, #0]
-    strh	r3, [r0, #0]
-    ldr	r0, [r4, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r4, #64]
-    mov	r0, r6
-    pop	{r4, r5, r6}
-    pop	{r1}
-    bx	r1
-.align 2
-    .word gMA
-.size MA_ProcessCheckStatusResponse, .-MA_ProcessCheckStatusResponse
-");
-#endif
 
 static void ConvertNegaErrToApiErr(void)
 {
