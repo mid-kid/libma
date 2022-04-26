@@ -2,6 +2,7 @@
 #define _MA_BIOS
 
 #include <AgbTypes.h>
+#include "ma_var.h"
 
 void MABIOS_Init(void);
 int MA_GetStatus(void);
