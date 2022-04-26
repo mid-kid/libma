@@ -75,22 +75,22 @@ static void MA_SetInterval(int index);
 static void MA_SetTimeoutCount(int index);
 static int MA_PreSend(void);
 static void MA_InitIoBuffer(MA_IOBUF *buffer, vu8 *mem, u16 size, u16 state);
-//static void MA_StartSioTransmit();
-//static void MA_SetTransmitData();
-//static void MA_IsSupportedHardware();
-//static void MABIOS_Data2();
+static void MA_StartSioTransmit(void);
+static void MA_SetTransmitData(MA_IOBUF *buffer);
+static int MA_IsSupportedHardware(u8 hardware);
+static void MABIOS_Data2(MA_BUF *data_recv, u8 *data_send, u8 size);
 static int MA_CreatePacket(u8 *packet, u8 cmd, u16 size);
 static int MA_Create8BitPacket(u8 *packet, u8 cmd, u16 size);
 static int MA_Create32BitPacket(u8 *packet, u8 cmd, u16 size);
 static u16 MA_CalcCheckSum(u8 *data, u16 size);
-//static void MA_IntrTimer_SIOSend();
-//static void MA_IntrTimer_SIORecv();
-//static void MA_IntrTimer_SIOIdle();
-//static void MA_IntrTimer_SIOWaitTime();
-//static void ConvertNegaErrToApiErr();
-//static void MA_ProcessRecvPacket();
-//static void MA_IntrSio_Send();
-//static void MA_IntrSio_Recv();
+static void MA_IntrTimer_SIOSend(void);
+static void MA_IntrTimer_SIORecv(void);
+static void MA_IntrTimer_SIOIdle(void);
+static void MA_IntrTimer_SIOWaitTime(void);
+static void ConvertNegaErrToApiErr(void);
+static void MA_ProcessRecvPacket(u8 cmd);
+static void MA_IntrSio_Send(void);
+static void MA_IntrSio_Recv(u8 byte);
 
 static u8 *tmppPacket;
 static MAPROT_FOOTER *tmppPacketLast;
@@ -1329,7 +1329,7 @@ int MA_ProcessCheckStatusResponse(u8 response)
 
 static void ConvertNegaErrToApiErr(void)
 {
-    static const u8 errTable[] asm("errTable.174") = {
+    static const u8 errTable[] = {
         MAAPIE_SYSTEM,
         MAAPIE_CANNOT_EXECUTE_LOW,
         MAAPIE_ILLEGAL_PARAMETER_LOW,
@@ -1372,7 +1372,7 @@ void MA_DefaultNegaResProc(void)
 
 static void MA_ProcessRecvPacket(u8 cmd)
 {
-    static u8 *pPacket asm("pPacket.181");
+    static u8 *pPacket;
 
     i = 1;
     pPacket = gMA.buffer_packet_send;
@@ -1464,7 +1464,7 @@ static void MA_ProcessRecvPacket(u8 cmd)
 
 void MA_IntrTimer(void)
 {
-    static u8 saveSioMode asm("saveSioMode.185");
+    static u8 saveSioMode;
 
     gMA.status |= STATUS_UNK_7;
     saveSioMode = gMA.intr_sio_mode;
@@ -1519,36 +1519,35 @@ void MA_IntrTimer(void)
     gMA.status &= ~STATUS_UNK_7;
 }
 
-static inline int MA_IntrSio_Timeout(void)
-{
-    if (++gMA.counter > gMA.counter_timeout[gMA.sio_mode]) {
-        if (!(gMA.status & STATUS_UNK_12)) {
-            MA_CancelRequest();
-            gMA.status |= STATUS_UNK_14;
-        } else {
-            MA_BiosStop();
-        }
-        return TRUE;
-    }
-    return FALSE;
+#define MA_IntrSio_Timeout() \
+{ \
+    if (++gMA.counter > gMA.counter_timeout[gMA.sio_mode]) { \
+        if (!(gMA.status & STATUS_UNK_12)) { \
+            MA_CancelRequest(); \
+            gMA.status |= STATUS_UNK_14; \
+        } else { \
+            MA_BiosStop(); \
+        } \
+        return; \
+    } \
 }
 
-static inline void MA_Bios_Error(void)
-{
-    gMA.status &= ~STATUS_UNK_0;
-    gMA.condition &= ~MA_CONDITION_UNK_5;
-    gMA.status &= ~STATUS_UNK_2;
+#define MA_Bios_Error() \
+{ \
+    gMA.status &= ~STATUS_UNK_0; \
+    gMA.condition &= ~MA_CONDITION_UNK_5; \
+    gMA.status &= ~STATUS_UNK_2; \
 }
 
-static inline void MA_Bios_disconnect_inline(void)
-{
-    gMA.intr_sio_mode = 0;
-    gMA.iobuf_packet_send.state = 0;
-    gMA.iobuf_packet_recv.state = 0;
-    MA_SetError(MAAPIE_MA_NOT_FOUND);
-    MA_Bios_Error();
-    gMA.iobuf_packet_send.state = 0;
-    *(vu32 *)REG_TM3CNT = 0;
+#define MA_Bios_disconnect_inline() \
+{ \
+    gMA.intr_sio_mode = 0; \
+    gMA.iobuf_packet_send.state = 0; \
+    gMA.iobuf_packet_recv.state = 0; \
+    MA_SetError(MAAPIE_MA_NOT_FOUND); \
+    MA_Bios_Error(); \
+    gMA.iobuf_packet_send.state = 0; \
+    *(vu32 *)REG_TM3CNT = 0; \
 }
 
 void MA_Bios_disconnect(void)
@@ -1558,7 +1557,7 @@ void MA_Bios_disconnect(void)
 
 static void MA_IntrSio_Send(void)
 {
-    static int dataLeft asm("dataLeft.192");
+    static int dataLeft;
 
     switch (gMA.iobuf_packet_send.state) {  // MAGIC
         default:
@@ -1567,7 +1566,7 @@ static void MA_IntrSio_Send(void)
         case 3: break;
     }
 
-    if (MA_IntrSio_Timeout()) return;
+    MA_IntrSio_Timeout();
 
     dataLeft = gMA.iobuf_packet_send.size - gMA.iobuf_packet_send.readcnt;
     if (gMA.sio_mode == MA_SIO_BYTE) {
@@ -1710,8 +1709,8 @@ static void MA_IntrSio_Send(void)
 
 static void MA_IntrSio_Recv(u8 byte)
 {
-    static u8 recvByte asm("recvByte.196");
-    static int amari asm("amari.197");
+    static u8 recvByte;
+    static int amari;
 
     if (gMA.sio_mode == MA_SIO_BYTE) {
         recvByte = *(vu8 *)REG_SIODATA8;
@@ -1729,7 +1728,7 @@ static void MA_IntrSio_Recv(u8 byte)
             if (byte != 0) break;
 
             // If we time out, stop trying to receive
-            if (MA_IntrSio_Timeout()) break;
+            MA_IntrSio_Timeout();
 
             // When the first magic byte is received, try to receive the second
             if (recvByte == MAPROT_MAGIC_1) {
@@ -1807,7 +1806,7 @@ static void MA_IntrSio_Recv(u8 byte)
         break;
 
     case 3:
-        if (MA_IntrSio_Timeout()) break;
+        MA_IntrSio_Timeout();
 
         // Read the packet body
         *gMA.iobuf_packet_recv.readptr++ = recvByte;
