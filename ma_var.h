@@ -85,7 +85,9 @@ typedef struct {
     u8 unk_84[4];
     u8 _88[4];
     vu8 unk_92;
-    u8 _93[4];
+    u8 _93[1];
+    vu16 unk_94;
+    vu8 unk_96;
     vu8 task_unk_97;
     vu8 task_unk_98;
     u8 sockets[NUM_SOCKETS];

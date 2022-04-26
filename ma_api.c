@@ -1,6 +1,7 @@
 #include "ma_api.h"
 #include "libma.h"
 
+#include "ma_bios.h"
 #include "ma_var.h"
 
 //static void MA_SetApiError();
@@ -73,35 +74,12 @@ void MA_TaskSet(u8 unk_1, u8 unk_2)
     if (gMA.task_unk_97 == 0) gMA.condition &= ~MA_CONDITION_APIWAIT;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MA_SetApiError:
-    push	{r4, lr}
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    ldr	r3, [pc, #28]
-    mov	r4, r3
-    add	r4, #96
-    ldrb	r2, [r4, #0]
-    mov	r2, #0
-    strb	r2, [r4, #0]
-    add	r3, #94
-    ldrh	r2, [r3, #0]
-    strh	r1, [r3, #0]
-    bl	MA_SetError
-    pop	{r4}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-.size MA_SetApiError, .-MA_SetApiError
-");
-#endif
+static void MA_SetApiError(u8 unk_1, u16 unk_2)
+{
+    gMA.unk_96 = 0;
+    gMA.unk_94 = unk_2;
+    MA_SetError(unk_1);
+}
 
 #if 0
 #else
