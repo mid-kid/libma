@@ -1,7 +1,7 @@
 #include "ma_bios.h"
 #include "libma.h"
 
-#include <stdlib.h>
+#include <stddef.h>
 #include "ma_api.h"
 #include "ma_var.h"
 #include "ma_sub.h"

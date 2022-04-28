@@ -1,8 +1,10 @@
 #include "ma_api.h"
 #include "libma.h"
 
+#include <stddef.h>
 #include "ma_bios.h"
 #include "ma_var.h"
+#include "ma_sub.h"
 
 //static void MA_SetApiError();
 //static void ApiValisStatusCheck();
@@ -212,58 +214,18 @@ static int MA_ApiPreExe(u8 unk_1) {
     return TRUE;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MakeEndLineBuffer:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, r0
-    mov	r6, r1
-    ldr	r4, [pc, #36]
-    ldr	r0, [pc, #36]
-    add	r1, r4, r0
-    mov	r0, #0
-    strb	r0, [r1, #0]
-    cmp	r6, #0
-    beq	MakeEndLineBuffer+0x56
-    cmp	r7, #0
-    beq	MakeEndLineBuffer+0x56
-    cmp	r6, #4
-    ble	MakeEndLineBuffer+0x38
-    ldr	r1, [pc, #20]
-    add	r0, r4, r1
-    mov	r1, r7
-    mov	r2, #5
-    bl	MAU_memcpy
-    b	MakeEndLineBuffer+0x56
-.align 2
-    .word gMA
-    .word 0x00000701
-    .word 0x000006fc
+static void MakeEndLineBuffer(u8 *unk_1, int size) {
+    gMA.unk_1788[5] = 0;
+    if (size == 0) return;
+    if (unk_1 == NULL) return;
 
-    ldr	r0, [pc, #32]
-    add	r4, r4, r0
-    add	r1, r6, r4
-    mov	r5, #5
-    sub	r5, r5, r6
-    mov	r0, r4
-    mov	r2, r5
-    bl	MAU_memcpy
-    add	r5, r5, r4
-    mov	r0, r5
-    mov	r1, r7
-    mov	r2, r6
-    bl	MAU_memcpy
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word 0x000006fc
-.size MakeEndLineBuffer, .-MakeEndLineBuffer
-");
-#endif
+    if (size >= 5) {
+        MAU_memcpy(gMA.unk_1788, unk_1, 5);
+    } else {
+        MAU_memcpy(gMA.unk_1788, gMA.unk_1788 + size, 5 - size);
+        MAU_memcpy(&gMA.unk_1788[5 - size], unk_1, size);
+    }
+}
 
 #if 0
 #else
