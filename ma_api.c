@@ -278,44 +278,16 @@ asm("
 
 static void InitPrevBuf(void)
 {
-    gMA.unk_1149 = 0;
-    gMA.unk_1786 = 0;
+    gMA.prevbuf[0] = 0;
+    gMA.prevbuf_size = 0;
     gMA.unk_101 = 0;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-ConcatPrevBuf:
-    push	{r4, r5, lr}
-    mov	r2, r0
-    lsl	r4, r1, #16
-    lsr	r4, r4, #16
-    ldr	r0, [pc, #32]
-    ldr	r1, [pc, #36]
-    add	r5, r0, r1
-    ldr	r1, [pc, #36]
-    add	r0, r0, r1
-    ldrh	r1, [r5, #0]
-    add	r0, r0, r1
-    mov	r1, r2
-    mov	r2, r4
-    bl	MAU_memcpy
-    ldrh	r0, [r5, #0]
-    add	r4, r4, r0
-    strh	r4, [r5, #0]
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-    .word 0x000006fa
-    .word 0x0000047d
-.size ConcatPrevBuf, .-ConcatPrevBuf
-");
-#endif
+static void ConcatPrevBuf(u8 *data, u16 size)
+{
+    MAU_memcpy(&gMA.prevbuf[gMA.prevbuf_size], data, size);
+    gMA.prevbuf_size += size;
+}
 
 #if 0
 #else

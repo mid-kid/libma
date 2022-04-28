@@ -115,9 +115,9 @@ typedef struct {
     MA_BUF *buffer_recv_ptr;
     MA_IOBUF *iobuf_sio_tx;
     u8 _828[321];
-    u8 unk_1149;
+    u8 prevbuf[1];
     u8 _1150[636];
-    u16 unk_1786;
+    u16 prevbuf_size;
     u8 unk_1788[6];
     u16 unk_1794;
     u16 unk_1796;
