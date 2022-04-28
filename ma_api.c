@@ -280,31 +280,11 @@ static int IsEndMultiLine(void) {
     }
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-InitPrevBuf:
-    ldr	r0, [pc, #20]
-    ldr	r2, [pc, #24]
-    add	r1, r0, r2
-    mov	r2, #0
-    strb	r2, [r1, #0]
-    ldr	r3, [pc, #20]
-    add	r1, r0, r3
-    mov	r3, #0
-    strh	r2, [r1, #0]
-    add	r0, #101
-    strb	r3, [r0, #0]
-    bx	lr
-.align 2
-    .word gMA
-    .word 0x0000047d
-    .word 0x000006fa
-.size InitPrevBuf, .-InitPrevBuf
-");
-#endif
+static void InitPrevBuf(void) {
+    gMA.unk_1149 = 0;
+    gMA.unk_1786 = 0;
+    gMA.unk_101 = 0;
+}
 
 #if 0
 #else
