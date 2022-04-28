@@ -229,15 +229,19 @@ static void MakeEndLineBuffer(u8 *unk_1, int size)
     }
 }
 
-#if 0
-#else
+static int IsEndMultiLine(void)
+{
+    static const char strEndMultiline[] asm("strEndMultiLine.25") = "\r\n.\r\n";
+
+    if (MAU_strcmp(gMA.unk_1788, strEndMultiline) == 0) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
 asm("
 .section .rodata
-.align 2
-.type strEndMultiLine.25, object
-strEndMultiLine.25:
-    .asciz \"\\r\\n.\\r\\n\"
-.size strEndMultiLine.25, .-strEndMultiLine.25
 .align 2
     .asciz \"QUIT\\r\\n\"
 .align 2
@@ -271,17 +275,6 @@ strEndMultiLine.25:
 .align 2
 .section .text
 ");
-#endif
-
-static int IsEndMultiLine(void)
-{
-    extern const char strEndMultiline[] asm("strEndMultiLine.25");
-    if (MAU_strcmp(gMA.unk_1788, strEndMultiline) == 0) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
 
 static void InitPrevBuf(void)
 {
