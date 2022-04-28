@@ -58,14 +58,14 @@
 
 void SetApiCallFlag(void)
 {
-    *(vu16 *)REG_IE &= ~TIMER3_INTR_FLAG & ~SIO_INTR_FLAG;
+    *(vu16 *)REG_IE &= ~SIO_INTR_FLAG & ~TIMER3_INTR_FLAG;
     gMA.status |= STATUS_UNK_5;
 }
 
 void ResetApiCallFlag(void)
 {
     gMA.status &= ~STATUS_UNK_5;
-    *(vu16 *)REG_IE |= TIMER3_INTR_FLAG | SIO_INTR_FLAG;
+    *(vu16 *)REG_IE |= SIO_INTR_FLAG | TIMER3_INTR_FLAG;
 }
 
 void MA_TaskSet(u8 unk_1, u8 unk_2)
@@ -289,55 +289,21 @@ static void ConcatPrevBuf(u8 *data, u16 size)
     gMA.prevbuf_size += size;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_End
-MA_End:
-    push	{r4, lr}
-    sub	sp, #4
-    ldr	r4, [pc, #20]
-    mov	r0, r4
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    mov	r3, r0
-    cmp	r3, #0
-    beq	MA_End+0x20
-    mov	r0, #33
-    mov	r1, #0
-    bl	MA_SetApiError
-    b	MA_End+0x3e
-.align 2
-    .word gMA
+void MA_End(void)
+{
+    int zero;
 
-    ldr	r0, [pc, #36]
-    str	r3, [r0, #0]
-    add	r0, #28
-    strh	r3, [r0, #0]
-    ldr	r2, [pc, #32]
-    ldrh	r1, [r2, #0]
-    ldr	r0, [pc, #32]
-    and	r0, r1
-    strh	r0, [r2, #0]
-    str	r3, [sp, #0]
-    ldr	r2, [pc, #28]
-    mov	r0, sp
-    mov	r1, r4
-    bl	CpuSet
-    add	sp, #4
-    pop	{r4}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word 0x0400010c
-    .word 0x04000200
-    .word 0x0000ff3f
-    .word 0x050001d9
-.size MA_End, .-MA_End
-");
-#endif
+    if (gMA.unk_92) {
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        return;
+    }
+
+    *(vu32 *)REG_TM3CNT = 0;
+    *(vu16 *)REG_SIOCNT = 0;
+    *(vu16 *)REG_IE &= ~SIO_INTR_FLAG & ~TIMER3_INTR_FLAG;
+    zero = 0;
+    CpuSet(&zero, &gMA, DMA_SRC_FIX | DMA_32BIT_BUS | (sizeof(gMA) / 4));
+}
 
 #if 0
 #else
