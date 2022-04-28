@@ -6,18 +6,18 @@
 
 static void xtoa(unsigned num, char *dest, unsigned base, int negative);
 
-int MAU_strlen(char *str)
+int MAU_strlen(const char *str)
 {
-    static char *eos;
+    static const char *eos;
 
     eos = str;
     while (*eos++ != '\0');
     return (u16)(eos - str - 1);
 }
 
-void MAU_strcpy(char *dest, char *src)
+void MAU_strcpy(char *dest, const char *src)
 {
-    static char *pSrc;
+    static const char *pSrc;
     pSrc = src;
 
     *dest++ = *pSrc;
@@ -27,7 +27,7 @@ void MAU_strcpy(char *dest, char *src)
     }
 }
 
-int MAU_strcpy_size(char *dest, char *src, int size)
+int MAU_strcpy_size(char *dest, const char *src, int size)
 {
     static int ret;
 
@@ -41,7 +41,7 @@ int MAU_strcpy_size(char *dest, char *src, int size)
     return ret;
 }
 
-char *MAU_strncpy_CRLF_LF(char *dest, char *src, int size)
+const char *MAU_strncpy_CRLF_LF(char *dest, const char *src, int size)
 {
     if (size == 0) return NULL;
 
@@ -76,7 +76,7 @@ char *MAU_SearchCRLF(char *str, int size)
     return NULL;
 }
 
-void MAU_strcat(char *dest, char *src)
+void MAU_strcat(char *dest, const char *src)
 {
     while (*dest != '\0') dest++;
     for (;;) {
@@ -86,17 +86,17 @@ void MAU_strcat(char *dest, char *src)
     }
 }
 
-char *MAU_strchr(char *str, int c)
+const char *MAU_strchr(const char *str, int c)
 {
     while (*str != '\0' && *str != (char)c) str++;
     if (*str == (char)c) return str;
     return NULL;
 }
 
-char *MAU_strrchr(char *str, int c)
+const char *MAU_strrchr(const char *str, int c)
 {
-    static char *start;
-    static char *string;
+    static const char *start;
+    static const char *string;
 
     string = str;
     start = str;
@@ -106,7 +106,7 @@ char *MAU_strrchr(char *str, int c)
     return NULL;
 }
 
-char *MAU_FindPostBlank(char *str)
+const char *MAU_FindPostBlank(const char *str)
 {
     while (*str != '\0' && *str != ' ') str++;
     if (*str == '\0') return NULL;
@@ -115,7 +115,7 @@ char *MAU_FindPostBlank(char *str)
     return str;
 }
 
-int MAU_strcmp(char *str1, char *str2)
+int MAU_strcmp(const char *str1, const char *str2)
 {
     static int ret;
 
@@ -130,7 +130,7 @@ int MAU_strcmp(char *str1, char *str2)
     return ret;
 }
 
-int MAU_strncmp(char *str1, char *str2, int size)
+int MAU_strncmp(const char *str1, const char *str2, int size)
 {
     if (size == 0) return 0;
     while (--size != 0) {
@@ -142,7 +142,7 @@ int MAU_strncmp(char *str1, char *str2, int size)
     return *str1 - *str2;
 }
 
-int MAU_strnicmp(char *str1, char *str2, int size)
+int MAU_strnicmp(const char *str1, const char *str2, int size)
 {
     static int f;
     static int l;
@@ -159,10 +159,10 @@ int MAU_strnicmp(char *str1, char *str2, int size)
     return 0;
 }
 
-void MAU_memcpy(void *dest, void *src, int size)
+void MAU_memcpy(void *dest, const void *src, int size)
 {
+    const char *s = src;
     char *d = dest;
-    char *s = src;
 
     while (size--) *d++ = *s++;
 }
@@ -220,7 +220,7 @@ char *MAU_itoa(int num, char *dest, int base)
     return dest;
 }
 
-int MAU_atoi(char *str)
+int MAU_atoi(const char *str)
 {
     static char c;
     static char sign;
@@ -244,7 +244,7 @@ int MAU_atoi(char *str)
 
 static const char telCharTable[] = "0123456789#*";
 
-void MAU_DecodeEEPROMTelNo(u8 *num, char *str)
+void MAU_DecodeEEPROMTelNo(const u8 *num, char *str)
 {
     static int i;
     static u8 hi;
@@ -269,7 +269,7 @@ void MAU_DecodeEEPROMTelNo(u8 *num, char *str)
     if (i == 8) *str = '\0';
 }
 
-int MAU_IsValidTelNoStr(char *str)
+int MAU_IsValidTelNoStr(const char *str)
 {
     static unsigned i;
 
@@ -282,7 +282,7 @@ int MAU_IsValidTelNoStr(char *str)
     return 1;
 }
 
-int MAU_CheckCRLF(char *str, u16 size)
+int MAU_CheckCRLF(const char *str, u16 size)
 {
     if (size < 3) return FALSE;
     if (str[size - 2] != '\r') return FALSE;
@@ -356,7 +356,7 @@ int MAU_Socket_FreeCheck(void)
     return ret;
 }
 
-int MAU_Socket_IpAddrCheck(u8 *addr)
+int MAU_Socket_IpAddrCheck(const u8 *addr)
 {
     if (addr[0] != gMA.ipaddr[0]) return FALSE;
     if (addr[1] != gMA.ipaddr[1]) return FALSE;

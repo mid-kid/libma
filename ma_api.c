@@ -177,7 +177,8 @@ static int ApiValisStatusCheck(u8 unk_1)
     return ret;
 }
 
-static int MA_ApiPreExe(u8 unk_1) {
+static int MA_ApiPreExe(u8 unk_1)
+{
     gMA.error = 0;
     gMA.unk_94 = 0;
     if (gMA.unk_88 != 0x4247414d) {
@@ -214,7 +215,8 @@ static int MA_ApiPreExe(u8 unk_1) {
     return TRUE;
 }
 
-static void MakeEndLineBuffer(u8 *unk_1, int size) {
+static void MakeEndLineBuffer(u8 *unk_1, int size)
+{
     gMA.unk_1788[5] = 0;
     if (size == 0) return;
     if (unk_1 == NULL) return;
@@ -271,16 +273,18 @@ strEndMultiLine.25:
 ");
 #endif
 
-static int IsEndMultiLine(void) {
+static int IsEndMultiLine(void)
+{
     extern const char strEndMultiline[] asm("strEndMultiLine.25");
-    if (MAU_strcmp(gMA.unk_1788, (u8 *)strEndMultiline) == 0) {
+    if (MAU_strcmp(gMA.unk_1788, strEndMultiline) == 0) {
         return TRUE;
     } else {
         return FALSE;
     }
 }
 
-static void InitPrevBuf(void) {
+static void InitPrevBuf(void)
+{
     gMA.unk_1149 = 0;
     gMA.unk_1786 = 0;
     gMA.unk_101 = 0;

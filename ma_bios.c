@@ -332,8 +332,11 @@ static void MA_SetTimeoutCount(int index)
 
 int MA_GetStatus(void)
 {
-    if (gMA.status & STATUS_UNK_0) return TRUE;
-    return FALSE;
+    if (gMA.status & STATUS_UNK_0) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
 }
 
 u16 MA_GetCondition(void)
@@ -472,8 +475,11 @@ void MA_SetDataInterval(s16 interval_byte, s16 interval_word)
 
 static int MA_IsSupportedHardware(u8 hardware)
 {
-    if ((hardware & MATYPE_PROT_MASK) == MAPROT_REPLY) return TRUE;
-    return FALSE;
+    if ((hardware & MATYPE_PROT_MASK) == MAPROT_REPLY) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
 }
 
 int MA_GetCallTypeFromHarwareType(u8 hardware)
