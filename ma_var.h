@@ -83,7 +83,7 @@ typedef struct {
     u8 recv_garbage_counter;
     u8 unk_83;
     u8 unk_84[4];
-    u8 _88[4];
+    u32 unk_88;
     vu8 unk_92;
     u8 _93[1];
     vu16 unk_94;
@@ -91,7 +91,7 @@ typedef struct {
     vu8 task_unk_97;
     vu8 task_unk_98;
     u8 sockets[NUM_SOCKETS];
-    u8 _101[1];
+    u8 unk_101;
     u8 unk_102;
     u8 _103[1];
     u16 unk_104;
@@ -114,7 +114,14 @@ typedef struct {
     MA_BUF buffer_recv;
     MA_BUF *buffer_recv_ptr;
     MA_IOBUF *iobuf_sio_tx;
-    u8 _828[1064];
+    u8 _828[321];
+    u8 unk_1149;
+    u8 _1150[636];
+    u16 unk_1786;
+    u8 unk_1788[6];
+    u16 unk_1794;
+    u16 unk_1796;
+    u8 _1798[94];
 } MA_VAR;
 
 extern MA_VAR gMA;

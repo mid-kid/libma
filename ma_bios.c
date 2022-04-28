@@ -1233,11 +1233,11 @@ static void MA_IntrTimer_SIOWaitTime(void)
 
 int MA_ProcessCheckStatusResponse(u8 response)
 {
-    int condition = 0;
+    int ret = 0;
 
     switch (response) {  // MAGIC
     case 0xff:
-        condition = MA_CONDITION_LOST;
+        ret = MA_CONDITION_LOST;
         if (gMA.unk_92 != 0) {
             if (gMA.status & STATUS_UNK_2) {
                 gMA.status = 0;
@@ -1273,7 +1273,7 @@ int MA_ProcessCheckStatusResponse(u8 response)
                 gMA.status = 0;
                 MA_SetError(MAAPIE_OFFLINE);
             } else {
-                gMA.status = condition;
+                gMA.status = ret;
             }
             gMA.unk_92 = 0;
             MA_ChangeSIOMode(MA_SIO_BYTE);
@@ -1299,32 +1299,32 @@ int MA_ProcessCheckStatusResponse(u8 response)
     case 4:
         switch(gMA.unk_92) {  // MAGIC
         case 3:
-            condition = MA_CONDITION_PPP;
+            ret = MA_CONDITION_PPP;
             break;
         case 4:
-            condition = MA_CONDITION_SMTP;
+            ret = MA_CONDITION_SMTP;
             break;
         case 5:
-            condition = MA_CONDITION_POP3;
+            ret = MA_CONDITION_POP3;
             break;
         case 7:
-            condition = MA_CONDITION_P2P_SEND;
+            ret = MA_CONDITION_P2P_SEND;
             break;
         case 8:
-            condition = MA_CONDITION_P2P_RECV;
+            ret = MA_CONDITION_P2P_RECV;
             break;
         }
         break;
     }
 
     gMA.condition &= ~MA_CONDITION_MASK;
-    gMA.condition |= condition << MA_CONDITION_SHIFT;
+    gMA.condition |= ret << MA_CONDITION_SHIFT;
     gMA.intr_sio_mode = 0;
     gMA.iobuf_packet_send.state = 0;
     gMA.iobuf_packet_recv.state = 0;
     gMA.status &= ~STATUS_UNK_2;
 
-    return condition;
+    return ret;
 }
 
 static void ConvertNegaErrToApiErr(void)

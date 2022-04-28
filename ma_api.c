@@ -175,53 +175,42 @@ static int ApiValisStatusCheck(u8 unk_1)
     return ret;
 }
 
-    mov	r0, r6
-    sub	r0, #22
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #1
-    bls	MA_ApiPreExe+0x7e
-    ldrh	r0, [r4, #2]
-    ldr	r1, [pc, #64]
-    and	r1, r0
-    ldrh	r0, [r4, #2]
-    strh	r1, [r4, #2]
-    ldrh	r1, [r4, #2]
-    ldr	r0, [pc, #56]
-    and	r0, r1
-    ldrh	r1, [r4, #2]
-    strh	r0, [r4, #2]
-    ldrb	r0, [r4, #0]
-    mov	r0, #255
-    strb	r0, [r4, #0]
-    mov	r0, r4
-    add	r0, #102
-    strb	r7, [r0, #0]
-    add	r0, #2
-    strh	r5, [r0, #0]
-    ldr	r1, [pc, #36]
-    add	r0, r4, r1
-    strh	r5, [r0, #0]
-    add	r1, #2
-    add	r0, r4, r1
-    strh	r5, [r0, #0]
-    ldrh	r0, [r4, #2]
-    mov	r1, #1
-    orr	r0, r1
-    ldrh	r1, [r4, #2]
-    orr	r0, r7
-    strh	r0, [r4, #2]
-    mov	r0, #1
-    pop	{r4, r5, r6, r7}
-    pop	{r1}
-    bx	r1
-.align 2
-    .word 0x0000ffbf
-    .word 0x0000fffd
-    .word 0x00000702
-.size MA_ApiPreExe, .-MA_ApiPreExe
-");
-#endif
+static int MA_ApiPreExe(u8 unk_1) {
+    gMA.error = 0;
+    gMA.unk_94 = 0;
+    if (gMA.unk_88 != 0x4247414d) {
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        return FALSE;
+    }
+    if (gMA.status & STATUS_UNK_7 || gMA.status & STATUS_UNK_8) {
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        return FALSE;
+    }
+    if (gMA.condition & MA_CONDITION_ERROR) {
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        return FALSE;
+    }
+    if (gMA.task_unk_97 != 0) {
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        return FALSE;
+    }
+    if (!ApiValisStatusCheck(unk_1)) {
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        return FALSE;
+    }
+
+    if (unk_1 != 0x16 && unk_1 != 0x17) {
+        gMA.condition &= ~MA_CONDITION_UNK_6;
+    }
+    gMA.condition &= ~MA_CONDITION_ERROR;
+    gMA.error = -1;
+    gMA.unk_102 = 0;
+    gMA.unk_104 = 0;
+    gMA.unk_1794 = 0;
+    gMA.unk_1796 = 0;
+    gMA.condition |= MA_CONDITION_APIWAIT;
+    return TRUE;
+}
 
 #if 0
 #else
