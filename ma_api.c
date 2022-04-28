@@ -268,28 +268,17 @@ strEndMultiLine.25:
     .asciz \" 0\\r\\n\"
 .align 2
 .section .text
-
-.align 2
-.thumb_func
-IsEndMultiLine:
-    push	{lr}
-    ldr	r0, [pc, #16]
-    ldr	r1, [pc, #16]
-    bl	MAU_strcmp
-    cmp	r0, #0
-    beq	IsEndMultiLine+0x1c
-    mov	r0, #0
-    b	IsEndMultiLine+0x1e
-.align 2
-    .word gMA+0x6fc
-    .word strEndMultiLine.25
-
-    mov	r0, #1
-    pop	{r1}
-    bx	r1
-.size IsEndMultiLine, .-IsEndMultiLine
 ");
 #endif
+
+static int IsEndMultiLine(void) {
+    extern const char strEndMultiline[] asm("strEndMultiLine.25");
+    if (MAU_strcmp(gMA.unk_1788, (u8 *)strEndMultiline) == 0) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
 
 #if 0
 #else
