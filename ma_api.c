@@ -81,262 +81,99 @@ static void MA_SetApiError(u8 unk_1, u16 unk_2)
     MA_SetError(unk_1);
 }
 
-#if 0
-#else
-asm("
-.lcomm ret.15, 0x4
+static int ApiValisStatusCheck(u8 unk_1)
+{
+    static int ret asm("ret.15");
 
-.align 2
-.thumb_func
-ApiValisStatusCheck:
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    ldr	r2, [pc, #20]
-    mov	r1, #1
-    str	r1, [r2, #0]
-    sub	r0, #3
-    cmp	r0, #33
-    bls	ApiValisStatusCheck+0x12
-    b	ApiValisStatusCheck+0x1a2
-    lsl	r0, r0, #2
-    ldr	r1, [pc, #8]
-    add	r0, r0, r1
-    ldr	r0, [r0, #0]
-    mov	pc, r0
-.align 2
-    .word ret.15
-    .word .L_ApiValisStatusCheck.0x24
-.L_ApiValisStatusCheck.0x24:
-    .word .L_ApiValisStatusCheck.0x24+0x88
-    .word .L_ApiValisStatusCheck.0x24+0x9c
-    .word .L_ApiValisStatusCheck.0x24+0xac
-    .word .L_ApiValisStatusCheck.0x24+0xbc
-    .word .L_ApiValisStatusCheck.0x24+0xd4
-    .word .L_ApiValisStatusCheck.0x24+0x17e
-    .word .L_ApiValisStatusCheck.0x24+0x17e
-    .word .L_ApiValisStatusCheck.0x24+0xec
-    .word .L_ApiValisStatusCheck.0x24+0x170
-    .word .L_ApiValisStatusCheck.0x24+0x118
-    .word .L_ApiValisStatusCheck.0x24+0x118
-    .word .L_ApiValisStatusCheck.0x24+0x118
-    .word .L_ApiValisStatusCheck.0x24+0x170
-    .word .L_ApiValisStatusCheck.0x24+0x128
-    .word .L_ApiValisStatusCheck.0x24+0x128
-    .word .L_ApiValisStatusCheck.0x24+0x128
-    .word .L_ApiValisStatusCheck.0x24+0x128
-    .word .L_ApiValisStatusCheck.0x24+0x128
-    .word .L_ApiValisStatusCheck.0x24+0x128
-    .word .L_ApiValisStatusCheck.0x24+0x138
-    .word .L_ApiValisStatusCheck.0x24+0x138
-    .word .L_ApiValisStatusCheck.0x24+0x150
-    .word .L_ApiValisStatusCheck.0x24+0x150
-    .word .L_ApiValisStatusCheck.0x24+0x150
-    .word .L_ApiValisStatusCheck.0x24+0x17e
-    .word .L_ApiValisStatusCheck.0x24+0x160
-    .word .L_ApiValisStatusCheck.0x24+0x160
-    .word .L_ApiValisStatusCheck.0x24+0x17e
-    .word .L_ApiValisStatusCheck.0x24+0x17e
-    .word .L_ApiValisStatusCheck.0x24+0x170
-    .word .L_ApiValisStatusCheck.0x24+0x170
-    .word .L_ApiValisStatusCheck.0x24+0x170
-    .word .L_ApiValisStatusCheck.0x24+0x170
-    .word .L_ApiValisStatusCheck.0x24+0x170
+    ret = TRUE;
+    switch (unk_1) {
+    case 0x3:
+        if (gMA.unk_92 == 0) break;
+        ret = FALSE;
+        break;
 
-    ldr	r0, [pc, #12]
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    cmp	r0, #0
-    bne	ApiValisStatusCheck+0xb8
-    b	ApiValisStatusCheck+0x1a2
-    b	ApiValisStatusCheck+0x19e
-.align 2
-    .word gMA
+    case 0x4:
+        if (gMA.unk_92 == 0) break;
+        ret = FALSE;
+        break;
 
-    ldr	r0, [pc, #8]
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    cmp	r0, #0
-    beq	ApiValisStatusCheck+0x1a2
-    b	ApiValisStatusCheck+0x19e
-.align 2
-    .word gMA
+    case 0x5:
+        if (gMA.unk_92 == 0) break;
+        ret = FALSE;
+        break;
 
-    ldr	r0, [pc, #8]
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    cmp	r0, #0
-    beq	ApiValisStatusCheck+0x1a2
-    b	ApiValisStatusCheck+0x19e
-.align 2
-    .word gMA
+    case 0x6:
+        if (gMA.unk_92 == 7) break;
+        if (gMA.unk_92 == 8) break;
+        ret = FALSE;
+        break;
 
-    ldr	r0, [pc, #16]
-    mov	r1, r0
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    cmp	r0, #7
-    beq	ApiValisStatusCheck+0x1a2
-    ldrb	r0, [r1, #0]
-    cmp	r0, #8
-    beq	ApiValisStatusCheck+0x1a2
-    b	ApiValisStatusCheck+0x19e
-.align 2
-    .word gMA
+    case 0x7:
+        if (gMA.unk_92 == 7) break;
+        if (gMA.unk_92 == 8) break;
+        ret = FALSE;
+        break;
 
-    ldr	r0, [pc, #16]
-    mov	r1, r0
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    cmp	r0, #7
-    beq	ApiValisStatusCheck+0x1a2
-    ldrb	r0, [r1, #0]
-    cmp	r0, #8
-    beq	ApiValisStatusCheck+0x1a2
-    b	ApiValisStatusCheck+0x19e
-.align 2
-    .word gMA
+    case 0xa:
+        if (gMA.unk_92 == 3) break;
+        if (gMA.unk_92 == 7) break;
+        if (gMA.unk_92 == 8) break;
+        if (gMA.unk_92 == 4) break;
+        if (gMA.unk_92 == 5) break;
+        ret = FALSE;
+        break;
 
-    ldr	r0, [pc, #36]
-    mov	r1, r0
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    cmp	r0, #3
-    beq	ApiValisStatusCheck+0x1a2
-    ldrb	r0, [r1, #0]
-    cmp	r0, #7
-    beq	ApiValisStatusCheck+0x1a2
-    ldrb	r0, [r1, #0]
-    cmp	r0, #8
-    beq	ApiValisStatusCheck+0x1a2
-    ldrb	r0, [r1, #0]
-    cmp	r0, #4
-    beq	ApiValisStatusCheck+0x1a2
-    ldrb	r0, [r1, #0]
-    cmp	r0, #5
-    beq	ApiValisStatusCheck+0x1a2
-    b	ApiValisStatusCheck+0x19e
-.align 2
-    .word gMA
+    case 0xc:
+    case 0xd:
+    case 0xe:
+        if (gMA.unk_92 == 4) break;
+        ret = FALSE;
+        break;
 
-    ldr	r0, [pc, #8]
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    cmp	r0, #4
-    beq	ApiValisStatusCheck+0x1a2
-    b	ApiValisStatusCheck+0x19e
-.align 2
-    .word gMA
+    case 0x10:
+    case 0x11:
+    case 0x12:
+    case 0x13:
+    case 0x14:
+    case 0x15:
+        if (gMA.unk_92 == 5) break;
+        ret = FALSE;
+        break;
 
-    ldr	r0, [pc, #8]
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    cmp	r0, #5
-    beq	ApiValisStatusCheck+0x1a2
-    b	ApiValisStatusCheck+0x19e
-.align 2
-    .word gMA
+    case 0x16:
+    case 0x17:
+        if (gMA.unk_92 == 3) break;
+        if (gMA.unk_92 == 6) break;
+        ret = FALSE;
+        break;
 
-    ldr	r0, [pc, #16]
-    mov	r1, r0
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    cmp	r0, #3
-    beq	ApiValisStatusCheck+0x1a2
-    ldrb	r0, [r1, #0]
-    cmp	r0, #6
-    beq	ApiValisStatusCheck+0x1a2
-    b	ApiValisStatusCheck+0x19e
-.align 2
-    .word gMA
+    case 0x18:
+    case 0x19:
+    case 0x1a:
+        if (gMA.unk_92 == 0) break;
+        ret = FALSE;
+        break;
 
-    ldr	r0, [pc, #8]
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    cmp	r0, #0
-    beq	ApiValisStatusCheck+0x1a2
-    b	ApiValisStatusCheck+0x19e
-.align 2
-    .word gMA
+    case 0x1c:
+    case 0x1d:
+        if (gMA.unk_92 == 0) break;
+        ret = FALSE;
+        break;
 
-    ldr	r0, [pc, #8]
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    cmp	r0, #0
-    beq	ApiValisStatusCheck+0x1a2
-    b	ApiValisStatusCheck+0x19e
-.align 2
-    .word gMA
+    case 0xb:
+    case 0xf:
+    case 0x20:
+    case 0x21:
+    case 0x22:
+    case 0x23:
+    case 0x24:
+        if (gMA.unk_92 == 3) break;
+        ret = FALSE;
+        break;
+    }
 
-    ldr	r0, [pc, #16]
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    cmp	r0, #3
-    beq	ApiValisStatusCheck+0x1a2
-    mov	r0, #0
-    str	r0, [r2, #0]
-    ldr	r0, [r2, #0]
-    bx	lr
-.align 2
-    .word gMA
-.size ApiValisStatusCheck, .-ApiValisStatusCheck
-");
-#endif
-
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MA_ApiPreExe:
-    push	{r4, r5, r6, r7, lr}
-    lsl	r0, r0, #24
-    lsr	r6, r0, #24
-    ldr	r4, [pc, #88]
-    ldrb	r0, [r4, #0]
-    mov	r0, #0
-    strb	r0, [r4, #0]
-    mov	r2, r4
-    add	r2, #94
-    ldrh	r1, [r2, #0]
-    mov	r7, #0
-    strh	r0, [r2, #0]
-    ldr	r1, [r4, #88]
-    ldr	r0, [pc, #72]
-    cmp	r1, r0
-    bne	MA_ApiPreExe+0x54
-    ldr	r0, [r4, #64]
-    mov	r1, #128
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_ApiPreExe+0x54
-    ldr	r0, [r4, #64]
-    add	r1, #128
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_ApiPreExe+0x54
-    ldrh	r1, [r4, #2]
-    mov	r0, #2
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_ApiPreExe+0x54
-    mov	r0, r4
-    add	r0, #97
-    ldrb	r0, [r0, #0]
-    mov	r5, r0
-    cmp	r5, #0
-    bne	MA_ApiPreExe+0x54
-    mov	r0, r6
-    bl	ApiValisStatusCheck
-    cmp	r0, #0
-    bne	MA_ApiPreExe+0x68
-    mov	r0, #33
-    mov	r1, #0
-    bl	MA_SetApiError
-    mov	r0, #0
-    b	MA_ApiPreExe+0xb2
-.align 2
-    .word gMA
-    .word 0x4247414d
+    return ret;
+}
 
     mov	r0, r6
     sub	r0, #22
