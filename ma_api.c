@@ -15,7 +15,7 @@
 //static void ConcatPrevBuf();
 //static void MATASK_Stop();
 //static void MATASK_TCP_Cut();
-//static void MA_InitLibraryMain();
+static void MA_InitLibraryMain(u8 *pHardwareType, int unk);
 //static void MATASK_InitLibrary();
 //static void MATASK_TCP_Connect();
 //static void MATASK_TCP_Disconnect();
@@ -633,37 +633,16 @@ MATASK_TCP_Cut:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_InitLibrary
-MA_InitLibrary:
-    push	{lr}
-    mov	r1, #1
-    bl	MA_InitLibraryMain
-    pop	{r0}
-    bx	r0
-.size MA_InitLibrary, .-MA_InitLibrary
-");
-#endif
+void MA_InitLibrary(u8 *pHardwareType)
+{
+    MA_InitLibraryMain(pHardwareType, 1);
+}
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_InitLibrary2
-MA_InitLibrary2:
-    push	{lr}
-    mov	r1, #2
-    bl	MA_InitLibraryMain
-    pop	{r0}
-    bx	r0
-.size MA_InitLibrary2, .-MA_InitLibrary2
-");
-#endif
+
+void MA_InitLibrary2(u8 *pHardwareType)
+{
+    MA_InitLibraryMain(pHardwareType, 2);
+}
 
 #if 0
 #else
