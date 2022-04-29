@@ -181,6 +181,7 @@ static int MA_ApiPreExe(u8 unk_1)
 {
     gMA.error = 0;
     gMA.unk_94 = 0;
+
     if (gMA.unk_88 != 0x4247414d) {
         MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
         return FALSE;
@@ -305,100 +306,40 @@ void MA_End(void)
     CpuSet(&zero, &gMA, DMA_SRC_FIX | DMA_32BIT_BUS | (sizeof(gMA) / 4));
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_Stop
-MA_Stop:
-    push	{lr}
-    bl	SetApiCallFlag
-    ldr	r2, [pc, #20]
-    ldr	r1, [r2, #88]
-    ldr	r0, [pc, #20]
-    cmp	r1, r0
-    beq	MA_Stop+0x24
-    mov	r0, #33
-    mov	r1, #0
-    bl	MA_SetApiError
-    b	MA_Stop+0xb6
-.align 2
-    .word gMA
-    .word 0x4247414d
+void MA_Stop(void)
+{
+    SetApiCallFlag();
+    if (gMA.unk_88 != 0x4247414d) {
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        return;
+    }
 
-    ldrh	r1, [r2, #2]
-    mov	r0, #2
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_Stop+0x3c
-    mov	r0, #33
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_Stop+0xb6
-    mov	r0, r2
-    add	r0, #97
-    ldrb	r0, [r0, #0]
-    cmp	r0, #30
-    beq	MA_Stop+0x36
-    mov	r0, r2
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    cmp	r0, #0
-    bne	MA_Stop+0x5a
-    ldrh	r1, [r2, #2]
-    mov	r0, #1
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_Stop+0x36
-    ldr	r1, [pc, #60]
-    ldrh	r2, [r1, #2]
-    ldr	r0, [pc, #60]
-    and	r0, r2
-    ldrh	r2, [r1, #2]
-    strh	r0, [r1, #2]
-    ldrh	r2, [r1, #2]
-    mov	r0, #32
-    and	r0, r2
-    mov	r3, r1
-    cmp	r0, #0
-    beq	MA_Stop+0xa0
-    mov	r0, r3
-    add	r0, #68
-    ldrb	r0, [r0, #0]
-    cmp	r0, #18
-    bne	MA_Stop+0xa0
-    ldrh	r0, [r3, #2]
-    mov	r1, #1
-    orr	r0, r1
-    ldrh	r1, [r3, #2]
-    mov	r1, #0
-    orr	r0, r1
-    strh	r0, [r3, #2]
-    mov	r0, #30
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	MA_CancelRequest
-    b	MA_Stop+0x36
-.align 2
-    .word gMA
-    .word 0x0000fffb
+    if (gMA.condition & MA_CONDITION_ERROR) {
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        ResetApiCallFlag();
+        return;
+    }
 
-    ldrh	r0, [r3, #2]
-    mov	r1, #1
-    ldrh	r2, [r3, #2]
-    orr	r1, r0
-    strh	r1, [r3, #2]
-    mov	r0, #30
-    mov	r1, #1
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r0}
-    bx	r0
-.size MA_Stop, .-MA_Stop
-");
-#endif
+    if (gMA.task_unk_97 == TASK_UNK_97_1E ||
+            (!gMA.unk_92 && !(gMA.condition & MA_CONDITION_APIWAIT))) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
+
+    if (gMA.condition & MA_CONDITION_UNK_5 && gMA.cmd_cur == MACMD_TEL) {
+        gMA.condition |= MA_CONDITION_APIWAIT;
+        MA_TaskSet(TASK_UNK_97_1E, 0);
+        MA_CancelRequest();
+        ResetApiCallFlag();
+        return;
+    }
+
+    gMA.condition |= MA_CONDITION_APIWAIT;
+    MA_TaskSet(TASK_UNK_97_1E, 1);
+    ResetApiCallFlag();
+}
 
 #if 0
 #else

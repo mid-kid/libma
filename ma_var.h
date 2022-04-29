@@ -3,8 +3,6 @@
 
 #include <AgbTypes.h>
 
-#define NUM_SOCKETS 2
-
 #define MA_CONDITION_UNK_5 (1 << 5)
 #define MA_CONDITION_UNK_6 (1 << 6)
 
@@ -32,6 +30,30 @@
 #define TASK_UNK_97_06 0x06
 #define TASK_UNK_97_07 0x07
 #define TASK_UNK_97_1E 0x1e
+
+#define MACMD_START 0x10
+#define MACMD_END 0x11
+#define MACMD_TEL 0x12
+#define MACMD_OFFLINE 0x13
+#define MACMD_WAITCALL 0x14
+#define MACMD_DATA 0x15
+#define MACMD_REINIT 0x16
+#define MACMD_CHECKSTATUS 0x17
+#define MACMD_CHANGECLOCK 0x18
+#define MACMD_EEPROM_READ 0x19
+#define MACMD_EEPROM_WRITE 0x1a
+#define MACMD_UNK_1F 0x1f
+#define MACMD_PPPCONNECT 0x21
+#define MACMD_PPPDISCONNECT 0x22
+#define MACMD_TCPCONNECT 0x23
+#define MACMD_TCPDISCONNECT 0x24
+#define MACMD_UDPCONNECT 0x25
+#define MACMD_UDPDISCONNECT 0x26
+#define MACMD_DNSREQUEST 0x28
+#define MACMD_TESTMODE 0x3f
+#define MACMD_ERROR 0x6e
+
+#define NUM_SOCKETS 2
 
 enum ma_sio_modes {
     MA_SIO_BYTE,
