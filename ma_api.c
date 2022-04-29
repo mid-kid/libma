@@ -15,7 +15,7 @@
 //static void ConcatPrevBuf();
 //static void MATASK_Stop();
 //static void MATASK_TCP_Cut();
-static void MA_InitLibraryMain(u8 *pHardwareType, int unk);
+static void MA_InitLibraryMain(u8 *pHardwareType, int task);
 //static void MATASK_InitLibrary();
 //static void MATASK_TCP_Connect();
 //static void MATASK_TCP_Disconnect();
@@ -71,9 +71,9 @@ void ResetApiCallFlag(void)
 void MA_TaskSet(u8 unk_1, u8 unk_2)
 {
     gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-    gMA.task_unk_97 = unk_1;
+    gMA.task = unk_1;
     gMA.task_unk_98 = unk_2;
-    if (gMA.task_unk_97 == 0) gMA.condition &= ~MA_CONDITION_APIWAIT;
+    if (gMA.task == 0) gMA.condition &= ~MA_CONDITION_APIWAIT;
 }
 
 static void MA_SetApiError(u8 unk_1, u16 unk_2)
@@ -194,7 +194,7 @@ static int MA_ApiPreExe(u8 unk_1)
         MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
         return FALSE;
     }
-    if (gMA.task_unk_97 != 0) {
+    if (gMA.task != 0) {
         MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
         return FALSE;
     }
@@ -320,7 +320,7 @@ void MA_Stop(void)
         return;
     }
 
-    if (gMA.task_unk_97 == TASK_UNK_97_1E ||
+    if (gMA.task == TASK_UNK_1E ||
             (!gMA.unk_92 && !(gMA.condition & MA_CONDITION_APIWAIT))) {
         ResetApiCallFlag();
         return;
@@ -330,14 +330,14 @@ void MA_Stop(void)
 
     if (gMA.condition & MA_CONDITION_UNK_5 && gMA.cmd_cur == MACMD_TEL) {
         gMA.condition |= MA_CONDITION_APIWAIT;
-        MA_TaskSet(TASK_UNK_97_1E, 0);
+        MA_TaskSet(TASK_UNK_1E, 0);
         MA_CancelRequest();
         ResetApiCallFlag();
         return;
     }
 
     gMA.condition |= MA_CONDITION_APIWAIT;
-    MA_TaskSet(TASK_UNK_97_1E, 1);
+    MA_TaskSet(TASK_UNK_1E, 1);
     ResetApiCallFlag();
 }
 
@@ -635,156 +635,62 @@ MATASK_TCP_Cut:
 
 void MA_InitLibrary(u8 *pHardwareType)
 {
-    MA_InitLibraryMain(pHardwareType, 1);
+    MA_InitLibraryMain(pHardwareType, TASK_UNK_01);
 }
 
 
 void MA_InitLibrary2(u8 *pHardwareType)
 {
-    MA_InitLibraryMain(pHardwareType, 2);
+    MA_InitLibraryMain(pHardwareType, TASK_UNK_02);
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MA_InitLibraryMain:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, r8
-    push	{r7}
-    sub	sp, #4
-    mov	r8, r0
-    mov	r5, r1
-    mov	r4, #0
-    str	r4, [sp, #0]
-    ldr	r7, [pc, #244]
-    ldr	r2, [pc, #248]
-    mov	r0, sp
-    mov	r1, r7
-    bl	CpuSet
-    bl	SetApiCallFlag
-    ldr	r0, [pc, #236]
-    str	r0, [r7, #88]
-    mov	r0, r7
-    add	r0, #92
-    ldrb	r1, [r0, #0]
-    strb	r4, [r0, #0]
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    ldrb	r0, [r7, #5]
-    lsl	r0, r0, #1
-    mov	r1, r7
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r7, #12]
-    mov	r6, #0
-    strh	r0, [r7, #12]
-    str	r4, [r7, #60]
-    ldrb	r0, [r7, #4]
-    strb	r6, [r7, #4]
-    ldr	r0, [r7, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r7, #64]
-    ldr	r0, [r7, #64]
-    ldr	r1, [pc, #188]
-    and	r0, r1
-    str	r0, [r7, #64]
-    ldr	r0, [r7, #64]
-    ldr	r1, [pc, #184]
-    and	r0, r1
-    str	r0, [r7, #64]
-    ldr	r0, [r7, #64]
-    ldr	r1, [pc, #180]
-    and	r0, r1
-    str	r0, [r7, #64]
-    ldr	r0, [r7, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r7, #64]
-    ldrh	r1, [r7, #2]
-    ldr	r0, [pc, #164]
-    and	r0, r1
-    ldrh	r1, [r7, #2]
-    strh	r0, [r7, #2]
-    ldrh	r1, [r7, #2]
-    ldr	r0, [pc, #160]
-    and	r0, r1
-    ldrh	r1, [r7, #2]
-    strh	r0, [r7, #2]
-    ldrh	r1, [r7, #2]
-    mov	r4, #255
-    mov	r0, r4
-    and	r0, r1
-    ldrh	r1, [r7, #2]
-    strh	r0, [r7, #2]
-    ldrh	r0, [r7, #2]
-    ldrh	r1, [r7, #2]
-    strh	r0, [r7, #2]
-    bl	MAU_Socket_Clear
-    ldrh	r0, [r7, #2]
-    and	r4, r0
-    ldrh	r0, [r7, #2]
-    strh	r4, [r7, #2]
-    ldrh	r0, [r7, #2]
-    ldrh	r1, [r7, #2]
-    strh	r0, [r7, #2]
-    bl	InitPrevBuf
-    bl	MABIOS_Init
-    mov	r0, r7
-    add	r0, #101
-    strb	r6, [r0, #0]
-    mov	r0, r8
-    str	r0, [r7, #112]
-    lsl	r5, r5, #24
-    lsr	r5, r5, #24
-    mov	r0, r5
-    mov	r1, #0
-    bl	MA_TaskSet
-    ldrh	r0, [r7, #2]
-    mov	r1, #1
-    orr	r0, r1
-    ldrh	r1, [r7, #2]
-    orr	r0, r6
-    strh	r0, [r7, #2]
-    bl	ResetApiCallFlag
-    ldr	r2, [pc, #72]
-    ldr	r0, [r2, #0]
-    mov	r1, #128
-    lsl	r1, r1, #15
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_InitLibraryMain+0xf6
-    ldr	r0, [r2, #0]
-    mov	r1, #128
-    lsl	r1, r1, #16
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_InitLibraryMain+0xfa
-    bl	MAAPI_Main
-    add	sp, #4
-    pop	{r3}
-    mov	r8, r3
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-    .word 0x050001d9
-    .word 0x4247414d
-    .word 0xfffffdff
-    .word 0xfffffbff
-    .word 0xffffdfff
-    .word 0x0000fff7
-    .word 0x0000ffef
-    .word 0x0400010c
-.size MA_InitLibraryMain, .-MA_InitLibraryMain
-");
-#endif
+void MA_InitLibraryMain(u8 *pHardwareType, int task)
+{
+    int zero;
+
+    zero = 0;
+    CpuSet(&zero, &gMA, DMA_SRC_FIX | DMA_32BIT_BUS | (sizeof(gMA) / 4));
+
+    SetApiCallFlag();
+
+    gMA.unk_88 = 0x4247414d;
+    gMA.unk_92 = 0;
+
+    MA_ChangeSIOMode(MA_SIO_BYTE);
+
+    gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
+    gMA.counter = 0;
+    gMA.intr_sio_mode = 0;
+
+    gMA.status &= ~STATUS_UNK_0;
+    gMA.status &= ~STATUS_UNK_9;
+    gMA.status &= ~STATUS_UNK_10;
+    gMA.status &= ~STATUS_UNK_13;
+    gMA.status &= ~STATUS_UNK_2;
+    gMA.condition &= ~MA_CONDITION_PTP_GET;
+    gMA.condition &= ~MA_CONDITION_CONNECT;
+
+    gMA.condition &= 0xff;
+    gMA.condition = gMA.condition;
+    MAU_Socket_Clear();
+    gMA.condition &= 0xff;
+    gMA.condition = gMA.condition;
+
+    InitPrevBuf();
+    MABIOS_Init();
+
+    gMA.unk_101 = 0;
+    gMA.unk_112 = pHardwareType;
+    MA_TaskSet(task, 0);
+
+    gMA.condition = gMA.condition | 1;
+
+    ResetApiCallFlag();
+
+    if (!(*(vu32 *)REG_TM3CNT & 0x400000) || !(*(vu32 *)REG_TM3CNT & 0x800000)) {
+        MAAPI_Main();
+    }
+}
 
 #if 0
 #else

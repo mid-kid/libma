@@ -357,7 +357,7 @@ void MA_SetError(u8 error)
     gMA.iobuf_packet_recv.state = 0;
     gMA.condition |= MA_CONDITION_ERROR;
     gMA.condition &= ~MA_CONDITION_UNK_5;
-    gMA.task_unk_97 = TASK_UNK_97_00;
+    gMA.task = TASK_UNK_00;
     gMA.condition &= ~MA_CONDITION_APIWAIT;
     gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
     gMA.iobuf_sio_tx = NULL;
@@ -1134,9 +1134,9 @@ static void MA_IntrTimer_SIORecv(void)
 
 static void MA_IntrTimer_SIOIdle(void)
 {
-    if (gMA.task_unk_97 != TASK_UNK_97_00
-            && gMA.task_unk_97 != TASK_UNK_97_06
-            && gMA.task_unk_97 != TASK_UNK_97_07) return;  // MAGIC
+    if (gMA.task != TASK_UNK_00
+            && gMA.task != TASK_UNK_06
+            && gMA.task != TASK_UNK_07) return;  // MAGIC
     if (!(gMA.status & STATUS_UNK_0)) return;
     gMA.counter++;
 
@@ -1195,8 +1195,8 @@ static void MA_IntrTimer_SIOWaitTime(void)
             gMA.condition &= 0xff;
             gMA.condition = gMA.condition;
 
-            MA_TaskSet(TASK_UNK_97_00, 0);
-            if (gMA.task_unk_97 != TASK_UNK_97_1E) {
+            MA_TaskSet(TASK_UNK_00, 0);
+            if (gMA.task != TASK_UNK_1E) {
                 gMA.status &= ~STATUS_UNK_14;
                 MA_SetError(MAAPIE_TIMEOUT);
                 gMA.counter = 0;
@@ -1378,7 +1378,7 @@ static void MA_ProcessRecvPacket(u8 cmd)
             gMA.status &= ~STATUS_UNK_13;
             gMA.condition &= ~MA_CONDITION_CONNECT;
 
-            if (gMA.task_unk_97 != 2 && gMA.task_unk_97 != 9) {  // MAGIC
+            if (gMA.task != 2 && gMA.task != 9) {  // MAGIC
                 gMA.intr_sio_mode = 3;  // MAGIC
                 gMA.timer_unk_12 = -0x4003;  // MAGIC
                 i = 0;

@@ -26,10 +26,12 @@
 #define STATUS_UNK_13 (1 << 13)
 #define STATUS_UNK_14 (1 << 14)
 
-#define TASK_UNK_97_00 0x00
-#define TASK_UNK_97_06 0x06
-#define TASK_UNK_97_07 0x07
-#define TASK_UNK_97_1E 0x1e
+#define TASK_UNK_00 0x00
+#define TASK_UNK_01 0x01
+#define TASK_UNK_02 0x02
+#define TASK_UNK_06 0x06
+#define TASK_UNK_07 0x07
+#define TASK_UNK_1E 0x1e
 
 #define MACMD_START 0x10
 #define MACMD_END 0x11
@@ -110,7 +112,7 @@ typedef struct {
     u8 _93[1];
     vu16 unk_94;
     vu8 unk_96;
-    vu8 task_unk_97;
+    vu8 task;
     vu8 task_unk_98;
     u8 sockets[NUM_SOCKETS];
     u8 unk_101;
