@@ -1195,7 +1195,7 @@ static void MA_IntrTimer_SIOWaitTime(void)
             gMA.condition &= 0xff;
             gMA.condition = gMA.condition;
 
-            MA_TaskSet(0, 0);
+            MA_TaskSet(TASK_UNK_97_00, 0);
             if (gMA.task_unk_97 != TASK_UNK_97_1E) {
                 gMA.status &= ~STATUS_UNK_14;
                 MA_SetError(MAAPIE_TIMEOUT);

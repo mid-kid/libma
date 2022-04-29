@@ -341,134 +341,43 @@ void MA_Stop(void)
     ResetApiCallFlag();
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MATASK_Stop:
-    push	{r4, r5, r6, lr}
-    ldr	r6, [pc, #20]
-    mov	r2, r6
-    add	r2, #98
-    ldrb	r0, [r2, #0]
-    cmp	r0, #1
-    beq	MATASK_Stop+0x2a
-    cmp	r0, #1
-    bgt	MATASK_Stop+0x1c
-    cmp	r0, #0
-    beq	MATASK_Stop+0x22
-    b	MATASK_Stop+0xe2
-.align 2
-    .word gMA
+static void MATASK_Stop(void)
+{
+    switch (gMA.task_unk_98) {  // MAGIC
+    case 0:
+        gMA.task_unk_98++;
 
-    cmp	r0, #2
-    beq	MATASK_Stop+0x40
-    b	MATASK_Stop+0xe2
-    ldrb	r0, [r2, #0]
-    add	r0, #1
-    ldrb	r1, [r2, #0]
-    strb	r0, [r2, #0]
-    bl	MA_BiosStop
-    ldr	r0, [pc, #12]
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    add	r1, #1
-    ldrb	r2, [r0, #0]
-    strb	r1, [r0, #0]
-    b	MATASK_Stop+0xe2
-.align 2
-    .word gMA
+    case 1:
+        MA_BiosStop();
+        gMA.task_unk_98++;
+        break;
 
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    mov	r0, r6
-    add	r0, #92
-    ldrb	r1, [r0, #0]
-    mov	r4, #0
-    strb	r4, [r0, #0]
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    ldrb	r0, [r6, #5]
-    lsl	r0, r0, #1
-    mov	r1, r6
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r6, #12]
-    mov	r5, #0
-    strh	r0, [r6, #12]
-    str	r4, [r6, #60]
-    ldrb	r0, [r6, #4]
-    strb	r5, [r6, #4]
-    ldr	r0, [r6, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r6, #64]
-    ldr	r0, [r6, #64]
-    ldr	r1, [pc, #108]
-    and	r0, r1
-    str	r0, [r6, #64]
-    ldr	r0, [r6, #64]
-    ldr	r1, [pc, #104]
-    and	r0, r1
-    str	r0, [r6, #64]
-    ldr	r0, [r6, #64]
-    ldr	r1, [pc, #100]
-    and	r0, r1
-    str	r0, [r6, #64]
-    ldr	r0, [r6, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r6, #64]
-    ldrh	r1, [r6, #2]
-    ldr	r0, [pc, #84]
-    and	r0, r1
-    ldrh	r1, [r6, #2]
-    strh	r0, [r6, #2]
-    ldrh	r1, [r6, #2]
-    ldr	r0, [pc, #80]
-    and	r0, r1
-    ldrh	r1, [r6, #2]
-    strh	r0, [r6, #2]
-    ldrh	r1, [r6, #2]
-    mov	r4, #255
-    mov	r0, r4
-    and	r0, r1
-    ldrh	r1, [r6, #2]
-    strh	r0, [r6, #2]
-    ldrh	r0, [r6, #2]
-    ldrh	r1, [r6, #2]
-    strh	r0, [r6, #2]
-    bl	MAU_Socket_Clear
-    ldrh	r0, [r6, #2]
-    and	r4, r0
-    ldrh	r0, [r6, #2]
-    strh	r4, [r6, #2]
-    ldrh	r0, [r6, #2]
-    ldrh	r1, [r6, #2]
-    strh	r0, [r6, #2]
-    mov	r0, r6
-    add	r0, #69
-    ldrb	r1, [r0, #0]
-    strb	r5, [r0, #0]
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    pop	{r4, r5, r6}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word 0xfffffdff
-    .word 0xfffffbff
-    .word 0xffffdfff
-    .word 0x0000fff7
-    .word 0x0000ffef
-.size MATASK_Stop, .-MATASK_Stop
-");
-#endif
+    case 2:
+        MA_ChangeSIOMode(MA_SIO_BYTE);
+        gMA.unk_92 = 0;
+        MA_ChangeSIOMode(MA_SIO_BYTE);
+        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
+        gMA.counter = 0;
+        gMA.intr_sio_mode = 0;
+        gMA.status &= ~STATUS_UNK_0;
+        gMA.status &= ~STATUS_UNK_9;
+        gMA.status &= ~STATUS_UNK_10;
+        gMA.status &= ~STATUS_UNK_13;
+        gMA.status &= ~STATUS_UNK_2;
+        gMA.condition &= ~MA_CONDITION_PTP_GET;
+        gMA.condition &= ~MA_CONDITION_CONNECT;
+
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+        MAU_Socket_Clear();
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+
+        gMA.recv_cmd = 0;
+        MA_TaskSet(TASK_UNK_97_00, 0);
+        break;
+    }
+}
 
 #if 0
 #else
