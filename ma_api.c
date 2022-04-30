@@ -12627,72 +12627,27 @@ u16 MAAPI_GetConditionFlag(void)
     return gMA.condition;
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-ErrDetailHexConv:
-    push	{r4, r5, lr}
-    lsl	r0, r0, #16
-    lsr	r1, r0, #16
-    mov	r2, #0
-    ldr	r0, [pc, #60]
-    cmp	r1, r0
-    bls	ErrDetailHexConv+0x2a
-    ldr	r3, [pc, #60]
-    mov	r5, r3
-    mov	r3, #128
-    lsl	r3, r3, #5
-    mov	r4, r3
-    mov	r3, r0
-    add	r0, r1, r5
-    lsl	r0, r0, #16
-    lsr	r1, r0, #16
-    add	r0, r2, r4
-    lsl	r0, r0, #16
-    lsr	r2, r0, #16
-    cmp	r1, r3
-    bhi	ErrDetailHexConv+0x1a
-    cmp	r1, #99
-    bls	ErrDetailHexConv+0x60
-    mov	r0, #128
-    lsl	r0, r0, #1
-    mov	r3, r0
-    mov	r0, r1
-    sub	r0, #100
-    lsl	r0, r0, #16
-    lsr	r1, r0, #16
-    add	r0, r2, r3
-    lsl	r0, r0, #16
-    lsr	r2, r0, #16
-    cmp	r1, #99
-    bhi	ErrDetailHexConv+0x34
-    b	ErrDetailHexConv+0x60
-.align 2
-    .word 0x000003e7
-    .word 0xfffffc18
+static u16 ErrDetailHexConv(u16 err)
+{
+    u16 hex;
 
-    mov	r0, r1
-    sub	r0, #10
-    lsl	r0, r0, #16
-    lsr	r1, r0, #16
-    mov	r0, r2
-    add	r0, #16
-    lsl	r0, r0, #16
-    lsr	r2, r0, #16
-    cmp	r1, #9
-    bhi	ErrDetailHexConv+0x50
-    add	r0, r2, r1
-    lsl	r0, r0, #16
-    lsr	r2, r0, #16
-    mov	r0, r2
-    pop	{r4, r5}
-    pop	{r1}
-    bx	r1
-.size ErrDetailHexConv, .-ErrDetailHexConv
-");
-#endif
+    hex = 0;
+    while (err >= 1000) {
+        err -= 1000;
+        hex += 0x1000;
+    }
+    while (err >= 100) {
+        err -= 100;
+        hex += 0x100;
+    }
+    while (err >= 10) {
+        err -= 10;
+        hex += 0x10;
+    }
+    hex += err;
+
+    return hex;
+}
 
 #if 0
 #else
