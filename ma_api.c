@@ -381,6 +381,7 @@ static void MATASK_Stop(void)
 
 #if 0
 #else
+void MA_TCP_Cut(void);
 asm("
 .align 2
 .thumb_func
@@ -1675,6 +1676,7 @@ static int EEPROMRegistrationCheck(u8 *data)
 
 #if 0
 #else
+void MA_TelServer(const char *pTelNo, const char *pUserID, const char *pPassword);
 asm("
 .align 2
 .thumb_func
@@ -2217,6 +2219,7 @@ MATASK_TelServer:
 
 #if 0
 #else
+void MA_Tel(const char *pTelNo);
 asm("
 .align 2
 .thumb_func
@@ -2521,6 +2524,7 @@ MATASK_Tel:
 
 #if 0
 #else
+void MA_Receive(void);
 asm("
 .align 2
 .thumb_func
@@ -2796,6 +2800,7 @@ MATASK_Receive:
 
 #if 0
 #else
+void MA_SData(const u8 *pSendData, u8 sendSize, u8 *pResult);
 asm("
 .align 2
 .thumb_func
@@ -2861,6 +2866,7 @@ MA_SData:
 
 #if 0
 #else
+void MA_GData(u8 *pRecvData, u8 *pRecvSize);
 asm("
 .align 2
 .thumb_func
@@ -3493,6 +3499,7 @@ MATASK_Condition:
 
 #if 0
 #else
+void MA_Offline(void);
 asm("
 .align 2
 .thumb_func
@@ -3859,6 +3866,7 @@ static int CheckSMTPResponse(char *response)
 
 #if 0
 #else
+void MA_SMTP_Connect(const char *pMailAddress);
 asm("
 .align 2
 .thumb_func
@@ -4433,6 +4441,7 @@ MATASK_SMTP_Connect:
 
 #if 0
 #else
+void MA_SMTP_Sender(const char * const pRecipients[]);
 asm("
 .align 2
 .thumb_func
@@ -4954,6 +4963,7 @@ MATASK_SMTP_Sender:
 
 #if 0
 #else
+void MA_SMTP_Send(const char *pSendData, u16 sendSize, int endFlag);
 asm("
 .align 2
 .thumb_func
@@ -5865,6 +5875,7 @@ static int CheckPOP3Response(char *response)
 
 #if 0
 #else
+void MA_POP3_Connect(const char *pUserID, const char *pPassword);
 asm("
 .align 2
 .thumb_func
@@ -6799,6 +6810,7 @@ MATASK_POP3_Stat:
 
 #if 0
 #else
+void MA_POP3_List(u16 mailNo, u32 *pSize);
 asm("
 .align 2
 .thumb_func
@@ -7135,6 +7147,7 @@ MATASK_POP3_List:
 
 #if 0
 #else
+void MA_POP3_Retr(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize);
 asm("
 .align 2
 .thumb_func
@@ -7793,6 +7806,7 @@ MATASK_POP3_Retr:
 
 #if 0
 #else
+void MA_POP3_Dele(u16 mailNo);
 asm("
 .align 2
 .thumb_func
@@ -8098,6 +8112,7 @@ MATASK_POP3_Dele:
 
 #if 0
 #else
+void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize);
 asm("
 .align 2
 .thumb_func
@@ -8977,6 +8992,7 @@ asm(".section .text\n");
 
 #if 0
 #else
+void MA_HTTP_Get(const char *pURL, char *pHeadBuf, u16 headBufSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword);
 asm("
 .align 2
 .thumb_func
@@ -9013,6 +9029,7 @@ MA_HTTP_Get:
 
 #if 0
 #else
+void MA_HTTP_Post(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword);
 asm("
 .align 2
 .thumb_func
@@ -12636,6 +12653,7 @@ MATASK_EEPROM_Write:
 
 #if 0
 #else
+void MA_GetTel(MA_TELDATA *pTelData);
 asm("
 .align 2
 .thumb_func
@@ -12713,6 +12731,7 @@ MA_GetTel:
 
 #if 0
 #else
+void MA_GetUserID(char *pUserIDBuf);
 asm("
 .align 2
 .thumb_func
@@ -12791,6 +12810,7 @@ MA_GetUserID:
 
 #if 0
 #else
+void MA_GetMailID(char *pBufPtr);
 asm("
 .align 2
 .thumb_func
@@ -13094,6 +13114,7 @@ ErrDetailHexConv:
 
 #if 0
 #else
+u8 MAAPI_ErrorCheck(u16 *pProtocolError);
 asm("
 .align 2
 .thumb_func
