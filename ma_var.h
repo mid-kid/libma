@@ -37,6 +37,7 @@
 #define TASK_UNK_10 0x10
 #define TASK_UNK_15 0x15
 #define TASK_UNK_1E 0x1e
+#define TASK_UNK_23 0x23
 
 #define MACMD_START 0x10
 #define MACMD_END 0x11

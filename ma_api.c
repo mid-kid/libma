@@ -1439,47 +1439,25 @@ MATASK_TCP_SendRecv:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_GetHostAddress
-MA_GetHostAddress:
-    push	{r4, r5, lr}
-    mov	r5, r0
-    mov	r4, r1
-    bl	SetApiCallFlag
-    mov	r0, #35
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_GetHostAddress+0x1a
-    bl	ResetApiCallFlag
-    b	MA_GetHostAddress+0x44
-    mov	r0, r4
-    bl	MAU_strlen
-    cmp	r0, #255
-    ble	MA_GetHostAddress+0x32
-    mov	r0, #32
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_GetHostAddress+0x44
-    ldr	r0, [pc, #24]
-    str	r5, [r0, #112]
-    str	r4, [r0, #116]
-    mov	r0, #35
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-.size MA_GetHostAddress, .-MA_GetHostAddress
-");
-#endif
+void MA_GetHostAddress(u8 *param_1, char *param_2)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_23)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (MAU_strlen(param_2) >= 0x100) {  // MAGIC
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    gMA.unk_112 = param_1;
+    gMA.unk_116 = (u32)param_2;
+    MA_TaskSet(TASK_UNK_23, 0);
+    ResetApiCallFlag();
+}
 
 #if 0
 #else
