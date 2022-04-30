@@ -4791,60 +4791,28 @@ MATASK_SMTP_Sender:
 ");
 #endif
 
-#if 0
-#else
-void MA_SMTP_Send(const char *pSendData, u16 sendSize, int endFlag);
-asm("
-.align 2
-.thumb_func
-.global MA_SMTP_Send
-MA_SMTP_Send:
-    push	{r4, r5, r6, r7, lr}
-    mov	r6, r0
-    mov	r7, r2
-    lsl	r1, r1, #16
-    lsr	r4, r1, #16
-    mov	r5, r4
-    bl	SetApiCallFlag
-    mov	r0, #13
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_SMTP_Send+0x20
-    bl	ResetApiCallFlag
-    b	MA_SMTP_Send+0x5a
-    cmp	r4, #0
-    bne	MA_SMTP_Send+0x32
-    mov	r0, #32
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_SMTP_Send+0x5a
-    ldr	r1, [pc, #44]
-    mov	r0, r1
-    add	r0, #96
-    ldrb	r0, [r0, #0]
-    cmp	r0, #1
-    bne	MA_SMTP_Send+0x42
-    mov	r0, #0
-    str	r0, [r1, #124]
-    str	r6, [r1, #112]
-    str	r5, [r1, #116]
-    str	r7, [r1, #120]
-    ldr	r0, [r1, #124]
-    add	r0, r0, r5
-    str	r0, [r1, #124]
-    mov	r0, #13
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-.size MA_SMTP_Send, .-MA_SMTP_Send
-");
-#endif
+void MA_SMTP_Send(const char *pSendData, u16 sendSize, int endFlag)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_0D)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (sendSize == 0) {
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (gMA.unk_96 == 1) gMA.unk_124 = 0;
+    gMA.unk_112 = (u8 *)pSendData;
+    gMA.unk_116 = sendSize;
+    gMA.unk_120 = endFlag;
+    gMA.unk_124 += sendSize;
+    MA_TaskSet(TASK_UNK_0D, 0);
+    ResetApiCallFlag();
+}
 
 #if 0
 #else

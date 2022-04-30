@@ -35,6 +35,7 @@
 #define TASK_UNK_08 0x08
 #define TASK_UNK_09 0x09
 #define TASK_UNK_0B 0x0b
+#define TASK_UNK_0D 0x0d
 #define TASK_UNK_0E 0x0e
 #define TASK_UNK_10 0x10
 #define TASK_UNK_13 0x13
@@ -137,7 +138,9 @@ typedef struct {
     u8 _110[2];
     u8 *unk_112;
     u32 unk_116;
-    u8 _120[84];
+    u32 unk_120;
+    u32 unk_124;
+    u8 _128[76];
     u8 sockets_used[NUM_SOCKETS];
     u8 local_address[4];
     u8 _210[2];
