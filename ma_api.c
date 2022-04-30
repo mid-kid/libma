@@ -241,41 +241,21 @@ static int IsEndMultiLine(void)
     }
 }
 
-asm("
-.section .rodata
-.align 2
-    .asciz \"QUIT\\r\\n\"
-.align 2
-    .asciz \"HELO \"
-.align 2
-    .asciz \"\\r\\n\"
-.align 2
-    .asciz \"MAIL FROM:<\"
-.align 2
-    .asciz \">\\r\\n\"
-.align 2
-    .asciz \"RCPT TO:<\"
-.align 2
-    .asciz \"DATA\\r\\n\"
-.align 2
-    .asciz \"USER \"
-.align 2
-    .asciz \"PASS \"
-.align 2
-    .asciz \"STAT\\r\\n\"
-.align 2
-    .asciz \"LIST \"
-.align 2
-    .asciz \"RETR \"
-.align 2
-    .asciz \"DELE \"
-.align 2
-    .asciz \"TOP \"
-.align 2
-    .asciz \" 0\\r\\n\"
-.align 2
-.section .text
-");
+static const char POP3_Quit[] asm(".LPOP3_Quit") = "QUIT\r\n";
+static const char POP3_Helo[] asm(".LPOP3_Helo") = "HELO ";
+static const char POP3_Newl[] asm(".LPOP3_Newl") = "\r\n";
+static const char POP3_From[] asm(".LPOP3_From") = "MAIL FROM:<";
+static const char POP3_From_Newl[] asm(".LPOP3_From_Newl") = ">\r\n";
+static const char POP3_Rcpt[] asm(".LPOP3_Rcpt") = "RCPT TO:<";
+static const char POP3_Data[] asm(".LPOP3_Data") = "DATA\r\n";
+static const char POP3_User[] asm(".LPOP3_User") = "USER ";
+static const char POP3_Pass[] asm(".LPOP3_Pass") = "PASS ";
+static const char POP3_Stat[] asm(".LPOP3_Stat") = "STAT\r\n";
+static const char POP3_List[] asm(".LPOP3_List") = "LIST ";
+static const char POP3_Retr[] asm(".LPOP3_Retr") = "RETR ";
+static const char POP3_Dele[] asm(".LPOP3_Dele") = "DELE ";
+static const char POP3_Top[]  asm(".LPOP3_Top") = "TOP ";
+static const char POP3_Zero[] asm(".LPOP3_Zero") = " 0\r\n";
 
 static void InitPrevBuf(void)
 {
@@ -7743,52 +7723,21 @@ MATASK_POP3_Retr:
 ");
 #endif
 
-#if 0
-#else
-void MA_POP3_Dele(u16 mailNo);
-asm("
-.align 2
-.thumb_func
-.global MA_POP3_Dele
-MA_POP3_Dele:
-    push	{r4, r5, lr}
-    lsl	r0, r0, #16
-    lsr	r5, r0, #16
-    bl	SetApiCallFlag
-    mov	r0, #19
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_POP3_Dele+0x1a
-    bl	ResetApiCallFlag
-    b	MA_POP3_Dele+0x4a
-    ldr	r4, [pc, #52]
-    ldr	r1, [pc, #52]
-    mov	r0, r4
-    bl	MAU_strcpy
-    mov	r0, r4
-    bl	MAU_strlen
-    mov	r1, r0
-    add	r1, r1, r4
-    mov	r0, r5
-    mov	r2, #10
-    bl	MAU_itoa
-    ldr	r1, [pc, #32]
-    mov	r0, r4
-    bl	MAU_strcat
-    mov	r0, #19
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA+0x370
-    .word strEndMultiLine.25+0x68
-    .word strEndMultiLine.25+0x18
-.size MA_POP3_Dele, .-MA_POP3_Dele
-");
-#endif
+void MA_POP3_Dele(u16 mailNo)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_13)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    MAU_strcpy(gMA.unk_880, POP3_Dele);
+    MAU_itoa(mailNo, gMA.unk_880 + MAU_strlen(gMA.unk_880), 10);
+    MAU_strcat(gMA.unk_880, POP3_Newl);
+
+    MA_TaskSet(TASK_UNK_13, 0);
+    ResetApiCallFlag();
+}
 
 #if 0
 #else

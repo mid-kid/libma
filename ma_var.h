@@ -36,6 +36,7 @@
 #define TASK_UNK_09 0x09
 #define TASK_UNK_0E 0x0e
 #define TASK_UNK_10 0x10
+#define TASK_UNK_13 0x13
 #define TASK_UNK_15 0x15
 #define TASK_UNK_1C 0x1c
 #define TASK_UNK_1D 0x1d
@@ -153,7 +154,9 @@ typedef struct {
     u8 _828[8];
     u8 smtp_server[20];
     u8 pop3_server[20];
-    u8 _876[273];
+    u8 _876[4];
+    u8 unk_880[14];
+    u8 _894[255];
     u8 prevbuf[1];
     u8 _1150[11];
     u8 eeprom_unk_1161[32];
