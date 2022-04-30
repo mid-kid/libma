@@ -1101,52 +1101,30 @@ MATASK_TCP_Connect:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_TCP_Disconnect
-MA_TCP_Disconnect:
-    push	{r4, r5, lr}
-    lsl	r0, r0, #24
-    lsr	r4, r0, #24
-    mov	r5, r4
-    bl	SetApiCallFlag
-    mov	r0, #33
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_TCP_Disconnect+0x1c
-    bl	ResetApiCallFlag
-    b	MA_TCP_Disconnect+0x50
-    bl	MAU_Socket_GetNum
-    cmp	r0, #0
-    bne	MA_TCP_Disconnect+0x28
-    mov	r0, #33
-    b	MA_TCP_Disconnect+0x34
-    mov	r0, r4
-    bl	MAU_Socket_Search
-    cmp	r0, #0
-    bne	MA_TCP_Disconnect+0x40
-    mov	r0, #32
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_TCP_Disconnect+0x50
-    ldr	r0, [pc, #20]
-    str	r5, [r0, #112]
-    mov	r0, #33
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-.size MA_TCP_Disconnect, .-MA_TCP_Disconnect
-");
-#endif
+void MA_TCP_Disconnect(u8 unk_1)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_21)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (MAU_Socket_GetNum() == 0) {
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (!MAU_Socket_Search(unk_1)) {
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    gMA.unk_112 = (u8 *)unk_1;
+    MA_TaskSet(TASK_UNK_21, 0);
+    ResetApiCallFlag();
+}
 
 #if 0
 #else
