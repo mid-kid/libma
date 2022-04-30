@@ -2100,65 +2100,33 @@ MATASK_TelServer:
 ");
 #endif
 
-#if 0
-#else
-void MA_Tel(const char *pTelNo);
-asm("
-.align 2
-.thumb_func
-.global MA_Tel
-MA_Tel:
-    push	{r4, lr}
-    mov	r4, r0
-    bl	SetApiCallFlag
-    mov	r0, #4
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_Tel+0x18
-    bl	ResetApiCallFlag
-    b	MA_Tel+0x66
-    mov	r0, r4
-    bl	MAU_strlen
-    cmp	r0, #20
-    bgt	MA_Tel+0x26
-    cmp	r0, #0
-    bne	MA_Tel+0x34
-    mov	r0, #32
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_Tel+0x66
-    ldr	r0, [pc, #52]
-    str	r4, [r0, #112]
-    ldr	r4, [pc, #52]
-    mov	r0, #0
-    str	r0, [r4, #0]
-    mov	r0, #4
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    ldr	r0, [r4, #0]
-    mov	r1, #128
-    lsl	r1, r1, #15
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_Tel+0x62
-    ldr	r0, [r4, #0]
-    mov	r1, #128
-    lsl	r1, r1, #16
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_Tel+0x66
-    bl	MAAPI_Main
-    pop	{r4}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-    .word 0x0400010c
-.size MA_Tel, .-MA_Tel
-");
-#endif
+void MA_Tel(const char *pTelNo)
+{
+    int len;
+
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_04)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    len = MAU_strlen(pTelNo);
+    if (len > 20 || len == 0) {  // MAGIC
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    gMA.unk_112 = (u8 *)pTelNo;
+    *(vu32 *)REG_TM3CNT = 0;
+    MA_TaskSet(TASK_UNK_04, 0);
+
+    ResetApiCallFlag();
+
+    if (!(*(vu32 *)REG_TM3CNT & TMR_IF_ENABLE) || !(*(vu32 *)REG_TM3CNT & TMR_ENABLE)) {
+        MAAPI_Main();
+    }
+}
 
 #if 0
 #else
@@ -3692,7 +3660,7 @@ void MA_SMTP_Connect(const char *pMailAddress)
     }
 
     len = MAU_strlen(pMailAddress);
-    if (len >= 0x1f || len == 0) {
+    if (len > 30 || len == 0) {  // MAGIC
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;
