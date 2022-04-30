@@ -5585,30 +5585,17 @@ void MA_POP3_Quit(void)
     ResetApiCallFlag();
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_SMTP_Quit
-MA_SMTP_Quit:
-    push	{lr}
-    bl	SetApiCallFlag
-    mov	r0, #14
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_SMTP_Quit+0x16
-    bl	ResetApiCallFlag
-    b	MA_SMTP_Quit+0x22
-    mov	r0, #14
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r0}
-    bx	r0
-.size MA_SMTP_Quit, .-MA_SMTP_Quit
-");
-#endif
+void MA_SMTP_Quit(void)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_0E)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    MA_TaskSet(TASK_UNK_0E, 0);
+    ResetApiCallFlag();
+}
 
 #if 0
 #else
