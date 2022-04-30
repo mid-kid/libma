@@ -142,7 +142,10 @@ typedef struct {
     u32 unk_116;
     u32 unk_120;
     u32 unk_124;
-    u8 _128[76];
+    u8 _128[32];
+    u32 unk_160;
+    u32 unk_164;
+    u8 _168[36];
     u8 sockets_used[NUM_SOCKETS];
     u8 local_address[4];
     u8 _210[2];

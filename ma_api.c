@@ -9347,76 +9347,62 @@ ConcatUserAgent:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.lcomm ret.256, 0x4
+static int GetRequestType(void)
+{
+    static int ret asm("ret.256");
 
-.align 2
-.thumb_func
-GetRequestType:
-    ldr	r1, [pc, #16]
-    mov	r0, #0
-    str	r0, [r1, #0]
-    ldr	r2, [pc, #16]
-    ldr	r0, [r2, #112]
-    cmp	r0, #22
-    beq	GetRequestType+0x1c
-    cmp	r0, #23
-    beq	GetRequestType+0x36
-    b	GetRequestType+0x72
-.align 2
-    .word ret.256
-    .word gMA
+    ret = 0;
+    switch ((u32)gMA.unk_112) {  // MAGIC
+    case 0x16:
+        switch (gMA.unk_160) {  // MAGIC
+        case 1:
+            switch (gMA.unk_164) {  // MAGIC
+            case 0:
+            case 1:
+                break;
 
-    mov	r0, r2
-    add	r0, #160
-    ldr	r3, [r0, #0]
-    cmp	r3, #1
-    bne	GetRequestType+0x72
-    add	r0, #4
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    bls	GetRequestType+0x72
-    cmp	r0, #2
-    bne	GetRequestType+0x72
-    str	r3, [r1, #0]
-    b	GetRequestType+0x72
-    mov	r0, r2
-    add	r0, #160
-    ldr	r0, [r0, #0]
-    cmp	r0, #2
-    beq	GetRequestType+0x50
-    cmp	r0, #2
-    bhi	GetRequestType+0x4a
-    cmp	r0, #0
-    beq	GetRequestType+0x6e
-    b	GetRequestType+0x72
-    cmp	r0, #4
-    beq	GetRequestType+0x60
-    b	GetRequestType+0x72
-    mov	r0, r2
-    add	r0, #164
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    bls	GetRequestType+0x72
-    cmp	r0, #2
-    bne	GetRequestType+0x72
-    b	GetRequestType+0x6e
-    mov	r0, r2
-    add	r0, #164
-    ldr	r0, [r0, #0]
-    cmp	r0, #0
-    beq	GetRequestType+0x72
-    cmp	r0, #2
-    bhi	GetRequestType+0x72
-    mov	r0, #1
-    str	r0, [r1, #0]
-    ldr	r0, [r1, #0]
-    bx	lr
-.size GetRequestType, .-GetRequestType
-");
-#endif
+            case 2:
+                ret = 1;
+                break;
+            }
+            break;
+
+        }
+        break;
+
+    case 0x17:
+        switch (gMA.unk_160) {  // MAGIC
+        case 0:
+            ret = 1;
+            break;
+
+        case 2:
+            switch (gMA.unk_164) {  // MAGIC
+            case 0:
+            case 1:
+                break;
+
+            case 2:
+                ret = 1;
+                break;
+            }
+            break;
+
+        case 4:
+            switch (gMA.unk_164) {  // MAGIC
+            case 0:
+                break;
+
+            case 1:
+            case 2:
+                ret = 1;
+                break;
+            }
+            break;
+        }
+    }
+    return ret;
+}
 
 #if 0
 #else
