@@ -3783,53 +3783,28 @@ static int CheckSMTPResponse(char *response)
     }
 }
 
-#if 0
-#else
-void MA_SMTP_Connect(const char *pMailAddress);
-asm("
-.align 2
-.thumb_func
-.global MA_SMTP_Connect
-MA_SMTP_Connect:
-    push	{r4, r5, lr}
-    mov	r5, r0
-    bl	SetApiCallFlag
-    mov	r0, #11
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_SMTP_Connect+0x18
-    bl	ResetApiCallFlag
-    b	MA_SMTP_Connect+0x4e
-    mov	r0, r5
-    bl	MAU_strlen
-    cmp	r0, #30
-    bgt	MA_SMTP_Connect+0x26
-    cmp	r0, #0
-    bne	MA_SMTP_Connect+0x34
-    mov	r0, #32
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_SMTP_Connect+0x4e
-    ldr	r4, [pc, #28]
-    mov	r0, r4
-    bl	MA_GetSMTPServerName
-    ldr	r0, [pc, #24]
-    add	r4, r4, r0
-    str	r5, [r4, #112]
-    mov	r0, #11
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA+0x370
-    .word 0xfffffc90
-.size MA_SMTP_Connect, .-MA_SMTP_Connect
-");
-#endif
+void MA_SMTP_Connect(const char *pMailAddress)
+{
+    int len;
+
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_0B)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    len = MAU_strlen(pMailAddress);
+    if (len >= 0x1f || len == 0) {
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    MA_GetSMTPServerName(gMA.unk_880);
+    gMA.unk_112 = (u8 *)pMailAddress;
+    MA_TaskSet(TASK_UNK_0B, 0);
+    ResetApiCallFlag();
+}
 
 #if 0
 #else

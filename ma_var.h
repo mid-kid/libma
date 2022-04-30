@@ -34,6 +34,7 @@
 #define TASK_UNK_07 0x07
 #define TASK_UNK_08 0x08
 #define TASK_UNK_09 0x09
+#define TASK_UNK_0B 0x0b
 #define TASK_UNK_0E 0x0e
 #define TASK_UNK_10 0x10
 #define TASK_UNK_13 0x13
