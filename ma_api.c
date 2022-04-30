@@ -11885,53 +11885,24 @@ MATASK_GetEEPROMData:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_EEPROMRead
-MA_EEPROMRead:
-    push	{r4, lr}
-    mov	r4, r0
-    bl	SetApiCallFlag
-    mov	r0, #28
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_EEPROMRead+0x18
-    bl	ResetApiCallFlag
-    b	MA_EEPROMRead+0x4a
-    ldr	r0, [pc, #52]
-    str	r4, [r0, #112]
-    ldr	r4, [pc, #52]
-    mov	r0, #0
-    str	r0, [r4, #0]
-    mov	r0, #28
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    ldr	r0, [r4, #0]
-    mov	r1, #128
-    lsl	r1, r1, #15
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_EEPROMRead+0x46
-    ldr	r0, [r4, #0]
-    mov	r1, #128
-    lsl	r1, r1, #16
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_EEPROMRead+0x4a
-    bl	MAAPI_Main
-    pop	{r4}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-    .word 0x0400010c
-.size MA_EEPROMRead, .-MA_EEPROMRead
-");
-#endif
+void MA_EEPROMRead(u8 *unk_1)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_1C)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    gMA.unk_112 = unk_1;
+    *(vu32 *)REG_TM3CNT = 0;
+    MA_TaskSet(TASK_UNK_1C, 0);
+
+    ResetApiCallFlag();
+
+    if (!(*(vu32 *)REG_TM3CNT & TMR_IF_ENABLE) || !(*(vu32 *)REG_TM3CNT & TMR_ENABLE)) {
+        MAAPI_Main();
+    }
+}
 
 #if 0
 #else
