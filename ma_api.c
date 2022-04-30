@@ -1686,26 +1686,14 @@ EEPROMSumCheck:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-EEPROMRegistrationCheck:
-    mov	r1, r0
-    ldrb	r0, [r1, #0]
-    cmp	r0, #77
-    bne	EEPROMRegistrationCheck+0x12
-    ldrb	r0, [r1, #1]
-    cmp	r0, #65
-    bne	EEPROMRegistrationCheck+0x12
-    mov	r0, #1
-    b	EEPROMRegistrationCheck+0x14
-    mov	r0, #0
-    bx	lr
-.size EEPROMRegistrationCheck, .-EEPROMRegistrationCheck
-");
-#endif
+static int EEPROMRegistrationCheck(u8 *data)
+{
+    if (data[0] == 'M' && data[1] == 'A') {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
 
 #if 0
 #else
