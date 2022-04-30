@@ -3352,61 +3352,23 @@ MATASK_Condition:
 ");
 #endif
 
-#if 0
-#else
-void MA_Offline(void);
-asm("
-.align 2
-.thumb_func
-.global MA_Offline
-MA_Offline:
-    push	{r4, lr}
-    bl	SetApiCallFlag
-    ldr	r0, [pc, #28]
-    mov	r4, r0
-    add	r4, #92
-    ldrb	r0, [r4, #0]
-    cmp	r0, #0
-    beq	MA_Offline+0x1c
-    mov	r0, #10
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_Offline+0x28
-    bl	ResetApiCallFlag
-    b	MA_Offline+0x60
-.align 2
-    .word gMA
+void MA_Offline(void)
+{
+    SetApiCallFlag();
+    if (!gMA.unk_92 || !MA_ApiPreExe(TASK_UNK_0A)) {
+        ResetApiCallFlag();
+        return;
+    }
 
-    ldrb	r0, [r4, #0]
-    cmp	r0, #7
-    beq	MA_Offline+0x34
-    ldrb	r0, [r4, #0]
-    cmp	r0, #8
-    bne	MA_Offline+0x3e
-    mov	r0, #10
-    mov	r1, #1
-    bl	MA_TaskSet
-    b	MA_Offline+0x5c
-    ldrb	r0, [r4, #0]
-    cmp	r0, #4
-    beq	MA_Offline+0x4a
-    ldrb	r0, [r4, #0]
-    cmp	r0, #5
-    bne	MA_Offline+0x54
-    mov	r0, #10
-    mov	r1, #100
-    bl	MA_TaskSet
-    b	MA_Offline+0x5c
-    mov	r0, #10
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r4}
-    pop	{r0}
-    bx	r0
-.size MA_Offline, .-MA_Offline
-");
-#endif
+    if (gMA.unk_92 == 7 || gMA.unk_92 == 8) {
+        MA_TaskSet(TASK_UNK_0A, 1);
+    } else if (gMA.unk_92 == 4 || gMA.unk_92 == 5) {
+        MA_TaskSet(TASK_UNK_0A, 100);
+    } else {
+        MA_TaskSet(TASK_UNK_0A, 0);
+    }
+    ResetApiCallFlag();
+}
 
 #if 0
 #else
