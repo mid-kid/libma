@@ -1554,54 +1554,22 @@ MATASK_GetHostAddress:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_GetLocalAddress
-MA_GetLocalAddress:
-    push	{r4, r5, lr}
-    mov	r5, r0
-    bl	SetApiCallFlag
-    mov	r0, #36
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_GetLocalAddress+0x18
-    bl	ResetApiCallFlag
-    b	MA_GetLocalAddress+0x48
-    ldr	r4, [pc, #52]
-    mov	r0, r4
-    add	r0, #206
-    ldrb	r0, [r0, #0]
-    strb	r0, [r5, #0]
-    mov	r0, r4
-    add	r0, #207
-    ldrb	r0, [r0, #0]
-    strb	r0, [r5, #1]
-    mov	r0, r4
-    add	r0, #208
-    ldrb	r0, [r0, #0]
-    strb	r0, [r5, #2]
-    mov	r0, r4
-    add	r0, #209
-    ldrb	r0, [r0, #0]
-    strb	r0, [r5, #3]
-    bl	ResetApiCallFlag
-    ldrh	r1, [r4, #2]
-    ldr	r0, [pc, #16]
-    and	r0, r1
-    ldrh	r1, [r4, #2]
-    strh	r0, [r4, #2]
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-    .word 0x0000fffe
-.size MA_GetLocalAddress, .-MA_GetLocalAddress
-");
-#endif
+void MA_GetLocalAddress(u8 *address)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_24)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    address[0] = gMA.local_address[0];
+    address[1] = gMA.local_address[1];
+    address[2] = gMA.local_address[2];
+    address[3] = gMA.local_address[3];
+
+    ResetApiCallFlag();
+    gMA.condition &= ~MA_CONDITION_APIWAIT;
+}
 
 #if 0
 #else

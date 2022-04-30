@@ -41,6 +41,7 @@
 #define TASK_UNK_1D 0x1d
 #define TASK_UNK_1E 0x1e
 #define TASK_UNK_23 0x23
+#define TASK_UNK_24 0x24
 
 #define MACMD_START 0x10
 #define MACMD_END 0x11
@@ -134,7 +135,8 @@ typedef struct {
     u32 unk_116;
     u8 _120[84];
     u8 sockets_used[NUM_SOCKETS];
-    u8 _206[6];
+    u8 local_address[4];
+    u8 _210[2];
     u8 unk_212[268];
     MA_BUF buffer_unk_480;
     MA_IOBUF iobuf_packet_send;
