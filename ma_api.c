@@ -11465,69 +11465,12 @@ MATASK_HTTP_GetPost:
 ");
 #endif
 
-#if 0
-
-void CopyEEPROMString(char *dest, char *src, int size)
+static void CopyEEPROMString(char *dest, char *src, int size)
 {
     static int i asm("i.281");
-
-    for (i = 0; i < size; i++) {
-        *dest++ = src[i];
-        if (src[i] == '\0') break;
-    }
-
+    for (i = 0; i < size; i++) if ((*dest++ = src[i]) == '\0') break;
     if (i == size) *dest = '\0';
 }
-
-#else
-void CopyEEPROMString(char *dest, char *src, int size);
-asm("
-.lcomm i.281, 0x4
-
-.align 2
-.thumb_func
-CopyEEPROMString:
-    push	{r4, r5, lr}
-    mov	r3, r0
-    mov	r4, r1
-    ldr	r0, [pc, #64]
-    mov	r1, #0
-    str	r1, [r0, #0]
-    mov	r5, r0
-    cmp	r1, r2
-    bge	CopyEEPROMString+0x38
-    ldrb	r0, [r4, #0]
-    strb	r0, [r3, #0]
-    lsl	r0, r0, #24
-    add	r3, #1
-    cmp	r0, #0
-    beq	CopyEEPROMString+0x38
-    mov	r1, r5
-    ldr	r0, [r1, #0]
-    add	r0, #1
-    str	r0, [r1, #0]
-    cmp	r0, r2
-    bge	CopyEEPROMString+0x38
-    add	r0, r4, r0
-    ldrb	r0, [r0, #0]
-    strb	r0, [r3, #0]
-    lsl	r0, r0, #24
-    add	r3, #1
-    cmp	r0, #0
-    bne	CopyEEPROMString+0x20
-    ldr	r0, [r5, #0]
-    cmp	r0, r2
-    bne	CopyEEPROMString+0x42
-    mov	r0, #0
-    strb	r0, [r3, #0]
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word i.281
-.size CopyEEPROMString, .-CopyEEPROMString
-");
-#endif
 
 #if 0
 #else
