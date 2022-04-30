@@ -3868,38 +3868,16 @@ MATASK_Offline:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-CheckSMTPResponse:
-    mov	r1, r0
-    ldrb	r0, [r1, #0]
-    sub	r0, #48
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #9
-    bhi	CheckSMTPResponse+0x2a
-    ldrb	r0, [r1, #1]
-    sub	r0, #48
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #9
-    bhi	CheckSMTPResponse+0x2a
-    ldrb	r0, [r1, #2]
-    sub	r0, #48
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #9
-    bhi	CheckSMTPResponse+0x2a
-    mov	r0, #0
-    b	CheckSMTPResponse+0x2c
-    mov	r0, #1
-    bx	lr
-.size CheckSMTPResponse, .-CheckSMTPResponse
-");
-#endif
+static int CheckSMTPResponse(char *response)
+{
+    if ((response[0] >= '0' && response[0] <= '9') &&
+            (response[1] >= '0' && response[1] <= '9') &&
+            (response[2] >= '0' && response[2] <= '9')) {
+        return FALSE;
+    } else {
+        return TRUE;
+    }
+}
 
 #if 0
 #else
