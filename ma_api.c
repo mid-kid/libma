@@ -5867,43 +5867,23 @@ MATASK_SMTP_POP3_Quit:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-CheckPOP3Response:
-    mov	r1, r0
-    ldrb	r0, [r1, #0]
-    cmp	r0, #43
-    bne	CheckPOP3Response+0x18
-    ldrb	r0, [r1, #1]
-    cmp	r0, #79
-    bne	CheckPOP3Response+0x18
-    ldrb	r0, [r1, #2]
-    cmp	r0, #75
-    bne	CheckPOP3Response+0x18
-    mov	r0, #0
-    b	CheckPOP3Response+0x36
-    ldrb	r0, [r1, #0]
-    cmp	r0, #45
-    bne	CheckPOP3Response+0x34
-    ldrb	r0, [r1, #1]
-    cmp	r0, #69
-    bne	CheckPOP3Response+0x34
-    ldrb	r0, [r1, #2]
-    cmp	r0, #82
-    bne	CheckPOP3Response+0x34
-    ldrb	r0, [r1, #3]
-    cmp	r0, #82
-    bne	CheckPOP3Response+0x34
-    mov	r0, #1
-    b	CheckPOP3Response+0x36
-    mov	r0, #2
-    bx	lr
-.size CheckPOP3Response, .-CheckPOP3Response
-");
-#endif
+static int CheckPOP3Response(char *response)
+{
+    if (response[0] == '+' &&
+            response[1] == 'O' &&
+            response[2] == 'K') {
+        return 0;
+    }
+
+    if (response[0] == '-' &&
+            response[1] == 'E' &&
+            response[2] == 'R' &&
+            response[3] == 'R') {
+        return 1;
+    }
+
+    return 2;
+}
 
 #if 0
 #else
