@@ -684,8 +684,7 @@ void MA_InitLibraryMain(u8 *pHardwareType, int task)
     gMA.unk_112 = pHardwareType;
     MA_TaskSet(task, 0);
 
-    gMA.condition = gMA.condition | 1;
-
+    gMA.condition |= MA_CONDITION_APIWAIT;
     ResetApiCallFlag();
 
     if (!(*(vu32 *)REG_TM3CNT & TMR_IF_ENABLE) || !(*(vu32 *)REG_TM3CNT & TMR_ENABLE)) {
@@ -2522,51 +2521,23 @@ MATASK_Tel:
 ");
 #endif
 
-#if 0
-#else
-void MA_Receive(void);
-asm("
-.align 2
-.thumb_func
-.global MA_Receive
-MA_Receive:
-    push	{r4, lr}
-    bl	SetApiCallFlag
-    mov	r0, #5
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_Receive+0x16
-    bl	ResetApiCallFlag
-    b	MA_Receive+0x44
-    ldr	r4, [pc, #52]
-    mov	r0, #0
-    str	r0, [r4, #0]
-    mov	r0, #5
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    ldr	r0, [r4, #0]
-    mov	r1, #128
-    lsl	r1, r1, #15
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_Receive+0x40
-    ldr	r0, [r4, #0]
-    mov	r1, #128
-    lsl	r1, r1, #16
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_Receive+0x44
-    bl	MAAPI_Main
-    pop	{r4}
-    pop	{r0}
-    bx	r0
-    lsl	r0, r0, #0
-    lsl	r4, r1, #4
-    lsl	r0, r0, #16
-.size MA_Receive, .-MA_Receive
-");
-#endif
+void MA_Receive(void)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_05)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    *(vu32 *)REG_TM3CNT = 0;
+    MA_TaskSet(TASK_UNK_05, 0);
+
+    ResetApiCallFlag();
+
+    if (!(*(vu32 *)REG_TM3CNT & TMR_IF_ENABLE) || !(*(vu32 *)REG_TM3CNT & TMR_ENABLE)) {
+        MAAPI_Main();
+    }
+}
 
 #if 0
 #else
