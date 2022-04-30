@@ -250,7 +250,7 @@ void MAU_DecodeEEPROMTelNo(const u8 *num, char *str)
     static u8 hi;
     static u8 lo;
 
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < EEPROM_TELNO_SIZE; i++) {
         hi = (*num >> 4) & 0xf;
         lo = (*num >> 0) & 0xf;
         num++;
@@ -266,7 +266,7 @@ void MAU_DecodeEEPROMTelNo(const u8 *num, char *str)
         *str++ = telCharTable[lo];
     }
 
-    if (i == 8) *str = '\0';
+    if (i == EEPROM_TELNO_SIZE) *str = '\0';
 }
 
 int MAU_IsValidTelNoStr(const char *str)

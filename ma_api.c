@@ -11440,58 +11440,26 @@ static void CopyEEPROMString(char *dest, char *src, int size)
     if (i == size) *dest = '\0';
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-CopyEEPROMData:
-    push	{r4, r5, lr}
-    mov	r5, r1
-    cmp	r0, #25
-    beq	CopyEEPROMData+0x38
-    cmp	r0, #25
-    bgt	CopyEEPROMData+0x12
-    cmp	r0, #24
-    beq	CopyEEPROMData+0x18
-    b	CopyEEPROMData+0x52
-    cmp	r0, #26
-    beq	CopyEEPROMData+0x48
-    b	CopyEEPROMData+0x52
-    ldr	r4, [pc, #24]
-    mov	r0, r4
-    mov	r1, r5
-    bl	MAU_DecodeEEPROMTelNo
-    mov	r0, r5
-    add	r0, #17
-    add	r4, #8
-    mov	r1, r4
-    mov	r2, #16
-    bl	CopyEEPROMString
-    b	CopyEEPROMData+0x52
-.align 2
-    .word gMA+0x4f3
+static void CopyEEPROMData(int unk_1, char *dest)
+{
+    switch (unk_1) {  // MAGIC
+    case 0x18:
+        MAU_DecodeEEPROMTelNo(gMA.eeprom_telno, dest);
+        CopyEEPROMString(&dest[EEPROM_TELNO_SIZE * 2 + 1],
+                gMA.eeprom_unk_1275, sizeof(gMA.eeprom_unk_1275));
+        break;
 
-    ldr	r1, [pc, #8]
-    mov	r0, r5
-    mov	r2, #32
-    bl	CopyEEPROMString
-    b	CopyEEPROMData+0x52
-.align 2
-    .word gMA+0x489
+    case 0x19:
+        CopyEEPROMString(dest,
+                gMA.eeprom_unk_1161, sizeof(gMA.eeprom_unk_1161));
+        break;
 
-    ldr	r1, [pc, #12]
-    mov	r0, r5
-    mov	r2, #30
-    bl	CopyEEPROMString
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA+0x4a9
-.size CopyEEPROMData, .-CopyEEPROMData
-");
-#endif
+    case 0x1a:
+        CopyEEPROMString(dest,
+                gMA.eeprom_unk_1193, sizeof(gMA.eeprom_unk_1193));
+        break;
+    }
+}
 
 #if 0
 #else

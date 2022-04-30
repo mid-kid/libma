@@ -65,6 +65,7 @@
 #define MACMD_TESTMODE 0x3f
 #define MACMD_ERROR 0x6e
 
+#define EEPROM_TELNO_SIZE 8
 #define NUM_SOCKETS 2
 
 enum ma_sio_modes {
@@ -154,7 +155,13 @@ typedef struct {
     u8 pop3_server[20];
     u8 _876[273];
     u8 prevbuf[1];
-    u8 _1150[636];
+    u8 _1150[11];
+    u8 eeprom_unk_1161[32];
+    u8 eeprom_unk_1193[30];
+    u8 _1223[44];
+    u8 eeprom_telno[EEPROM_TELNO_SIZE];
+    u8 eeprom_unk_1275[16];
+    u8 _1291[495];
     u16 prevbuf_size;
     u8 unk_1788[6];
     u16 unk_1794;
