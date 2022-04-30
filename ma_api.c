@@ -11599,7 +11599,21 @@ MATASK_HTTP_GetPost:
 #endif
 
 #if 0
+
+void CopyEEPROMString(char *dest, char *src, int size)
+{
+    static int i asm("i.281");
+
+    for (i = 0; i < size; i++) {
+        *dest++ = src[i];
+        if (src[i] == '\0') break;
+    }
+
+    if (i == size) *dest = '\0';
+}
+
 #else
+void CopyEEPROMString(char *dest, char *src, int size);
 asm("
 .lcomm i.281, 0x4
 
@@ -12973,43 +12987,15 @@ MA_GetMailID:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_GetSMTPServerName
-MA_GetSMTPServerName:
-    push	{lr}
-    ldr	r1, [pc, #12]
-    mov	r2, #20
-    bl	CopyEEPROMString
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA+0x344
-.size MA_GetSMTPServerName, .-MA_GetSMTPServerName
-");
-#endif
+void MA_GetSMTPServerName(char *dest)
+{
+    CopyEEPROMString(dest, gMA.smtp_server, sizeof(gMA.smtp_server));
+}
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_GetPOP3ServerName
-MA_GetPOP3ServerName:
-    push	{lr}
-    ldr	r1, [pc, #12]
-    mov	r2, #20
-    bl	CopyEEPROMString
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA+0x358
-.size MA_GetPOP3ServerName, .-MA_GetPOP3ServerName
-");
-#endif
+void MA_GetPOP3ServerName(char *dest)
+{
+    CopyEEPROMString(dest, gMA.pop3_server, sizeof(gMA.pop3_server));
+}
 
 asm("
 .section .rodata

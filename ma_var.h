@@ -140,7 +140,10 @@ typedef struct {
     MA_BUF buffer_recv;
     MA_BUF *buffer_recv_ptr;
     MA_IOBUF *iobuf_sio_tx;
-    u8 _828[321];
+    u8 _828[8];
+    u8 smtp_server[20];
+    u8 pop3_server[20];
+    u8 _876[273];
     u8 prevbuf[1];
     u8 _1150[636];
     u16 prevbuf_size;

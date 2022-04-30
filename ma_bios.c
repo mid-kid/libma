@@ -657,7 +657,7 @@ static void MABIOS_Data2(MA_BUF *data_recv, u8 *data_send, u8 size)
     tmppPacket[MAPROT_HEADER_SIZE + 1] = size;
     for (i = 0; i < size; i++) {
 #if NONMATCHING
-        tmppPacket[i + MAPROT_HEADER_SIZE + 2] = *data_send++;
+        tmppPacket[MAPROT_HEADER_SIZE + 2 + i] = *data_send++;
 #else
         u8 *p = tmppPacket;
         int n = i + 2;
