@@ -1121,7 +1121,7 @@ void MA_TCP_Disconnect(u8 unk_1)
         return;
     }
 
-    gMA.unk_112 = (u8 *)unk_1;
+    gMA.unk_112 = (u8 *)(u32)unk_1;
     MA_TaskSet(TASK_UNK_21, 0);
     ResetApiCallFlag();
 }
@@ -1529,66 +1529,24 @@ void MA_GetLocalAddress(u8 *address)
     gMA.condition &= ~MA_CONDITION_APIWAIT;
 }
 
-#if 0
-#else
-asm("
-.lcomm tmp.89, 0x2
-.lcomm sum.90, 0x2
-.lcomm i.91, 0x4
+static int EEPROMSumCheck(u8 *data)
+{
+    static u16 tmp asm("tmp.89");
+    static u16 sum asm("sum.90");
+    static int i asm("i.91");
 
-.align 2
-.thumb_func
-EEPROMSumCheck:
-    push	{r4, r5, r6, r7, lr}
-    mov	r5, r0
-    ldr	r1, [pc, #68]
-    mov	r0, #0
-    strh	r0, [r1, #0]
-    ldr	r2, [pc, #68]
-    mov	r0, #0
-    str	r0, [r2, #0]
-    mov	r6, r1
-    ldr	r7, [pc, #64]
-    mov	r4, r6
-    mov	r3, r2
-    ldr	r0, [r3, #0]
-    add	r2, r5, r0
-    ldrh	r1, [r4, #0]
-    ldrb	r2, [r2, #0]
-    add	r1, r1, r2
-    strh	r1, [r4, #0]
-    add	r0, #1
-    str	r0, [r3, #0]
-    cmp	r0, #189
-    ble	EEPROMSumCheck+0x18
-    mov	r0, r5
-    add	r0, #190
-    ldrb	r0, [r0, #0]
-    lsl	r0, r0, #8
-    mov	r1, r5
-    add	r1, #191
-    ldrb	r1, [r1, #0]
-    add	r1, r1, r0
-    strh	r1, [r7, #0]
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    ldrh	r6, [r6, #0]
-    cmp	r1, r6
-    beq	EEPROMSumCheck+0x58
-    mov	r0, #0
-    b	EEPROMSumCheck+0x5a
-.align 2
-    .word sum.90
-    .word i.91
-    .word tmp.89
+    sum = 0;
+    for (i = 0; i < 0xbe; i++) {
+        sum += data[i];
+    }
 
-    mov	r0, #1
-    pop	{r4, r5, r6, r7}
-    pop	{r1}
-    bx	r1
-.size EEPROMSumCheck, .-EEPROMSumCheck
-");
-#endif
+    tmp = (data[0xbe] << 8) + data[0xbf];
+    if (tmp == sum) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
 
 static int EEPROMRegistrationCheck(u8 *data)
 {
