@@ -921,66 +921,34 @@ MATASK_InitLibrary:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_TCP_Connect
-MA_TCP_Connect:
-    push	{r4, r5, r6, lr}
-    mov	r6, r0
-    mov	r4, r1
-    lsl	r2, r2, #16
-    lsr	r5, r2, #16
-    bl	SetApiCallFlag
-    mov	r0, #32
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_TCP_Connect+0x1e
-    bl	ResetApiCallFlag
-    b	MA_TCP_Connect+0x70
-    bl	MAU_Socket_FreeCheck
-    cmp	r0, #0
-    bne	MA_TCP_Connect+0x2a
-    mov	r0, #33
-    b	MA_TCP_Connect+0x50
-    bl	MAU_Socket_GetNum
-    cmp	r0, #0
-    bne	MA_TCP_Connect+0x44
-    ldr	r0, [pc, #12]
-    mov	r1, r4
-    mov	r2, #4
-    bl	MAU_memcpy
-    b	MA_TCP_Connect+0x5c
-.align 2
-    .word gMA+0x6a
+void MA_TCP_Connect(u8 *unk_1, u8 *unk_2, u16 unk_3)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_20)) {
+        ResetApiCallFlag();
+        return;
+    }
 
-    mov	r0, r4
-    bl	MAU_Socket_IpAddrCheck
-    cmp	r0, #0
-    bne	MA_TCP_Connect+0x5c
-    mov	r0, #32
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_TCP_Connect+0x70
-    ldr	r0, [pc, #24]
-    str	r6, [r0, #112]
-    str	r4, [r0, #116]
-    str	r5, [r0, #120]
-    mov	r0, #32
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r4, r5, r6}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-.size MA_TCP_Connect, .-MA_TCP_Connect
-");
-#endif
+    if (!MAU_Socket_FreeCheck()) {
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (MAU_Socket_GetNum() == 0) {
+        MAU_memcpy(gMA.ipaddr, unk_2, 4);
+    } else if (!MAU_Socket_IpAddrCheck(unk_2)) {
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    gMA.unk_112 = unk_1;
+    gMA.unk_116 = (u32)unk_2;
+    gMA.unk_120 = unk_3;
+    MA_TaskSet(TASK_UNK_20, 0);
+    ResetApiCallFlag();
+}
 
 #if 0
 #else
