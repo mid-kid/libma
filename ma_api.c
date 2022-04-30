@@ -6536,65 +6536,28 @@ MATASK_POP3_Stat:
 ");
 #endif
 
-#if 0
-#else
-void MA_POP3_List(u16 mailNo, u32 *pSize);
-asm("
-.align 2
-.thumb_func
-.global MA_POP3_List
-MA_POP3_List:
-    push	{r4, r5, r6, lr}
-    mov	r5, r1
-    lsl	r0, r0, #16
-    lsr	r4, r0, #16
-    mov	r6, r4
-    bl	SetApiCallFlag
-    mov	r0, #17
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_POP3_List+0x1e
-    bl	ResetApiCallFlag
-    b	MA_POP3_List+0x68
-    cmp	r4, #0
-    bne	MA_POP3_List+0x30
-    mov	r0, #32
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_POP3_List+0x68
-    ldr	r4, [pc, #60]
-    str	r5, [r4, #112]
-    mov	r0, #220
-    lsl	r0, r0, #2
-    add	r4, r4, r0
-    ldr	r1, [pc, #56]
-    mov	r0, r4
-    bl	MAU_strcpy
-    mov	r0, r4
-    bl	MAU_strlen
-    mov	r1, r0
-    add	r1, r1, r4
-    mov	r0, r6
-    mov	r2, #10
-    bl	MAU_itoa
-    ldr	r1, [pc, #32]
-    mov	r0, r4
-    bl	MAU_strcat
-    mov	r0, #17
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r4, r5, r6}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-    .word strEndMultiLine.25+0x58
-    .word strEndMultiLine.25+0x18
-.size MA_POP3_List, .-MA_POP3_List
-");
-#endif
+void MA_POP3_List(u16 mailNo, u32 *pSize)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_11)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (mailNo == 0) {
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    gMA.unk_112 = (u8 *)pSize;
+    MAU_strcpy(gMA.unk_880, POP3_List);
+    MAU_itoa(mailNo, &gMA.unk_880[MAU_strlen(gMA.unk_880)], 10);
+    MAU_strcat(gMA.unk_880, POP3_Newl);
+    MA_TaskSet(TASK_UNK_11, 0);
+
+    ResetApiCallFlag();
+}
 
 #if 0
 #else
@@ -7541,7 +7504,7 @@ void MA_POP3_Dele(u16 mailNo)
     }
 
     MAU_strcpy(gMA.unk_880, POP3_Dele);
-    MAU_itoa(mailNo, gMA.unk_880 + MAU_strlen(gMA.unk_880), 10);
+    MAU_itoa(mailNo, &gMA.unk_880[MAU_strlen(gMA.unk_880)], 10);
     MAU_strcat(gMA.unk_880, POP3_Newl);
 
     MA_TaskSet(TASK_UNK_13, 0);
