@@ -27,7 +27,7 @@ static void MA_InitLibraryMain(u8 *pHardwareType, int task);
 //static void MATASK_Tel();
 //static void MATASK_Receive();
 //static void MATASK_P2P();
-//static void MA_ConditionMain();
+static void MA_ConditionMain(u8 *pCondition, int task);
 //static void MATASK_Condition();
 //static void MATASK_Offline();
 //static void CheckSMTPResponse();
@@ -374,7 +374,7 @@ static void MATASK_Stop(void)
         gMA.condition = gMA.condition;
 
         gMA.recv_cmd = 0;
-        MA_TaskSet(TASK_UNK_97_00, 0);
+        MA_TaskSet(TASK_UNK_00, 0);
         break;
     }
 }
@@ -687,7 +687,7 @@ void MA_InitLibraryMain(u8 *pHardwareType, int task)
 
     ResetApiCallFlag();
 
-    if (!(*(vu32 *)REG_TM3CNT & 0x400000) || !(*(vu32 *)REG_TM3CNT & 0x800000)) {
+    if (!(*(vu32 *)REG_TM3CNT & TMR_IF_ENABLE) || !(*(vu32 *)REG_TM3CNT & TMR_ENABLE)) {
         MAAPI_Main();
     }
 }
@@ -3189,110 +3189,41 @@ MATASK_P2P:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_Condition
-MA_Condition:
-    push	{lr}
-    mov	r1, #8
-    bl	MA_ConditionMain
-    pop	{r0}
-    bx	r0
-.size MA_Condition, .-MA_Condition
-");
-#endif
+void MA_Condition(u8 *pCondition)
+{
+    MA_ConditionMain(pCondition, TASK_UNK_08);
+}
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_Condition2
-MA_Condition2:
-    push	{lr}
-    mov	r1, #9
-    bl	MA_ConditionMain
-    pop	{r0}
-    bx	r0
-.size MA_Condition2, .-MA_Condition2
-");
-#endif
+void MA_Condition2(u8 *pCondition)
+{
+    MA_ConditionMain(pCondition, TASK_UNK_09);
+}
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MA_ConditionMain:
-    push	{r4, r5, lr}
-    mov	r5, r0
-    mov	r4, r1
-    bl	SetApiCallFlag
-    lsl	r4, r4, #24
-    lsr	r4, r4, #24
-    mov	r0, r4
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_ConditionMain+0x1e
-    bl	ResetApiCallFlag
-    b	MA_ConditionMain+0x80
-    ldr	r2, [pc, #32]
-    str	r5, [r2, #112]
-    mov	r0, r2
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    mov	r1, r0
-    cmp	r1, #0
-    bne	MA_ConditionMain+0x48
-    mov	r0, #1
-    str	r0, [r2, #116]
-    ldr	r0, [pc, #16]
-    str	r1, [r0, #0]
-    mov	r0, r4
-    mov	r1, #0
-    bl	MA_TaskSet
-    b	MA_ConditionMain+0x54
-.align 2
-    .word gMA
-    .word 0x0400010c
+void MA_ConditionMain(u8 *pCondition, int task)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(task)) {
+        ResetApiCallFlag();
+        return;
+    }
 
-    mov	r0, #0
-    str	r0, [r2, #116]
-    mov	r0, r4
-    mov	r1, #1
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    ldr	r0, [pc, #44]
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    cmp	r0, #0
-    bne	MA_ConditionMain+0x80
-    ldr	r2, [pc, #40]
-    ldr	r0, [r2, #0]
-    mov	r1, #128
-    lsl	r1, r1, #15
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_ConditionMain+0x7c
-    ldr	r0, [r2, #0]
-    mov	r1, #128
-    lsl	r1, r1, #16
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_ConditionMain+0x80
-    bl	MAAPI_Main
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-    .word 0x0400010c
-.size MA_ConditionMain, .-MA_ConditionMain
-");
-#endif
+    gMA.unk_112 = pCondition;
+    if (!gMA.unk_92) {
+        gMA.unk_112_size = 1;
+        *(vu32 *)REG_TM3CNT = 0;
+        MA_TaskSet(task, 0);
+    } else {
+        gMA.unk_112_size = 0;
+        MA_TaskSet(task, 1);
+    }
+
+    ResetApiCallFlag();
+    if (gMA.unk_92) return;
+
+    if (!(*(vu32 *)REG_TM3CNT & TMR_IF_ENABLE) || !(*(vu32 *)REG_TM3CNT & TMR_ENABLE)) {
+        MAAPI_Main();
+    }
+}
 
 #if 0
 #else
