@@ -2621,71 +2621,33 @@ MATASK_Receive:
 ");
 #endif
 
-#if 0
-#else
-void MA_SData(const u8 *pSendData, u8 sendSize, u8 *pResult);
-asm("
-.align 2
-.thumb_func
-.global MA_SData
-MA_SData:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, r0
-    mov	r5, r2
-    lsl	r1, r1, #24
-    lsr	r4, r1, #24
-    mov	r6, r4
-    bl	SetApiCallFlag
-    mov	r0, #0
-    strb	r0, [r5, #0]
-    mov	r0, #6
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_SData+0x24
-    bl	ResetApiCallFlag
-    b	MA_SData+0x76
-    sub	r0, r4, #1
-    lsl	r0, r0, #24
-    cmp	r0, #0
-    bge	MA_SData+0x3a
-    mov	r0, #32
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_SData+0x76
-    ldr	r2, [pc, #32]
-    ldrh	r1, [r2, #2]
-    mov	r0, #8
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_SData+0x64
-    mov	r0, #1
-    strb	r0, [r5, #0]
-    ldrh	r1, [r2, #2]
-    ldr	r0, [pc, #16]
-    and	r0, r1
-    ldrh	r1, [r2, #2]
-    strh	r0, [r2, #2]
-    bl	ResetApiCallFlag
-    b	MA_SData+0x76
-.align 2
-    .word gMA
-    .word 0x0000fffe
+void MA_SData(const u8 *pSendData, u8 sendSize, u8 *pResult)
+{
+    SetApiCallFlag();
+    *pResult = FALSE;
+    if (!MA_ApiPreExe(TASK_UNK_06)) {
+        ResetApiCallFlag();
+        return;
+    }
 
-    str	r7, [r2, #112]
-    str	r6, [r2, #116]
-    ldr	r0, [r2, #64]
-    mov	r1, #128
-    lsl	r1, r1, #6
-    orr	r0, r1
-    str	r0, [r2, #64]
-    bl	ResetApiCallFlag
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.size MA_SData, .-MA_SData
-");
-#endif
+    if ((s8)(sendSize - 1) < 0) {
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (gMA.condition & MA_CONDITION_PTP_GET) {
+        *pResult = TRUE;
+        gMA.condition &= ~MA_CONDITION_APIWAIT;
+        ResetApiCallFlag();
+        return;
+    }
+
+    gMA.unk_112 = (u8 *)pSendData;
+    gMA.unk_116 = sendSize;
+    gMA.status |= STATUS_UNK_13;
+    ResetApiCallFlag();
+}
 
 #if 0
 #else
