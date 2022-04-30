@@ -5573,30 +5573,17 @@ MATASK_SMTP_Send:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_POP3_Quit
-MA_POP3_Quit:
-    push	{lr}
-    bl	SetApiCallFlag
-    mov	r0, #21
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_POP3_Quit+0x16
-    bl	ResetApiCallFlag
-    b	MA_POP3_Quit+0x22
-    mov	r0, #21
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r0}
-    bx	r0
-.size MA_POP3_Quit, .-MA_POP3_Quit
-");
-#endif
+void MA_POP3_Quit(void)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_15)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    MA_TaskSet(TASK_UNK_15, 0);
+    ResetApiCallFlag();
+}
 
 #if 0
 #else
