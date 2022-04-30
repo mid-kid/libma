@@ -3197,11 +3197,11 @@ void MA_ConditionMain(u8 *pCondition, int task)
 
     gMA.unk_112 = pCondition;
     if (!gMA.unk_92) {
-        gMA.unk_112_size = 1;
+        gMA.unk_116 = 1;
         *(vu32 *)REG_TM3CNT = 0;
         MA_TaskSet(task, 0);
     } else {
-        gMA.unk_112_size = 0;
+        gMA.unk_116 = 0;
         MA_TaskSet(task, 1);
     }
 
@@ -6508,38 +6508,19 @@ MATASK_POP3_Connect:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_POP3_Stat
-MA_POP3_Stat:
-    push	{r4, r5, lr}
-    mov	r4, r0
-    mov	r5, r1
-    bl	SetApiCallFlag
-    mov	r0, #16
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_POP3_Stat+0x1a
-    bl	ResetApiCallFlag
-    b	MA_POP3_Stat+0x2c
-    ldr	r0, [pc, #24]
-    str	r4, [r0, #112]
-    str	r5, [r0, #116]
-    mov	r0, #16
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-.size MA_POP3_Stat, .-MA_POP3_Stat
-");
-#endif
+void MA_POP3_Stat(u16 *pNum, u32 *pSize)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_10)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    gMA.unk_112 = (u8 *)pNum;
+    gMA.unk_116 = (u32)pSize;
+    MA_TaskSet(TASK_UNK_10, 0);
+    ResetApiCallFlag();
+}
 
 #if 0
 #else
