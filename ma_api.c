@@ -76,11 +76,11 @@ void MA_TaskSet(u8 unk_1, u8 unk_2)
     if (gMA.task == 0) gMA.condition &= ~MA_CONDITION_APIWAIT;
 }
 
-static void MA_SetApiError(u8 unk_1, u16 unk_2)
+static void MA_SetApiError(u8 error, u16 unk_2)
 {
     gMA.unk_96 = 0;
     gMA.unk_94 = unk_2;
-    MA_SetError(unk_1);
+    MA_SetError(error);
 }
 
 static int ApiValisStatusCheck(u8 unk_1)
@@ -1365,7 +1365,7 @@ MATASK_TCP_SendRecv:
 ");
 #endif
 
-void MA_GetHostAddress(u8 *param_1, char *param_2)
+void MA_GetHostAddress(u8 *unk_1, char *unk_2)
 {
     SetApiCallFlag();
     if (!MA_ApiPreExe(TASK_UNK_23)) {
@@ -1373,14 +1373,14 @@ void MA_GetHostAddress(u8 *param_1, char *param_2)
         return;
     }
 
-    if (MAU_strlen(param_2) >= 0x100) {  // MAGIC
+    if (MAU_strlen(unk_2) >= 0x100) {  // MAGIC
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;
     }
 
-    gMA.unk_112 = param_1;
-    gMA.unk_116 = (u32)param_2;
+    gMA.unk_112 = unk_1;
+    gMA.unk_116 = (u32)unk_2;
     MA_TaskSet(TASK_UNK_23, 0);
     ResetApiCallFlag();
 }
@@ -4129,74 +4129,43 @@ MATASK_SMTP_Connect:
 ");
 #endif
 
-#if 0
-#else
-void MA_SMTP_Sender(const char * const pRecipients[]);
-asm("
-.align 2
-.thumb_func
-.global MA_SMTP_Sender
-MA_SMTP_Sender:
-    push	{r4, r5, r6, lr}
-    mov	r6, r0
-    bl	SetApiCallFlag
-    mov	r0, #12
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_SMTP_Sender+0x18
-    bl	ResetApiCallFlag
-    b	MA_SMTP_Sender+0x7a
-    ldr	r1, [r6, #0]
-    cmp	r1, #0
-    beq	MA_SMTP_Sender+0x52
-    ldr	r0, [r6, #4]
-    cmp	r0, #0
-    beq	MA_SMTP_Sender+0x52
-    mov	r0, r1
-    bl	MAU_strlen
-    cmp	r0, #30
-    bgt	MA_SMTP_Sender+0x52
-    cmp	r0, #0
-    beq	MA_SMTP_Sender+0x52
-    mov	r5, #1
-    ldr	r0, [r6, #4]
-    cmp	r0, #0
-    beq	MA_SMTP_Sender+0x6a
-    add	r4, r6, #4
-    ldr	r0, [r4, #0]
-    bl	MAU_strlen
-    cmp	r0, #0
-    beq	MA_SMTP_Sender+0x52
-    cmp	r0, #127
-    bgt	MA_SMTP_Sender+0x52
-    mov	r0, #128
-    lsl	r0, r0, #1
-    cmp	r5, r0
-    ble	MA_SMTP_Sender+0x60
-    mov	r0, #32
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_SMTP_Sender+0x7a
-    add	r4, #4
-    add	r5, #1
-    ldr	r0, [r4, #0]
-    cmp	r0, #0
-    bne	MA_SMTP_Sender+0x3c
-    ldr	r0, [pc, #20]
-    str	r6, [r0, #112]
-    mov	r0, #12
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r4, r5, r6}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-.size MA_SMTP_Sender, .-MA_SMTP_Sender
-");
-#endif
+void MA_SMTP_Sender(const char * const pRecipients[])
+{
+    int i;
+    int len;
+
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_0C)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (pRecipients[0] == NULL || pRecipients[1] == NULL) {
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    len = MAU_strlen(pRecipients[0]);
+    if (len > 30 || len == 0) {  // MAGIC
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    for (i = 1; pRecipients[i] != NULL; i++) {
+        len = MAU_strlen(pRecipients[i]);
+        if (len == 0 || len >= 0x80 || i > 0x100) {  // MAGIC
+            MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+            ResetApiCallFlag();
+            return;
+        }
+    }
+
+    gMA.unk_112 = (u8 *)pRecipients;
+    MA_TaskSet(TASK_UNK_0C, 0);
+    ResetApiCallFlag();
+}
 
 #if 0
 #else
