@@ -29,6 +29,8 @@
 #define TASK_UNK_00 0x00
 #define TASK_UNK_01 0x01
 #define TASK_UNK_02 0x02
+#define TASK_UNK_03 0x03
+#define TASK_UNK_03 0x03
 #define TASK_UNK_04 0x04
 #define TASK_UNK_05 0x05
 #define TASK_UNK_06 0x06
