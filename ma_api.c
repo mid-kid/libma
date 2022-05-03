@@ -11992,83 +11992,33 @@ MATASK_EEPROM_Write:
 ");
 #endif
 
-#if 0
-#else
-void MA_GetTel(MA_TELDATA *pTelData);
-asm("
-.align 2
-.thumb_func
-.global MA_GetTel
-MA_GetTel:
-    push	{r4, r5, lr}
-    mov	r5, r0
-    bl	SetApiCallFlag
-    mov	r0, #24
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_GetTel+0x18
-    bl	ResetApiCallFlag
-    b	MA_GetTel+0x8e
-    mov	r0, r5
-    mov	r1, #36
-    mov	r2, #0
-    bl	MAU_memset
-    ldr	r4, [pc, #36]
-    mov	r0, r4
-    add	r0, #101
-    ldrb	r0, [r0, #0]
-    cmp	r0, #1
-    bne	MA_GetTel+0x50
-    mov	r0, #24
-    mov	r1, r5
-    bl	CopyEEPROMData
-    bl	ResetApiCallFlag
-    ldrh	r0, [r4, #2]
-    ldr	r1, [pc, #12]
-    and	r1, r0
-    ldrh	r0, [r4, #2]
-    strh	r1, [r4, #2]
-    b	MA_GetTel+0x8e
-.align 2
-    .word gMA
-    .word 0x0000fffe
+void MA_GetTel(MA_TELDATA *pTelData)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_18)) {
+        ResetApiCallFlag();
+        return;
+    }
 
-    mov	r0, #24
-    str	r0, [r4, #112]
-    str	r5, [r4, #116]
-    ldr	r5, [pc, #60]
-    mov	r0, #0
-    str	r0, [r5, #0]
-    mov	r0, #27
-    mov	r1, #0
-    bl	MA_TaskSet
-    ldrh	r1, [r4, #2]
-    mov	r0, #1
-    ldrh	r2, [r4, #2]
-    orr	r0, r1
-    strh	r0, [r4, #2]
-    bl	ResetApiCallFlag
-    ldr	r0, [r5, #0]
-    mov	r1, #128
-    lsl	r1, r1, #15
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_GetTel+0x8a
-    ldr	r0, [r5, #0]
-    mov	r1, #128
-    lsl	r1, r1, #16
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_GetTel+0x8e
-    bl	MAAPI_Main
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-    lsl	r4, r1, #4
-    lsl	r0, r0, #16
-.size MA_GetTel, .-MA_GetTel
-");
-#endif
+    MAU_memset(pTelData, 36, 0);  // MAGIC
+    if (gMA.unk_101 == 1) {
+        CopyEEPROMData(TASK_UNK_18, (char *)pTelData);
+        ResetApiCallFlag();
+        gMA.condition &= ~MA_CONDITION_APIWAIT;
+        return;
+    }
+
+    gMA.unk_112 = (u8 *)TASK_UNK_18;
+    gMA.unk_116 = (u32)pTelData;
+    *(vu32 *)REG_TM3CNT = 0;
+    MA_TaskSet(TASK_UNK_1B, 0);
+    gMA.condition |= MA_CONDITION_APIWAIT;
+    ResetApiCallFlag();
+
+    if (!(*(vu32 *)REG_TM3CNT & TMR_IF_ENABLE) || !(*(vu32 *)REG_TM3CNT & TMR_ENABLE)) {
+        MAAPI_Main();
+    }
+}
 
 #if 0
 #else
@@ -12149,7 +12099,7 @@ MA_GetUserID:
 ");
 #endif
 
-void MA_GetMailID(char *unk_1)
+void MA_GetMailID(char *pBufPtr)
 {
     SetApiCallFlag();
     if (!MA_ApiPreExe(TASK_UNK_1A)) {
@@ -12157,16 +12107,16 @@ void MA_GetMailID(char *unk_1)
         return;
     }
 
-    MAU_memset(unk_1, 31, 0);
+    MAU_memset(pBufPtr, 31, 0);  // MAGIC
     if (gMA.unk_101 == 1) {
-        CopyEEPROMData(TASK_UNK_1A, unk_1);
+        CopyEEPROMData(TASK_UNK_1A, pBufPtr);
         ResetApiCallFlag();
         gMA.condition &= ~MA_CONDITION_APIWAIT;
         return;
     }
 
     gMA.unk_112 = (u8 *)TASK_UNK_1A;
-    gMA.unk_116 = (u32)unk_1;
+    gMA.unk_116 = (u32)pBufPtr;
     *(vu32 *)REG_TM3CNT = 0;
     MA_TaskSet(TASK_UNK_1B, 0);
     gMA.condition |= MA_CONDITION_APIWAIT;
