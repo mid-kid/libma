@@ -1094,86 +1094,29 @@ void MA_TCP_Disconnect(u8 unk_1)
     ResetApiCallFlag();
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MATASK_TCP_Disconnect:
-    push	{r4, r5, lr}
-    ldr	r1, [pc, #44]
-    mov	r0, r1
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    cmp	r0, #238
-    bne	MATASK_TCP_Disconnect+0x1c
-    mov	r0, r1
-    add	r0, #80
-    ldrb	r0, [r0, #0]
-    cmp	r0, #36
-    beq	MATASK_TCP_Disconnect+0x1c
-    bl	MA_DefaultNegaResProc
-    ldr	r4, [pc, #16]
-    mov	r5, r4
-    add	r5, #98
-    ldrb	r0, [r5, #0]
-    cmp	r0, #0
-    beq	MATASK_TCP_Disconnect+0x34
-    cmp	r0, #1
-    beq	MATASK_TCP_Disconnect+0x4e
-    b	MATASK_TCP_Disconnect+0x90
-.align 2
-    .word gMA
+static void MATASK_TCP_Disconnect(void)
+{
+    if ((gMA.recv_cmd == 0xee) && (gMA.unk_80 != 0x24)) {
+        MA_DefaultNegaResProc();
+    }
 
-    mov	r1, #240
-    lsl	r1, r1, #1
-    add	r0, r4, r1
-    ldr	r1, [r4, #112]
-    lsl	r1, r1, #24
-    lsr	r1, r1, #24
-    bl	MABIOS_TCPDisconnect
-    ldrb	r0, [r5, #0]
-    add	r0, #1
-    ldrb	r1, [r5, #0]
-    strb	r0, [r5, #0]
-    b	MATASK_TCP_Disconnect+0x90
-    ldr	r0, [r4, #112]
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    bl	MAU_Socket_Delete
-    mov	r1, r4
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    mov	r0, #3
-    strb	r0, [r1, #0]
-    ldrh	r1, [r4, #2]
-    mov	r0, #255
-    and	r0, r1
-    ldrh	r1, [r4, #2]
-    mov	r2, #0
-    strh	r0, [r4, #2]
-    ldrh	r0, [r4, #2]
-    mov	r3, #128
-    lsl	r3, r3, #1
-    mov	r1, r3
-    orr	r0, r1
-    ldrh	r1, [r4, #2]
-    orr	r0, r2
-    strh	r0, [r4, #2]
-    mov	r0, r4
-    add	r0, #99
-    strb	r2, [r0, #0]
-    add	r0, #105
-    strb	r2, [r0, #0]
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.size MATASK_TCP_Disconnect, .-MATASK_TCP_Disconnect
-");
-#endif
+    switch (gMA.task_unk_98) {
+    case 0:
+        MABIOS_TCPDisconnect(&gMA.buffer_unk_480, (u32)gMA.unk_112);
+        gMA.task_unk_98++;
+        break;
+
+    case 1:
+        MAU_Socket_Delete((u32)gMA.unk_112);
+        gMA.unk_92 = 3;
+        gMA.condition &= ~MA_CONDITION_MASK;
+        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        gMA.sockets[0] = 0;
+        gMA.sockets_used[0] = FALSE;
+        MA_TaskSet(0, 0);
+        break;
+    }
+}
 
 #if 0
 #else
