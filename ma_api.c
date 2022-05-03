@@ -1405,97 +1405,45 @@ static int EEPROMRegistrationCheck(u8 *data)
     }
 }
 
-#if 0
-#else
-void MA_TelServer(const char *pTelNo, const char *pUserID, const char *pPassword);
-asm("
-.align 2
-.thumb_func
-.global MA_TelServer
-MA_TelServer:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, r8
-    push	{r7}
-    mov	r5, r0
-    mov	r7, r1
-    mov	r8, r2
-    bl	SetApiCallFlag
-    mov	r0, #3
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_TelServer+0x20
-    bl	ResetApiCallFlag
-    b	MA_TelServer+0xa8
-    mov	r0, r5
-    bl	MAU_strlen
-    mov	r6, r0
-    mov	r0, r7
-    bl	MAU_strlen
-    mov	r4, r0
-    mov	r0, r8
-    bl	MAU_strlen
-    cmp	r6, #20
-    bgt	MA_TelServer+0x58
-    cmp	r4, #32
-    bgt	MA_TelServer+0x58
-    cmp	r0, #16
-    bgt	MA_TelServer+0x58
-    cmp	r6, #0
-    beq	MA_TelServer+0x58
-    cmp	r4, #0
-    beq	MA_TelServer+0x58
-    cmp	r0, #0
-    beq	MA_TelServer+0x58
-    mov	r0, r5
-    bl	MAU_IsValidTelNoStr
-    cmp	r0, #0
-    bne	MA_TelServer+0x66
-    mov	r0, #32
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_TelServer+0xa8
-    ldr	r4, [pc, #76]
-    str	r5, [r4, #112]
-    str	r7, [r4, #116]
-    mov	r0, r8
-    str	r0, [r4, #120]
-    ldr	r5, [pc, #68]
-    mov	r0, #0
-    str	r0, [r5, #0]
-    mov	r0, #3
-    mov	r1, #0
-    bl	MA_TaskSet
-    ldrh	r1, [r4, #2]
-    mov	r0, #1
-    ldrh	r2, [r4, #2]
-    orr	r0, r1
-    strh	r0, [r4, #2]
-    bl	ResetApiCallFlag
-    ldr	r0, [r5, #0]
-    mov	r1, #128
-    lsl	r1, r1, #15
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_TelServer+0xa4
-    ldr	r0, [r5, #0]
-    mov	r1, #128
-    lsl	r1, r1, #16
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_TelServer+0xa8
-    bl	MAAPI_Main
-    pop	{r3}
-    mov	r8, r3
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-    .word 0x0400010c
-.size MA_TelServer, .-MA_TelServer
-");
-#endif
+void MA_TelServer(const char *pTelNo, const char *pUserID, const char *pPassword)
+{
+    int len_telno, len_userid, len_password;
+
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_03)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    len_telno = MAU_strlen(pTelNo);
+    len_userid = MAU_strlen(pUserID);
+    len_password = MAU_strlen(pPassword);
+    if (len_telno > 20 || len_userid > 32 || len_password > 16 ||
+            len_telno == 0 || len_userid == 0 || len_password == 0) {
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (!MAU_IsValidTelNoStr(pTelNo)) {
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    gMA.unk_112 = (u8 *)pTelNo;
+    gMA.unk_116 = (u32)pUserID;
+    gMA.unk_120 = (u32)pPassword;
+    *(vu32 *)REG_TM3CNT = 0;
+    MA_TaskSet(TASK_UNK_03, 0);
+
+    gMA.condition |= MA_CONDITION_APIWAIT;
+    ResetApiCallFlag();
+
+    if (!(*(vu32 *)REG_TM3CNT & TMR_IF_ENABLE) || !(*(vu32 *)REG_TM3CNT & TMR_ENABLE)) {
+        MAAPI_Main();
+    }
+}
 
 #if 0
 #else
