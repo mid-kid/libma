@@ -12020,84 +12020,33 @@ void MA_GetTel(MA_TELDATA *pTelData)
     }
 }
 
-#if 0
-#else
-void MA_GetUserID(char *pUserIDBuf);
-asm("
-.align 2
-.thumb_func
-.global MA_GetUserID
-MA_GetUserID:
-    push	{r4, r5, lr}
-    mov	r5, r0
-    bl	SetApiCallFlag
-    mov	r0, #25
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_GetUserID+0x18
-    bl	ResetApiCallFlag
-    b	MA_GetUserID+0x8c
-    ldr	r4, [pc, #32]
-    mov	r0, r4
-    add	r0, #101
-    ldrb	r0, [r0, #0]
-    cmp	r0, #1
-    bne	MA_GetUserID+0x44
-    mov	r0, #25
-    mov	r1, r5
-    bl	CopyEEPROMData
-    bl	ResetApiCallFlag
-    ldrh	r0, [r4, #2]
-    ldr	r1, [pc, #12]
-    and	r1, r0
-    ldrh	r0, [r4, #2]
-    strh	r1, [r4, #2]
-    b	MA_GetUserID+0x8c
-.align 2
-    .word gMA
-    .word 0x0000fffe
+void MA_GetUserID(char *pUserIDBuf)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_19)) {
+        ResetApiCallFlag();
+        return;
+    }
 
-    mov	r0, r5
-    mov	r1, #33
-    mov	r2, #0
-    bl	MAU_memset
-    mov	r0, #25
-    str	r0, [r4, #112]
-    str	r5, [r4, #116]
-    ldr	r5, [pc, #60]
-    mov	r0, #0
-    str	r0, [r5, #0]
-    mov	r0, #27
-    mov	r1, #0
-    bl	MA_TaskSet
-    ldrh	r1, [r4, #2]
-    mov	r0, #1
-    ldrh	r2, [r4, #2]
-    orr	r0, r1
-    strh	r0, [r4, #2]
-    bl	ResetApiCallFlag
-    ldr	r0, [r5, #0]
-    mov	r1, #128
-    lsl	r1, r1, #15
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_GetUserID+0x88
-    ldr	r0, [r5, #0]
-    mov	r1, #128
-    lsl	r1, r1, #16
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_GetUserID+0x8c
-    bl	MAAPI_Main
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-    lsl	r0, r0, #0
-    lsl	r4, r1, #4
-    lsl	r0, r0, #16
-.size MA_GetUserID, .-MA_GetUserID
-");
-#endif
+    if (gMA.unk_101 == 1) {
+        CopyEEPROMData(TASK_UNK_19, pUserIDBuf);
+        ResetApiCallFlag();
+        gMA.condition &= ~MA_CONDITION_APIWAIT;
+        return;
+    }
+
+    MAU_memset(pUserIDBuf, 33, 0);  // MAGIC
+    gMA.unk_112 = (u8 *)TASK_UNK_19;
+    gMA.unk_116 = (u32)pUserIDBuf;
+    *(vu32 *)REG_TM3CNT = 0;
+    MA_TaskSet(TASK_UNK_1B, 0);
+    gMA.condition |= MA_CONDITION_APIWAIT;
+    ResetApiCallFlag();
+
+    if (!(*(vu32 *)REG_TM3CNT & TMR_IF_ENABLE) || !(*(vu32 *)REG_TM3CNT & TMR_ENABLE)) {
+        MAAPI_Main();
+    }
+}
 
 void MA_GetMailID(char *pBufPtr)
 {

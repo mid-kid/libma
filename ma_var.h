@@ -45,6 +45,7 @@
 #define TASK_UNK_13 0x13
 #define TASK_UNK_15 0x15
 #define TASK_UNK_18 0x18
+#define TASK_UNK_19 0x19
 #define TASK_UNK_1A 0x1a
 #define TASK_UNK_1B 0x1b
 #define TASK_UNK_1C 0x1c
