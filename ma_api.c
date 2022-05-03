@@ -1328,100 +1328,37 @@ void MA_GetHostAddress(u8 *unk_1, char *unk_2)
     ResetApiCallFlag();
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MATASK_GetHostAddress:
-    push	{r4, lr}
-    ldr	r2, [pc, #48]
-    mov	r0, r2
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    cmp	r0, #238
-    bne	MATASK_GetHostAddress+0x3c
-    mov	r0, r2
-    add	r0, #80
-    ldrb	r0, [r0, #0]
-    cmp	r0, #40
-    bne	MATASK_GetHostAddress+0x38
-    mov	r3, r2
-    add	r3, #102
-    mov	r1, #0
-    mov	r0, #36
-    strb	r0, [r3, #0]
-    mov	r0, r2
-    add	r0, #104
-    strh	r1, [r0, #0]
-    mov	r1, r2
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    mov	r0, #240
-    strb	r0, [r1, #0]
-    b	MATASK_GetHostAddress+0x3c
-.align 2
-    .word gMA
+static void MATASK_GetHostAddress(void)
+{
+    if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY)) {
+        if (gMA.unk_80 == 0x28) {  // MAGIC
+            gMA.unk_102 = 0x24;  // MAGIC
+            gMA.unk_104 = 0;
+            gMA.task_unk_98 = 0xf0;
+        } else {
+            MA_DefaultNegaResProc();
+        }
+    }
 
-    bl	MA_DefaultNegaResProc
-    ldr	r2, [pc, #20]
-    mov	r4, r2
-    add	r4, #98
-    ldrb	r0, [r4, #0]
-    mov	r1, r0
-    cmp	r1, #1
-    beq	MATASK_GetHostAddress+0x7c
-    cmp	r1, #1
-    bgt	MATASK_GetHostAddress+0x58
-    cmp	r1, #0
-    beq	MATASK_GetHostAddress+0x5e
-    b	MATASK_GetHostAddress+0xae
-.align 2
-    .word gMA
-    cmp	r1, #240
-    beq	MATASK_GetHostAddress+0x96
-    b	MATASK_GetHostAddress+0xae
-    mov	r3, #240
-    lsl	r3, r3, #1
-    add	r0, r2, r3
-    strh	r1, [r0, #0]
-    mov	r1, r2
-    add	r1, #212
-    str	r1, [r0, #4]
-    ldr	r1, [r2, #116]
-    bl	MABIOS_DNSRequest
-    ldrb	r0, [r4, #0]
-    add	r0, #1
-    ldrb	r1, [r4, #0]
-    strb	r0, [r4, #0]
-    b	MATASK_GetHostAddress+0xae
-    ldr	r0, [r2, #112]
-    mov	r3, #242
-    lsl	r3, r3, #1
-    add	r1, r2, r3
-    ldr	r1, [r1, #0]
-    mov	r2, #4
-    bl	MAU_memcpy
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    b	MATASK_GetHostAddress+0xae
-    mov	r0, r2
-    add	r0, #102
-    ldrb	r0, [r0, #0]
-    mov	r1, r2
-    add	r1, #104
-    ldrh	r1, [r1, #0]
-    bl	MA_SetApiError
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    pop	{r4}
-    pop	{r0}
-    bx	r0
-.size MATASK_GetHostAddress, .-MATASK_GetHostAddress
-");
-#endif
+    switch (gMA.task_unk_98) {  // MAGIC
+    case 0:
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_DNSRequest(&gMA.buffer_unk_480, (char *)gMA.unk_116);
+        gMA.task_unk_98++;
+        break;
+
+    case 1:
+        MAU_memcpy(gMA.unk_112, gMA.buffer_unk_480.data, 4);
+        MA_TaskSet(TASK_UNK_00, 0);
+        break;
+
+    case 0xf0:
+        MA_SetApiError(gMA.unk_102, gMA.unk_104);
+        MA_TaskSet(TASK_UNK_00, 0);
+        break;
+    }
+}
 
 void MA_GetLocalAddress(u8 *address)
 {

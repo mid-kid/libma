@@ -59,6 +59,8 @@
 #define TASK_UNK_23 0x23
 #define TASK_UNK_24 0x24
 
+#define MAPROT_REPLY 0x80
+
 #define MACMD_START 0x10
 #define MACMD_END 0x11
 #define MACMD_TEL 0x12
