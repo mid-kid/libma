@@ -5329,105 +5329,52 @@ static int CheckPOP3Response(char *response)
     return 2;
 }
 
-#if 0
-#else
-void MA_POP3_Connect(const char *pUserID, const char *pPassword);
-asm("
-.align 2
-.thumb_func
-.global MA_POP3_Connect
-MA_POP3_Connect:
-    push	{r4, r5, r6, lr}
-    mov	r5, r0
-    mov	r6, r1
-    bl	SetApiCallFlag
-    mov	r0, #15
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_POP3_Connect+0x1a
-    bl	ResetApiCallFlag
-    b	MA_POP3_Connect+0xc2
-    mov	r0, r5
-    bl	MAU_strlen
-    cmp	r0, #30
-    bgt	MA_POP3_Connect+0x36
-    cmp	r0, #0
-    beq	MA_POP3_Connect+0x36
-    mov	r0, r6
-    bl	MAU_strlen
-    cmp	r0, #16
-    bgt	MA_POP3_Connect+0x36
-    cmp	r0, #0
-    bne	MA_POP3_Connect+0x44
-    mov	r0, #32
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_POP3_Connect+0xc2
-    ldr	r4, [pc, #44]
-    mov	r1, #220
-    lsl	r1, r1, #2
-    add	r0, r4, r1
-    str	r0, [r4, #112]
-    bl	MA_GetPOP3ServerName
-    ldr	r0, [r4, #112]
-    bl	MAU_strlen
-    mov	r1, r0
-    ldr	r0, [r4, #112]
-    add	r0, r0, r1
-    add	r0, #1
-    str	r0, [r4, #116]
-    ldr	r1, [pc, #20]
-    bl	MAU_strcpy
-    ldr	r0, [r4, #116]
-    mov	r1, r5
-    bl	MAU_strcat
-    ldr	r2, [r4, #116]
-    b	MA_POP3_Connect+0x7e
-.align 2
-    .word gMA
-    .word strEndMultiLine.25+0x40
+void MA_POP3_Connect(const char *pUserID, const char *pPassword)
+{
+    int len_userid, len_password;
+    char *end;
 
-    add	r2, #1
-    ldrb	r0, [r2, #0]
-    cmp	r0, #0
-    beq	MA_POP3_Connect+0x88
-    cmp	r0, #64
-    bne	MA_POP3_Connect+0x7c
-    mov	r0, #13
-    strb	r0, [r2, #0]
-    add	r2, #1
-    mov	r0, #10
-    strb	r0, [r2, #0]
-    add	r2, #1
-    mov	r0, #0
-    strb	r0, [r2, #0]
-    add	r2, #1
-    ldr	r4, [pc, #44]
-    str	r2, [r4, #120]
-    ldr	r1, [pc, #44]
-    mov	r0, r2
-    bl	MAU_strcpy
-    ldr	r0, [r4, #120]
-    mov	r1, r6
-    bl	MAU_strcat
-    ldr	r0, [r4, #120]
-    ldr	r1, [pc, #28]
-    bl	MAU_strcat
-    mov	r0, #15
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r4, r5, r6}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-    .word strEndMultiLine.25+0x48
-    .word strEndMultiLine.25+0x18
-.size MA_POP3_Connect, .-MA_POP3_Connect
-");
-#endif
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_0F)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    len_userid = MAU_strlen(pUserID);
+    if (len_userid > 30 || len_userid == 0) {
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    len_password = MAU_strlen(pPassword);
+    if (len_password > 16 || len_password == 0) {
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    gMA.unk_112 = gMA.unk_880;
+    MA_GetPOP3ServerName(gMA.unk_112);
+
+    gMA.unk_116 = (u32)(gMA.unk_112 + MAU_strlen(gMA.unk_112) + 1);
+    MAU_strcpy((char *)gMA.unk_116, POP3_User);
+    MAU_strcat((char *)gMA.unk_116, pUserID);
+
+    end = (char *)gMA.unk_116;
+    while (*end != '\0' && *end != '@') end++;
+    *end++ = '\r';
+    *end++ = '\n';
+    *end++ = '\0';
+
+    gMA.unk_120 = (u32)end;
+    MAU_strcpy((char *)gMA.unk_120, POP3_Pass);
+    MAU_strcat((char *)gMA.unk_120, pPassword);
+    MAU_strcat((char *)gMA.unk_120, POP3_Newl);
+
+    MA_TaskSet(TASK_UNK_0F, 0);
+    ResetApiCallFlag();
+}
 
 #if 0
 #else

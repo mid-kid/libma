@@ -43,7 +43,7 @@ void MA_TaskSet(u8 unk_1, u8 unk_2);
 //void MA_GetUserID();
 //void MA_GetMailID();
 void MA_GetSMTPServerName(char *dest);
-//void MA_GetPOP3ServerName();
+void MA_GetPOP3ServerName(char *dest);
 void MAAPI_Main(void);
 //void MAAPI_GetConditionFlag();
 //void MAAPI_ErrorCheck();
