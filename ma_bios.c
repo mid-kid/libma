@@ -1159,7 +1159,7 @@ static void MA_IntrTimer_SIOIdle(void)
         if (gMA.counter > gMA.counter_null[gMA.sio_mode]) {
             gMA.counter = 0;
             (&gMA.buffer_recv)->size = 0;
-            (&gMA.buffer_recv)->data = &gMA.unk_84;
+            (&gMA.buffer_recv)->data = gMA.unk_84;
             MABIOS_CheckStatus2(&gMA.buffer_recv);
         }
     }

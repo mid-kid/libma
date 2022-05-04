@@ -950,124 +950,40 @@ void MA_TCP_Connect(u8 *unk_1, u8 *unk_2, u16 unk_3)
     ResetApiCallFlag();
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MATASK_TCP_Connect:
-    push	{r4, lr}
-    ldr	r2, [pc, #48]
-    mov	r0, r2
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    cmp	r0, #238
-    bne	MATASK_TCP_Connect+0x3c
-    mov	r0, r2
-    add	r0, #80
-    ldrb	r0, [r0, #0]
-    cmp	r0, #35
-    bne	MATASK_TCP_Connect+0x38
-    mov	r3, r2
-    add	r3, #102
-    mov	r1, #0
-    mov	r0, #36
-    strb	r0, [r3, #0]
-    mov	r0, r2
-    add	r0, #104
-    strh	r1, [r0, #0]
-    mov	r1, r2
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    mov	r0, #240
-    strb	r0, [r1, #0]
-    b	MATASK_TCP_Connect+0x3c
-.align 2
-    .word gMA
+static void MATASK_TCP_Connect(void)
+{
+    if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY)) {
+        if (gMA.unk_80 == 0x23) {  // MAGIC
+            gMA.unk_102 = 0x24;  // MAGIC
+            gMA.unk_104 = 0;
+            gMA.task_unk_98 = 0xf0;
+        } else {
+            MA_DefaultNegaResProc();
+        }
+    }
 
-    bl	MA_DefaultNegaResProc
-    ldr	r3, [pc, #20]
-    mov	r4, r3
-    add	r4, #98
-    ldrb	r0, [r4, #0]
-    mov	r1, r0
-    cmp	r1, #1
-    beq	MATASK_TCP_Connect+0x82
-    cmp	r1, #1
-    bgt	MATASK_TCP_Connect+0x58
-    cmp	r1, #0
-    beq	MATASK_TCP_Connect+0x5e
-    b	MATASK_TCP_Connect+0xdc
-.align 2
-    .word gMA
+    switch (gMA.task_unk_98) {  // MAGIC
+    case 0:
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_TCPConnect(&gMA.buffer_unk_480, (u8 *)gMA.unk_116, gMA.unk_120);
+        gMA.task_unk_98++;
+        break;
 
-    cmp	r1, #240
-    beq	MATASK_TCP_Connect+0xa2
-    b	MATASK_TCP_Connect+0xdc
-    mov	r2, #240
-    lsl	r2, r2, #1
-    add	r0, r3, r2
-    strh	r1, [r0, #0]
-    mov	r1, r3
-    add	r1, #212
-    str	r1, [r0, #4]
-    ldr	r1, [r3, #116]
-    ldr	r2, [r3, #120]
-    lsl	r2, r2, #16
-    lsr	r2, r2, #16
-    bl	MABIOS_TCPConnect
-    ldrb	r0, [r4, #0]
-    add	r0, #1
-    ldrb	r1, [r4, #0]
-    strb	r0, [r4, #0]
-    b	MATASK_TCP_Connect+0xdc
-    ldr	r2, [r3, #112]
-    mov	r0, #242
-    lsl	r0, r0, #1
-    add	r1, r3, r0
-    ldr	r0, [r1, #0]
-    ldrb	r0, [r0, #0]
-    strb	r0, [r2, #0]
-    ldr	r0, [r1, #0]
-    ldrb	r0, [r0, #0]
-    bl	MAU_Socket_Add
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    b	MATASK_TCP_Connect+0xdc
-    mov	r1, r3
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    mov	r0, #3
-    strb	r0, [r1, #0]
-    ldrh	r1, [r3, #2]
-    mov	r0, #255
-    and	r0, r1
-    ldrh	r1, [r3, #2]
-    strh	r0, [r3, #2]
-    ldrh	r1, [r3, #2]
-    mov	r2, #128
-    lsl	r2, r2, #1
-    mov	r0, r2
-    ldrh	r2, [r3, #2]
-    orr	r0, r1
-    strh	r0, [r3, #2]
-    mov	r0, r3
-    add	r0, #102
-    ldrb	r0, [r0, #0]
-    mov	r1, r3
-    add	r1, #104
-    ldrh	r1, [r1, #0]
-    bl	MA_SetApiError
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    pop	{r4}
-    pop	{r0}
-    bx	r0
-.size MATASK_TCP_Connect, .-MATASK_TCP_Connect
-");
-#endif
+    case 1:
+        *gMA.unk_112 = *gMA.buffer_unk_480.data;
+        MAU_Socket_Add(*gMA.buffer_unk_480.data);
+        MA_TaskSet(TASK_UNK_00, 0);
+        break;
+
+    case 0xf0:
+        gMA.unk_92 = 3;  // MAGIC
+        gMA.condition &= ~MA_CONDITION_MASK;
+        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetApiError(gMA.unk_102,gMA.unk_104);
+        MA_TaskSet(TASK_UNK_00, 0);
+    }
+}
 
 void MA_TCP_Disconnect(u8 unk_1)
 {

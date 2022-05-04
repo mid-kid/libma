@@ -104,7 +104,7 @@ typedef struct {
 
 typedef struct {
     u16 size;
-    void *data;
+    u8 *data;
 } MA_BUF;
 
 typedef struct {
