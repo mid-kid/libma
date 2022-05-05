@@ -11940,6 +11940,55 @@ static u16 ErrDetailHexConv(u16 err)
 }
 
 #if 0
+
+u8 MAAPI_ErrorCheck(u16 *pProtocolError)
+{
+    if (!(gMA.condition & MA_CONDITION_ERROR)) {
+        *pProtocolError = 0;
+        return 0;
+    }
+
+    switch (gMA.error) {
+    case MAAPIE_UNK_83:
+        gMA.error = MAAPIE_SYSTEM;
+        gMA.unk_94 = 0;  // MAGIC
+        break;
+
+    case MAAPIE_UNK_84:
+        gMA.error = MAAPIE_SYSTEM;
+        gMA.unk_94 = 1;  // MAGIC
+        break;
+
+    case MAAPIE_UNK_87:
+        gMA.error = MAAPIE_SYSTEM;
+        gMA.unk_94 = 2;  // MAGIC
+        break;
+
+    case MAAPIE_UNK_85:
+        gMA.error = MAAPIE_SYSTEM;
+        gMA.unk_94 = 3;  // MAGIC
+        break;
+    }
+
+    gMA.condition &= ~MA_CONDITION_ERROR;
+
+    if (pProtocolError != NULL) {
+        if (gMA.error == MAAPIE_SYSTEM) {
+            *pProtocolError = ErrDetailHexConv(gMA.unk_94);
+        } else if (gMA.error > 0x15 && gMA.error < 0x34 && gMA.error > 0x2f) {
+            *pProtocolError = ErrDetailHexConv(gMA.unk_94);
+        } else {
+            *pProtocolError = 0;
+        }
+    }
+
+    if (!(gMA.condition & MA_CONDITION_UNK_6)) {
+        gMA.cmd_cur = 0;
+        gMA.recv_cmd = 0;
+    }
+    return gMA.error;
+}
+
 #else
 u8 MAAPI_ErrorCheck(u16 *pProtocolError);
 asm("

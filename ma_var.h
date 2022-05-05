@@ -9,6 +9,7 @@
 #define MAAPIE_UNK_83 0x83
 #define MAAPIE_UNK_84 0x84
 #define MAAPIE_UNK_85 0x85
+#define MAAPIE_UNK_87 0x87
 
 #define STATUS_UNK_0 (1 << 0)
 #define STATUS_UNK_1 (1 << 1)
