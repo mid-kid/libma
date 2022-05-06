@@ -403,7 +403,6 @@ void MA_TCP_Cut(void)
         MA_TaskSet(TASK_UNK_1F, 0);
     }
     ResetApiCallFlag();
-    return;
 }
 
 #else
@@ -989,70 +988,39 @@ static void MATASK_TCP_Disconnect(void)
     }
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-.global MA_TCP_SendRecv
-MA_TCP_SendRecv:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, r9
-    mov	r6, r8
-    push	{r6, r7}
-    mov	r8, r1
-    mov	r9, r3
-    lsl	r0, r0, #24
-    lsr	r4, r0, #24
-    mov	r7, r4
-    lsl	r2, r2, #24
-    lsr	r5, r2, #24
-    mov	r6, r5
-    bl	SetApiCallFlag
-    mov	r0, #34
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_TCP_SendRecv+0x2c
-    bl	ResetApiCallFlag
-    b	MA_TCP_SendRecv+0x6e
-    bl	MAU_Socket_GetNum
-    cmp	r0, #0
-    bne	MA_TCP_SendRecv+0x38
-    mov	r0, #33
-    b	MA_TCP_SendRecv+0x48
-    mov	r0, r4
-    bl	MAU_Socket_Search
-    cmp	r0, #0
-    beq	MA_TCP_SendRecv+0x46
-    cmp	r5, #254
-    bls	MA_TCP_SendRecv+0x54
-    mov	r0, #32
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_TCP_SendRecv+0x6e
-    ldr	r0, [pc, #36]
-    str	r7, [r0, #112]
-    mov	r1, r8
-    str	r1, [r0, #116]
-    str	r6, [r0, #120]
-    mov	r1, r9
-    str	r1, [r0, #124]
-    mov	r0, #34
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r3, r4}
-    mov	r8, r3
-    mov	r9, r4
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA
-.size MA_TCP_SendRecv, .-MA_TCP_SendRecv
-");
-#endif
+void MA_TCP_SendRecv(u8 unk_1, int unk_2, u8 unk_3, int unk_4)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_22)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (MAU_Socket_GetNum() == 0) {
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (!MAU_Socket_Search(unk_1)) {
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (unk_3 >= 0xff) {
+        MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    gMA.unk_112 = (u8 *)(u32)unk_1;
+    gMA.unk_116 = unk_2;
+    gMA.unk_120 = unk_3;
+    gMA.unk_124 = unk_4;
+    MA_TaskSet(TASK_UNK_22, 0);
+    ResetApiCallFlag();
+}
 
 #if 0
 #else
