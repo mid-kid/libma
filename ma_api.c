@@ -360,6 +360,52 @@ static void MATASK_Stop(void)
 }
 
 #if 0
+
+void MA_TCP_Cut(void)
+{
+    SetApiCallFlag();
+    if (gMA.unk_88 != 0x4247414d) {  // MAGIC
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        return;
+    }
+
+    if (gMA.unk_92 == 3 && gMA.task == 0) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (!(gMA.unk_92 == 6 || gMA.unk_92 == 4 || gMA.unk_92 == 5 ||
+        (0x0a < gMA.task && gMA.task < 0x18 && gMA.condition & 1))) {
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (gMA.condition & MA_CONDITION_ERROR) {
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (gMA.task == TASK_UNK_1F || gMA.task == TASK_UNK_1E) {
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    gMA.unk_112 = (u8 *)(u32)gMA.cmd_cur;
+    gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
+    if (!(gMA.condition & MA_CONDITION_UNK_5 || gMA.unk_92 == 3)) {
+        gMA.condition |= MA_CONDITION_APIWAIT;
+        MA_TaskSet(TASK_UNK_1F, 2);
+    } else {
+        gMA.condition |= MA_CONDITION_APIWAIT;
+        MA_TaskSet(TASK_UNK_1F, 0);
+    }
+    ResetApiCallFlag();
+    return;
+}
+
 #else
 void MA_TCP_Cut(void);
 asm("
