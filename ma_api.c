@@ -486,133 +486,42 @@ MA_TCP_Cut:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MATASK_TCP_Cut:
-    push	{r4, lr}
-    ldr	r3, [pc, #28]
-    mov	r0, #98
-    add	r0, r0, r3
-    mov	ip, r0
-    ldrb	r0, [r0, #0]
-    mov	r2, r0
-    mov	r4, r3
-    cmp	r2, #1
-    beq	MATASK_TCP_Cut+0x3a
-    cmp	r2, #1
-    bgt	MATASK_TCP_Cut+0x24
-    cmp	r2, #0
-    beq	MATASK_TCP_Cut+0x2e
-    b	MATASK_TCP_Cut+0xec
-.align 2
-    .word gMA
+static void MATASK_TCP_Cut(void)
+{
+    int param = gMA.task_unk_98;
 
-    cmp	r2, #2
-    beq	MATASK_TCP_Cut+0x88
-    cmp	r2, #3
-    beq	MATASK_TCP_Cut+0xb0
-    b	MATASK_TCP_Cut+0xec
-    mov	r1, ip
-    ldrb	r0, [r1, #0]
-    add	r0, #1
-    ldrb	r1, [r1, #0]
-    mov	r2, ip
-    strb	r0, [r2, #0]
-    ldr	r0, [r4, #112]
-    cmp	r0, #35
-    bne	MATASK_TCP_Cut+0x66
-    mov	r0, r4
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    cmp	r0, #238
-    beq	MATASK_TCP_Cut+0x66
-    mov	r1, #242
-    lsl	r1, r1, #1
-    add	r0, r4, r1
-    ldr	r0, [r0, #0]
-    ldrb	r0, [r0, #0]
-    mov	r1, r4
-    add	r1, #99
-    strb	r0, [r1, #0]
-    sub	r1, #1
-    ldrb	r0, [r1, #0]
-    add	r0, #1
-    ldrb	r2, [r1, #0]
-    strb	r0, [r1, #0]
-    b	MATASK_TCP_Cut+0x88
-    mov	r0, r4
-    add	r0, #204
-    ldrb	r0, [r0, #0]
-    cmp	r0, #1
-    beq	MATASK_TCP_Cut+0x7c
-    mov	r0, r4
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    mov	r1, #3
-    strb	r1, [r0, #0]
-    b	MATASK_TCP_Cut+0xec
-    mov	r0, r4
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    add	r1, #1
-    ldrb	r2, [r0, #0]
-    strb	r1, [r0, #0]
-    ldr	r4, [pc, #24]
-    ldr	r2, [pc, #28]
-    add	r0, r4, r2
-    ldrb	r1, [r0, #0]
-    mov	r0, r4
-    bl	MABIOS_TCPDisconnect
-    ldr	r0, [pc, #20]
-    add	r2, r4, r0
-    ldrb	r0, [r2, #0]
-    add	r0, #1
-    ldrb	r1, [r2, #0]
-    strb	r0, [r2, #0]
-    b	MATASK_TCP_Cut+0xec
-.align 2
-    .word gMA+0x1e0
-    .word 0xfffffe83
-    .word 0xfffffe82
+    switch (param) {
+    case 0:
+        gMA.task_unk_98++;
 
-    mov	r0, r3
-    add	r0, #92
-    ldrb	r1, [r0, #0]
-    strb	r2, [r0, #0]
-    ldrh	r1, [r3, #2]
-    mov	r0, #255
-    and	r0, r1
-    ldrh	r1, [r3, #2]
-    mov	r2, #0
-    strh	r0, [r3, #2]
-    ldrh	r0, [r3, #2]
-    mov	r4, #128
-    lsl	r4, r4, #1
-    mov	r1, r4
-    orr	r0, r1
-    ldrh	r1, [r3, #2]
-    orr	r0, r2
-    strh	r0, [r3, #2]
-    mov	r0, r3
-    add	r0, #99
-    strb	r2, [r0, #0]
-    add	r0, #105
-    strb	r2, [r0, #0]
-    sub	r0, #135
-    ldrb	r1, [r0, #0]
-    strb	r2, [r0, #0]
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    pop	{r4}
-    pop	{r0}
-    bx	r0
-.size MATASK_TCP_Cut, .-MATASK_TCP_Cut
-");
-#endif
+    case 1:
+        if ((u32)gMA.unk_112 == 0x23 &&  // MAGIC
+                gMA.recv_cmd != (MACMD_ERROR | MAPROT_REPLY)) {
+            gMA.sockets[0] = gMA.buffer_unk_480.data[0];
+            gMA.task_unk_98++;
+        } else if (gMA.sockets_used[0] != TRUE) {
+            gMA.task_unk_98 = 3;
+            break;
+        } else {
+            gMA.task_unk_98++;
+        }
+
+    case 2:
+        MABIOS_TCPDisconnect(&gMA.buffer_unk_480, gMA.sockets[0]);
+        gMA.task_unk_98++;
+        break;
+
+    case 3:
+        gMA.unk_92 = param;
+        gMA.condition &= ~MA_CONDITION_MASK;
+        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        gMA.sockets[0] = 0;
+        gMA.sockets_used[0] = FALSE;
+        gMA.recv_cmd = 0;
+        MA_TaskSet(TASK_UNK_00, 0);
+        break;
+    }
+}
 
 void MA_InitLibrary(u8 *pHardwareType)
 {
