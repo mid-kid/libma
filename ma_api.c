@@ -1028,7 +1028,7 @@ static void MATASK_TCP_SendRecv(void)
         if (gMA.unk_80 == 0x15) {  // MAGIC
             MA_DefaultNegaResProc();
             gMA.task_unk_98 = 0xf0;
-            MAU_Socket_Delete(gMA.unk_112);
+            MAU_Socket_Delete((u32)gMA.unk_112);
         } else {
             MA_DefaultNegaResProc();
         }
@@ -1038,12 +1038,12 @@ static void MATASK_TCP_SendRecv(void)
         gMA.unk_102 = 0x23;  // MAGIC
         gMA.unk_104 = 0;
         gMA.task_unk_98 = 0xf0;
-        MAU_Socket_Delete(gMA.unk_112);
+        MAU_Socket_Delete((u32)gMA.unk_112);
     }
 
     switch (gMA.task_unk_98) {  // MAGIC
     case 0:
-        MABIOS_Data(&gMA.buffer_unk_480, (u8 *)gMA.unk_116, gMA.unk_120, gMA.unk_112);
+        MABIOS_Data(&gMA.buffer_unk_480, (u8 *)gMA.unk_116, gMA.unk_120, (u32)gMA.unk_112);
         gMA.task_unk_98++;
         break;
 
