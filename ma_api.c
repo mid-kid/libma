@@ -11783,8 +11783,6 @@ static u16 ErrDetailHexConv(u16 err)
     return hex;
 }
 
-#if 0
-
 u8 MAAPI_ErrorCheck(u16 *pProtocolError)
 {
     if (!(gMA.condition & MA_CONDITION_ERROR)) {
@@ -11817,142 +11815,24 @@ u8 MAAPI_ErrorCheck(u16 *pProtocolError)
     gMA.condition &= ~MA_CONDITION_ERROR;
 
     if (pProtocolError != NULL) {
-        if (gMA.error == MAAPIE_SYSTEM) {
+        switch (gMA.error) {
+        case MAAPIE_SYSTEM:
+        case MAAPIE_SMTP:
+        case MAAPIE_POP3:
+        case MAAPIE_HTTP:
+        case MAAPIE_GB_CENTER:
             *pProtocolError = ErrDetailHexConv(gMA.unk_94);
-        } else if (gMA.error > 0x15 && gMA.error < 0x34 && gMA.error > 0x2f) {
-            *pProtocolError = ErrDetailHexConv(gMA.unk_94);
-        } else {
+            break;
+
+        default:
             *pProtocolError = 0;
+            break;
         }
     }
 
-    if (!(gMA.condition & MA_CONDITION_UNK_6)) {
+    if (!(gMA.condition & MA_CONDITION_UNK_5)) {
         gMA.cmd_cur = 0;
         gMA.recv_cmd = 0;
     }
     return gMA.error;
 }
-
-#else
-u8 MAAPI_ErrorCheck(u16 *pProtocolError);
-asm("
-.align 2
-.thumb_func
-.global MAAPI_ErrorCheck
-MAAPI_ErrorCheck:
-    push	{r4, lr}
-    mov	r4, r0
-    ldr	r2, [pc, #20]
-    ldrh	r1, [r2, #2]
-    mov	r3, #2
-    mov	r0, r3
-    and	r0, r1
-    lsl	r0, r0, #16
-    lsr	r0, r0, #16
-    cmp	r0, #0
-    bne	MAAPI_ErrorCheck+0x20
-    strh	r0, [r4, #0]
-    mov	r0, #0
-    b	MAAPI_ErrorCheck+0xda
-.align 2
-    .word gMA
-
-    ldrb	r0, [r2, #0]
-    cmp	r0, #132
-    beq	MAAPI_ErrorCheck+0x4c
-    cmp	r0, #132
-    bgt	MAAPI_ErrorCheck+0x30
-    cmp	r0, #131
-    beq	MAAPI_ErrorCheck+0x3a
-    b	MAAPI_ErrorCheck+0x7c
-    cmp	r0, #133
-    beq	MAAPI_ErrorCheck+0x6c
-    cmp	r0, #135
-    beq	MAAPI_ErrorCheck+0x5c
-    b	MAAPI_ErrorCheck+0x7c
-    ldrb	r0, [r2, #0]
-    mov	r1, #0
-    mov	r0, #21
-    strb	r0, [r2, #0]
-    mov	r0, r2
-    add	r0, #94
-    ldrh	r2, [r0, #0]
-    strh	r1, [r0, #0]
-    b	MAAPI_ErrorCheck+0x7c
-    ldrb	r0, [r2, #0]
-    mov	r0, #21
-    strb	r0, [r2, #0]
-    mov	r1, r2
-    add	r1, #94
-    ldrh	r0, [r1, #0]
-    mov	r0, #1
-    b	MAAPI_ErrorCheck+0x7a
-    ldrb	r0, [r2, #0]
-    mov	r0, #21
-    strb	r0, [r2, #0]
-    mov	r0, r2
-    add	r0, #94
-    ldrh	r1, [r0, #0]
-    strh	r3, [r0, #0]
-    b	MAAPI_ErrorCheck+0x7c
-    ldrb	r0, [r2, #0]
-    mov	r0, #21
-    strb	r0, [r2, #0]
-    mov	r1, r2
-    add	r1, #94
-    ldrh	r0, [r1, #0]
-    mov	r0, #3
-    strh	r0, [r1, #0]
-    ldr	r2, [pc, #44]
-    ldrh	r0, [r2, #2]
-    ldr	r1, [pc, #44]
-    and	r1, r0
-    ldrh	r0, [r2, #2]
-    strh	r1, [r2, #2]
-    cmp	r4, #0
-    beq	MAAPI_ErrorCheck+0xb8
-    ldrb	r0, [r2, #0]
-    cmp	r0, #21
-    beq	MAAPI_ErrorCheck+0x9e
-    cmp	r0, #21
-    blt	MAAPI_ErrorCheck+0xb4
-    cmp	r0, #51
-    bgt	MAAPI_ErrorCheck+0xb4
-    cmp	r0, #48
-    blt	MAAPI_ErrorCheck+0xb4
-    mov	r0, r2
-    add	r0, #94
-    ldrh	r0, [r0, #0]
-    bl	ErrDetailHexConv
-    b	MAAPI_ErrorCheck+0xb6
-.align 2
-    .word gMA
-    .word 0x0000fffd
-
-    mov	r0, #0
-    strh	r0, [r4, #0]
-    ldr	r3, [pc, #36]
-    ldrh	r1, [r3, #2]
-    mov	r0, #32
-    and	r0, r1
-    lsl	r0, r0, #16
-    lsr	r2, r0, #16
-    cmp	r2, #0
-    bne	MAAPI_ErrorCheck+0xd8
-    mov	r0, r3
-    add	r0, #68
-    ldrb	r1, [r0, #0]
-    strb	r2, [r0, #0]
-    mov	r1, r3
-    add	r1, #69
-    ldrb	r0, [r1, #0]
-    strb	r2, [r1, #0]
-    ldrb	r0, [r3, #0]
-    pop	{r4}
-    pop	{r1}
-    bx	r1
-.align 2
-    .word gMA
-.size MAAPI_ErrorCheck, .-MAAPI_ErrorCheck
-");
-#endif
