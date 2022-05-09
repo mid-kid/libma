@@ -1022,130 +1022,43 @@ void MA_TCP_SendRecv(u8 unk_1, int unk_2, u8 unk_3, int unk_4)
     ResetApiCallFlag();
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MATASK_TCP_SendRecv:
-    push	{r4, r5, lr}
-    ldr	r4, [pc, #48]
-    mov	r0, r4
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    cmp	r0, #238
-    bne	MATASK_TCP_SendRecv+0x3c
-    mov	r0, r4
-    add	r0, #80
-    ldrb	r0, [r0, #0]
-    cmp	r0, #21
-    bne	MATASK_TCP_SendRecv+0x38
-    bl	MA_DefaultNegaResProc
-    mov	r1, r4
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    mov	r0, #240
-    strb	r0, [r1, #0]
-    ldr	r0, [r4, #112]
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    bl	MAU_Socket_Delete
-    b	MATASK_TCP_SendRecv+0x3c
-.align 2
-    .word gMA
+static void MATASK_TCP_SendRecv(void)
+{
+    if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY)) {
+        if (gMA.unk_80 == 0x15) {  // MAGIC
+            MA_DefaultNegaResProc();
+            gMA.task_unk_98 = 0xf0;
+            MAU_Socket_Delete(gMA.unk_112);
+        } else {
+            MA_DefaultNegaResProc();
+        }
+    }
 
-    bl	MA_DefaultNegaResProc
-    bl	MA_GetCondition
-    mov	r1, #64
-    and	r1, r0
-    cmp	r1, #0
-    beq	MATASK_TCP_SendRecv+0x6e
-    ldr	r2, [pc, #56]
-    mov	r3, r2
-    add	r3, #102
-    mov	r1, #0
-    mov	r0, #35
-    strb	r0, [r3, #0]
-    mov	r0, r2
-    add	r0, #104
-    strh	r1, [r0, #0]
-    mov	r1, r2
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    mov	r0, #240
-    strb	r0, [r1, #0]
-    ldr	r0, [r2, #112]
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    bl	MAU_Socket_Delete
-    ldr	r5, [pc, #20]
-    mov	r4, r5
-    add	r4, #98
-    ldrb	r0, [r4, #0]
-    cmp	r0, #1
-    beq	MATASK_TCP_SendRecv+0xb0
-    cmp	r0, #1
-    bgt	MATASK_TCP_SendRecv+0x88
-    cmp	r0, #0
-    beq	MATASK_TCP_SendRecv+0x8e
-    b	MATASK_TCP_SendRecv+0xf2
-.align 2
-    .word gMA
+    if (MA_GetCondition() & MA_CONDITION_UNK_6) {
+        gMA.unk_102 = 0x23;  // MAGIC
+        gMA.unk_104 = 0;
+        gMA.task_unk_98 = 0xf0;
+        MAU_Socket_Delete(gMA.unk_112);
+    }
 
-    cmp	r0, #240
-    beq	MATASK_TCP_SendRecv+0xda
-    b	MATASK_TCP_SendRecv+0xf2
-    mov	r1, #240
-    lsl	r1, r1, #1
-    add	r0, r5, r1
-    ldr	r1, [r5, #116]
-    ldr	r2, [r5, #120]
-    lsl	r2, r2, #24
-    lsr	r2, r2, #24
-    ldr	r3, [r5, #112]
-    lsl	r3, r3, #24
-    lsr	r3, r3, #24
-    bl	MABIOS_Data
-    ldrb	r0, [r4, #0]
-    add	r0, #1
-    ldrb	r1, [r4, #0]
-    strb	r0, [r4, #0]
-    b	MATASK_TCP_SendRecv+0xf2
-    ldr	r0, [r5, #116]
-    mov	r2, #242
-    lsl	r2, r2, #1
-    add	r1, r5, r2
-    ldr	r1, [r1, #0]
-    add	r1, #1
-    sub	r2, #4
-    add	r4, r5, r2
-    ldrh	r2, [r4, #0]
-    sub	r2, #1
-    bl	MAU_memcpy
-    ldr	r1, [r5, #124]
-    ldrb	r0, [r4, #0]
-    sub	r0, #1
-    strb	r0, [r1, #0]
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    b	MATASK_TCP_SendRecv+0xf2
-    mov	r0, r5
-    add	r0, #102
-    ldrb	r0, [r0, #0]
-    mov	r1, r5
-    add	r1, #104
-    ldrh	r1, [r1, #0]
-    bl	MA_SetApiError
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.size MATASK_TCP_SendRecv, .-MATASK_TCP_SendRecv
-");
-#endif
+    switch (gMA.task_unk_98) {  // MAGIC
+    case 0:
+        MABIOS_Data(&gMA.buffer_unk_480, (u8 *)gMA.unk_116, gMA.unk_120, gMA.unk_112);
+        gMA.task_unk_98++;
+        break;
+
+    case 1:
+        MAU_memcpy((u8 *)gMA.unk_116, &gMA.buffer_unk_480.data[1], gMA.buffer_unk_480.size - 1);
+        *(u8 *)gMA.unk_124 = gMA.buffer_unk_480.size - 1;
+        MA_TaskSet(TASK_UNK_00, 0);
+        break;
+
+    case 0xf0:
+        MA_SetApiError(gMA.unk_102, gMA.unk_104);
+        MA_TaskSet(TASK_UNK_00, 0);
+        break;
+    }
+}
 
 void MA_GetHostAddress(u8 *unk_1, char *unk_2)
 {
