@@ -182,8 +182,8 @@ typedef struct {
     u8 _876[4];
     u8 unk_880[14];
     u8 _894[255];
-    u8 prevbuf[1];
-    u8 _1150[11];
+    u8 prevbuf[2];
+    u8 _1151[10];
     u8 eeprom_unk_1161[32];
     u8 eeprom_unk_1193[30];
     u8 _1223[44];

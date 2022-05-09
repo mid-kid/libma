@@ -2284,127 +2284,48 @@ void MA_SData(const u8 *pSendData, u8 sendSize, u8 *pResult)
     ResetApiCallFlag();
 }
 
-#if 0
-#else
-void MA_GData(u8 *pRecvData, u8 *pRecvSize);
-asm("
-.align 2
-.thumb_func
-.global MA_GData
-MA_GData:
-    push	{r4, r5, r6, r7, lr}
-    mov	r4, r0
-    mov	r7, r1
-    bl	SetApiCallFlag
-    mov	r0, #7
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_GData+0x1a
-    bl	ResetApiCallFlag
-    b	MA_GData+0xe0
-    ldr	r6, [pc, #24]
-    ldrh	r1, [r6, #2]
-    mov	r0, #8
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_GData+0x38
-    mov	r0, #33
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_GData+0xe0
-.align 2
-    .word gMA
+void MA_GData(u8 *pRecvData, u8 *pRecvSize)
+{
+    int i;
+    u8 size;
 
-    ldr	r0, [pc, #124]
-    add	r1, r6, r0
-    sub	r0, #1
-    add	r5, r6, r0
-    ldrb	r2, [r5, #0]
-    mov	r0, r4
-    bl	MAU_memcpy
-    ldrb	r0, [r5, #0]
-    strb	r0, [r7, #0]
-    ldrb	r0, [r5, #0]
-    add	r0, #1
-    lsl	r0, r0, #24
-    lsr	r4, r0, #24
-    mov	r3, #0
-    ldr	r0, [pc, #100]
-    add	r1, r6, r0
-    ldrh	r0, [r1, #0]
-    sub	r0, r0, r4
-    cmp	r3, r0
-    bge	MA_GData+0x78
-    mov	r6, r1
-    add	r2, r4, r5
-    add	r1, r3, r5
-    ldrb	r0, [r2, #0]
-    strb	r0, [r1, #0]
-    add	r2, #1
-    add	r3, #1
-    ldrh	r0, [r6, #0]
-    sub	r0, r0, r4
-    cmp	r3, r0
-    blt	MA_GData+0x66
-    ldr	r1, [pc, #68]
-    ldr	r0, [pc, #64]
-    add	r5, r1, r0
-    ldrh	r0, [r5, #0]
-    sub	r0, r0, r4
-    strh	r0, [r5, #0]
-    lsl	r0, r0, #16
-    mov	r2, r1
-    cmp	r0, #0
-    beq	MA_GData+0xc8
-    ldr	r0, [pc, #52]
-    add	r3, r2, r0
-    ldrb	r0, [r3, #0]
-    sub	r0, #1
-    lsl	r0, r0, #24
-    cmp	r0, #0
-    bge	MA_GData+0x9e
-    mov	r0, #128
-    strb	r0, [r3, #0]
-    ldrh	r1, [r5, #0]
-    ldrb	r0, [r3, #0]
-    add	r0, #1
-    cmp	r1, r0
-    blt	MA_GData+0xc8
-    ldrh	r0, [r2, #2]
-    mov	r1, #8
-    orr	r0, r1
-    ldrh	r1, [r2, #2]
-    mov	r1, #0
-    orr	r0, r1
-    strh	r0, [r2, #2]
-    b	MA_GData+0xd2
-.align 2
-    .word 0x0000047e
-    .word 0x000006fa
-    .word gMA
-    .word 0x0000047d
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_07)) {
+        ResetApiCallFlag();
+        return;
+    }
 
-    ldrh	r0, [r2, #2]
-    ldr	r1, [pc, #28]
-    and	r1, r0
-    ldrh	r0, [r2, #2]
-    strh	r1, [r2, #2]
-    ldrh	r0, [r2, #2]
-    ldr	r1, [pc, #20]
-    and	r1, r0
-    ldrh	r0, [r2, #2]
-    strh	r1, [r2, #2]
-    bl	ResetApiCallFlag
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word 0x0000fff7
-    .word 0x0000fffe
-.size MA_GData, .-MA_GData
-");
-#endif
+    if (!(gMA.condition & MA_CONDITION_PTP_GET)) {
+        MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    MAU_memcpy(pRecvData, &gMA.prevbuf[1], gMA.prevbuf[0]);
+
+    *pRecvSize = gMA.prevbuf[0];
+    size = gMA.prevbuf[0] + 1;
+    for (i = 0; i < gMA.prevbuf_size - size; i++) {
+        gMA.prevbuf[i] = gMA.prevbuf[size + i];
+    }
+
+    gMA.prevbuf_size -= size;
+    if (gMA.prevbuf_size != 0) {
+        if ((s8)(gMA.prevbuf[0] - 1) < 0) {
+            gMA.prevbuf[0] = 0x80;  // MAGIC
+        }
+
+        if (gMA.prevbuf_size >= gMA.prevbuf[0] + 1) {
+            gMA.condition |= MA_CONDITION_PTP_GET;
+        } else {
+            gMA.condition &= ~MA_CONDITION_PTP_GET;
+        }
+    } else {
+        gMA.condition &= ~MA_CONDITION_PTP_GET;
+    }
+    gMA.condition &= ~MA_CONDITION_APIWAIT;
+    ResetApiCallFlag();
+}
 
 #if 0
 #else
