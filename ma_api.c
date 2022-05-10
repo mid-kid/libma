@@ -969,7 +969,8 @@ void MA_TCP_Disconnect(u8 unk_1)
 
 static void MATASK_TCP_Disconnect(void)
 {
-    if ((gMA.recv_cmd == 0xee) && (gMA.unk_80 != 0x24)) {
+    if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY) &&
+            gMA.unk_80 != 0x24) {  // MAGIC
         MA_DefaultNegaResProc();
     }
 
@@ -2243,181 +2244,55 @@ void MA_GData(u8 *pRecvData, u8 *pRecvSize)
     ResetApiCallFlag();
 }
 
-#if 0
-#else
-void MATASK_P2P(void);
-asm("
-.align 2
-.thumb_func
-MATASK_P2P:
-    push	{r4, r5, r6, r7, lr}
-    ldr	r2, [pc, #224]
-    ldr	r0, [r2, #64]
-    mov	r1, #128
-    lsl	r1, r1, #3
-    and	r0, r1
-    mov	r5, r2
-    cmp	r0, #0
-    beq	MATASK_P2P+0x2c
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #208]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #204]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #200]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    mov	r0, r5
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    cmp	r0, #238
-    bne	MATASK_P2P+0x100
-    mov	r0, r5
-    add	r0, #80
-    ldrb	r0, [r0, #0]
-    cmp	r0, #21
-    bne	MATASK_P2P+0x100
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    mov	r0, r5
-    add	r0, #92
-    ldrb	r1, [r0, #0]
-    mov	r4, #0
-    strb	r4, [r0, #0]
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    ldrb	r0, [r5, #5]
-    lsl	r0, r0, #1
-    mov	r1, r5
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r5, #12]
-    mov	r1, #0
-    strh	r0, [r5, #12]
-    str	r4, [r5, #60]
-    ldrb	r0, [r5, #4]
-    strb	r1, [r5, #4]
-    ldr	r0, [r5, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #120]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #100]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #96]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #88]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #84]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    mov	r4, #255
-    mov	r0, r4
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    bl	MAU_Socket_Clear
-    ldrh	r0, [r5, #2]
-    and	r4, r0
-    ldrh	r0, [r5, #2]
-    strh	r4, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    mov	r0, #35
-    mov	r1, #0
-    bl	MA_SetApiError
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    b	MATASK_P2P+0x154
-.align 2
-    .word gMA
-    .word 0xfffffbff
-    .word 0xffffdfff
-    .word 0x0000fffe
-    .word 0xfffffdff
-    .word 0x0000fff7
-    .word 0x0000ffef
+static void MATASK_P2P(void)
+{
+    if (gMA.status & STATUS_UNK_10) {
+        gMA.status &= ~STATUS_UNK_10;
+        gMA.status &= ~STATUS_UNK_13;
+        gMA.condition &= ~MA_CONDITION_APIWAIT;
+    }
 
-    mov	r6, r5
-    mov	r0, #240
-    lsl	r0, r0, #1
-    add	r7, r6, r0
-    ldrh	r1, [r7, #0]
-    cmp	r1, #1
-    bls	MATASK_P2P+0x154
-    add	r0, #4
-    add	r4, r6, r0
-    ldr	r0, [r4, #0]
-    add	r0, #1
-    sub	r1, #1
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    bl	ConcatPrevBuf
-    mov	r0, #0
-    str	r0, [r4, #0]
-    strh	r0, [r7, #0]
-    ldr	r1, [pc, #52]
-    add	r4, r6, r1
-    ldrb	r0, [r4, #0]
-    sub	r0, #1
-    lsl	r0, r0, #24
-    cmp	r0, #0
-    bge	MATASK_P2P+0x138
-    mov	r0, #128
-    strb	r0, [r4, #0]
-    ldr	r1, [pc, #36]
-    add	r0, r5, r1
-    ldrh	r1, [r0, #0]
-    ldrb	r0, [r4, #0]
-    add	r0, #1
-    cmp	r1, r0
-    blt	MATASK_P2P+0x154
-    ldrh	r0, [r5, #2]
-    mov	r1, #8
-    orr	r0, r1
-    ldrh	r1, [r5, #2]
-    mov	r1, #0
-    orr	r0, r1
-    strh	r0, [r5, #2]
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word 0x0000047d
-    .word 0x000006fa
-.size MATASK_P2P, .-MATASK_P2P
-");
-#endif
+    if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY) &&
+            gMA.unk_80 == 0x15) {  // MAGIC
+        MA_ChangeSIOMode(MA_SIO_BYTE);
+        gMA.unk_92 = 0;
+        MA_ChangeSIOMode(MA_SIO_BYTE);
+        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
+        gMA.counter = 0;
+        gMA.intr_sio_mode = 0;
+        gMA.status &= ~STATUS_UNK_0;
+        gMA.status &= ~STATUS_UNK_9;
+        gMA.status &= ~STATUS_UNK_10;
+        gMA.status &= ~STATUS_UNK_13;
+        gMA.status &= ~STATUS_UNK_2;
+        gMA.condition &= ~MA_CONDITION_PTP_GET;
+        gMA.condition &= ~MA_CONDITION_CONNECT;
+
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+        MAU_Socket_Clear();
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+
+        MA_SetApiError(MAAPIE_OFFLINE, 0);
+        MA_TaskSet(TASK_UNK_00, 0);
+        return;
+    }
+
+    if (gMA.buffer_unk_480.size <= 1) return;
+
+    ConcatPrevBuf(&gMA.buffer_unk_480.data[1], gMA.buffer_unk_480.size - 1);
+
+    gMA.buffer_unk_480.data = NULL;
+    gMA.buffer_unk_480.size = 0;
+    if ((s8)(gMA.prevbuf[0] - 1) < 0) {
+        gMA.prevbuf[0] = 0x80;  // MAGIC
+    }
+
+    if (gMA.prevbuf_size >= gMA.prevbuf[0] + 1) {
+        gMA.condition |= MA_CONDITION_PTP_GET;
+    }
+}
 
 void MA_Condition(u8 *pCondition)
 {
