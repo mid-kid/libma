@@ -6,6 +6,9 @@
 #include "ma_var.h"
 #include "ma_sub.h"
 
+#define CASSETTE_INITIAL_CODE (ROM_BANK0 + 0xac)
+#define CASSETTE_VERSION_NO (ROM_BANK0 + 0xbc)
+
 //static void MA_SetApiError();
 //static void ApiValisStatusCheck();
 //static void MA_ApiPreExe();
@@ -7996,6 +7999,7 @@ static const char strHttpDate[] = "Date: ";
 static const char strHttpLocation[] = "Location: ";
 static const char strHttpUserAgent[] = "User-Agent: AGB-";
 static const char strServerRoot[] = "/";
+asm(".word 0x00000000\n");
 asm(".section .text\n");
 
 #if 0
@@ -8493,170 +8497,52 @@ MA_HTTP_GetPost:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.lcomm tmpLen.249, 0x4
-.lcomm tmpp.250, 0x4
-.lcomm tmpNum.251, 0x1
+#define ConcatUserAgent_WriteAscii(dest, code) \
+{ \
+    if (code < 0x20 || code >= 0x7f) { \
+        *dest = '0'; \
+    } else { \
+        *dest = code; \
+    } \
+}
 
+asm(".section .rodata\n");
+
+static void ConcatUserAgent(char *user_agent)
+{
+    static int tmpLen asm("tmpLen.249");
+    static u8 *tmpp asm("tmpp.250");
+    static u8 tmpNum asm("tmpNum.251");
+    static const char hexChar[] asm("hexChar.252") = "0123456789ABCDEF";
+
+    tmpLen = MAU_strlen(user_agent);
+    tmpp = &user_agent[tmpLen];
+
+    ConcatUserAgent_WriteAscii(tmpp++, *(char *)(CASSETTE_INITIAL_CODE + 0));
+    ConcatUserAgent_WriteAscii(tmpp++, *(char *)(CASSETTE_INITIAL_CODE + 1));
+    ConcatUserAgent_WriteAscii(tmpp++, *(char *)(CASSETTE_INITIAL_CODE + 2));
+    ConcatUserAgent_WriteAscii(tmpp++, *(char *)(CASSETTE_INITIAL_CODE + 3));
+
+    *tmpp++ = '-';
+    tmpNum = *(u8 *)CASSETTE_VERSION_NO;
+    *tmpp++ = hexChar[(tmpNum >> 4) & 0xf];
+    *tmpp++ = hexChar[(tmpNum >> 0) & 0xf];
+
+    *tmpp++ = '\r';
+    *tmpp++ = '\n';
+    *tmpp++ = '\r';
+    *tmpp++ = '\n';
+    *tmpp = '\0';
+}
+
+asm("
 .section .rodata
-    .word 0x00000000
-.align 2
-.type hexChar.252, object
-hexChar.252:
-    .asciz \"0123456789ABCDEF\"
-.size hexChar.252, .-hexChar.252
 .align 2
     .asciz \"\\\"\\r\\n\"
 .align 2
     .asciz \"HTTP\"
 .section .text
-
-.align 2
-.thumb_func
-ConcatUserAgent:
-    push	{r4, r5, lr}
-    mov	r4, r0
-    bl	MAU_strlen
-    ldr	r1, [pc, #28]
-    str	r0, [r1, #0]
-    ldr	r2, [pc, #28]
-    add	r4, r4, r0
-    str	r4, [r2, #0]
-    ldr	r0, [pc, #28]
-    ldrb	r1, [r0, #0]
-    mov	r0, r1
-    sub	r0, #32
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #94
-    bls	ConcatUserAgent+0x34
-    mov	r0, #48
-    strb	r0, [r4, #0]
-    b	ConcatUserAgent+0x36
-.align 2
-    .word tmpLen.249
-    .word tmpp.250
-    .word 0x080000ac
-
-    strb	r1, [r4, #0]
-    add	r0, r4, #1
-    str	r0, [r2, #0]
-    ldr	r0, [pc, #32]
-    ldrb	r2, [r0, #0]
-    mov	r0, r2
-    sub	r0, #32
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #94
-    bls	ConcatUserAgent+0x64
-    ldr	r0, [pc, #20]
-    ldr	r1, [r0, #0]
-    mov	r2, #48
-    strb	r2, [r1, #0]
-    add	r1, #1
-    str	r1, [r0, #0]
-    mov	r5, r0
-    b	ConcatUserAgent+0x70
-.align 2
-    .word 0x080000ad
-    .word tmpp.250
-
-    ldr	r1, [pc, #32]
-    ldr	r0, [r1, #0]
-    strb	r2, [r0, #0]
-    add	r0, #1
-    str	r0, [r1, #0]
-    mov	r5, r1
-    ldr	r0, [pc, #24]
-    ldrb	r1, [r0, #0]
-    mov	r0, r1
-    sub	r0, #32
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #94
-    bls	ConcatUserAgent+0x90
-    ldr	r0, [r5, #0]
-    mov	r1, #48
-    b	ConcatUserAgent+0x92
-.align 2
-    .word tmpp.250
-    .word 0x080000ae
-
-    ldr	r0, [r5, #0]
-    strb	r1, [r0, #0]
-    add	r0, #1
-    str	r0, [r5, #0]
-    ldr	r0, [pc, #20]
-    ldrb	r1, [r0, #0]
-    mov	r0, r1
-    sub	r0, #32
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #94
-    bls	ConcatUserAgent+0xb4
-    ldr	r0, [r5, #0]
-    mov	r1, #48
-    b	ConcatUserAgent+0xb6
-.align 2
-    .word 0x080000af
-
-    ldr	r0, [r5, #0]
-    strb	r1, [r0, #0]
-    add	r0, #1
-    str	r0, [r5, #0]
-    ldr	r1, [r5, #0]
-    mov	r0, #45
-    strb	r0, [r1, #0]
-    add	r1, #1
-    str	r1, [r5, #0]
-    ldr	r2, [pc, #76]
-    ldr	r0, [pc, #76]
-    ldrb	r0, [r0, #0]
-    strb	r0, [r2, #0]
-    ldr	r4, [pc, #76]
-    lsl	r0, r0, #24
-    lsr	r0, r0, #28
-    add	r0, r0, r4
-    ldrb	r0, [r0, #0]
-    strb	r0, [r1, #0]
-    add	r3, r1, #1
-    str	r3, [r5, #0]
-    ldrb	r2, [r2, #0]
-    mov	r0, #15
-    and	r0, r2
-    add	r0, r0, r4
-    ldrb	r0, [r0, #0]
-    strb	r0, [r1, #1]
-    add	r0, r3, #1
-    str	r0, [r5, #0]
-    mov	r4, #13
-    strb	r4, [r3, #1]
-    add	r1, r0, #1
-    str	r1, [r5, #0]
-    mov	r2, #10
-    strb	r2, [r0, #1]
-    add	r0, r1, #1
-    str	r0, [r5, #0]
-    strb	r4, [r1, #1]
-    add	r1, r0, #1
-    str	r1, [r5, #0]
-    strb	r2, [r0, #1]
-    add	r0, r1, #1
-    str	r0, [r5, #0]
-    mov	r0, #0
-    strb	r0, [r1, #1]
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word tmpNum.251
-    .word 0x080000bc
-    .word hexChar.252
-.size ConcatUserAgent, .-ConcatUserAgent
 ");
-#endif
 
 static int GetRequestType(void)
 {
