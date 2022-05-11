@@ -86,17 +86,17 @@ void MAU_strcat(char *dest, const char *src)
     }
 }
 
-const char *MAU_strchr(const char *str, int c)
+char *MAU_strchr(char *str, int c)
 {
     while (*str != '\0' && *str != (char)c) str++;
     if (*str == (char)c) return str;
     return NULL;
 }
 
-const char *MAU_strrchr(const char *str, int c)
+char *MAU_strrchr(char *str, int c)
 {
-    static const char *start;
-    static const char *string;
+    static char *start;
+    static char *string;
 
     string = str;
     start = str;
@@ -106,7 +106,7 @@ const char *MAU_strrchr(const char *str, int c)
     return NULL;
 }
 
-const char *MAU_FindPostBlank(const char *str)
+char *MAU_FindPostBlank(char *str)
 {
     while (*str != '\0' && *str != ' ') str++;
     if (*str == '\0') return NULL;

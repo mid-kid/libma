@@ -7651,6 +7651,74 @@ MATASK_POP3_Head:
 #endif
 
 #if 0
+
+static char *ExtractServerName(char *unk_1, char *unk_2, u8 *unk_3, u8 *unk_4)
+{
+    static const char strDownload[] asm("strDownload.229") = "gameboy.datacenter.ne.jp/cgb/download";
+    static const char strUpload[] asm("strUpload.230") = "gameboy.datacenter.ne.jp/cgb/upload";
+    static const char strUtility[] asm("strUtility.231") = "gameboy.datacenter.ne.jp/cgb/utility";
+    static const char strRanking[] asm("strRanking.232") = "gameboy.datacenter.ne.jp/cgb/ranking";
+    static const char strHttp[] asm("strHttp.233") = "http://";
+
+    static char *cp asm("cp.234");
+    static char *tmpp asm("tmpp.235");
+    static int len asm("len.236");
+
+    if (MAU_strnicmp(unk_2, strHttp, sizeof(strHttp) - 1) == 0) {
+        unk_2 += sizeof(strHttp) - 1;
+    }
+
+    cp = MAU_strchr(unk_2, '/');
+    if (!cp) {
+        if (MAU_strchr(unk_2, '\0') - unk_2 > 0xff) {
+            *unk_1 = '\0';
+            return NULL;
+        }
+        MAU_strcpy(unk_1, unk_2);
+        *unk_3 = 0;
+        return NULL;
+    }
+
+    len = cp - unk_2;
+    if (len > 0xff) {
+        *unk_1 = '\0';
+        return NULL;
+    }
+
+    MAU_memcpy(unk_1, unk_2, len);
+    unk_1[len] = '\0';
+
+    if (MAU_strnicmp(unk_2, strDownload, sizeof(strDownload) - 1) == 0) {
+        *unk_4 = 1;
+        *unk_3 = 1;
+        tmpp = MAU_strrchr(unk_2, '/') + 1;
+        if (tmpp[0] < '0' || tmpp[0] > '9') *unk_3 = 0;
+        return cp;
+    }
+
+    if (MAU_strnicmp(unk_2, strUpload, sizeof(strUpload) - 1) == 0) {
+        *unk_4 = 2;
+        *unk_3 = 2;
+        tmpp = MAU_strrchr(unk_2, '/') + 1;
+        if (tmpp[0] < '0' || tmpp[0] > '9') *unk_3 = 0;
+        return cp;
+    }
+
+    if (MAU_strnicmp(unk_2, strUtility, sizeof(strUtility) - 1) == 0) {
+        *unk_4 = 3;
+        *unk_3 = 3;
+        return cp;
+    }
+
+    if (MAU_strnicmp(unk_2, strRanking, sizeof(strRanking) - 1) == 0) {
+        *unk_4 = 4;
+        *unk_3 = 4;
+        tmpp = MAU_strrchr(unk_2, '/') + 1;
+        if (tmpp[0] < '0' || tmpp[0] > '9') *unk_3 = 0;
+        return cp;
+    }
+}
+
 #else
 asm("
 .section .rodata
