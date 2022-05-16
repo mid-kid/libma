@@ -26,6 +26,7 @@
 #define STATUS_UNK_12 (1 << 12)
 #define STATUS_UNK_13 (1 << 13)
 #define STATUS_UNK_14 (1 << 14)
+#define STATUS_UNK_15 (1 << 15)
 
 #define TASK_UNK_00 0x00
 #define TASK_UNK_01 0x01
@@ -46,6 +47,7 @@
 #define TASK_UNK_0F 0x0f
 #define TASK_UNK_10 0x10
 #define TASK_UNK_11 0x11
+#define TASK_UNK_12 0x12
 #define TASK_UNK_13 0x13
 #define TASK_UNK_15 0x15
 #define TASK_UNK_18 0x18
@@ -157,7 +159,9 @@ typedef struct {
     u32 unk_116;
     u32 unk_120;
     u32 unk_124;
-    u8 _128[32];
+    u8 _128[12];
+    u32 unk_140;
+    u8 _144[16];
     u32 unk_160;
     u32 unk_164;
     u8 _168[36];

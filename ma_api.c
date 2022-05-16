@@ -6997,6 +6997,69 @@ MATASK_POP3_Dele:
 #endif
 
 #if 0
+
+void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
+{
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(TASK_UNK_12)) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    *pRecvSize = 0;
+    gMA.unk_112 = pRecvData;
+    gMA.unk_116 = recvBufSize;
+    gMA.unk_120 = (u32)pRecvSize;
+
+    if (gMA.condition & MA_CONDITION_BUFFER_FULL) {
+        gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
+        gMA.status &= ~STATUS_UNK_15;
+
+        if (recvBufSize == 0) {
+            gMA.unk_112 = (u8 *)(u32)recvBufSize;
+            gMA.unk_120 = recvBufSize;
+            MA_TaskSet(TASK_UNK_12, 1);
+            ResetApiCallFlag();
+            return;
+        }
+
+        if (gMA.prevbuf_size == 0 || gMA.prevbuf_size > recvBufSize) {
+            MAU_memcpy(pRecvData, gMA.prevbuf, gMA.prevbuf_size);
+            *pRecvSize += gMA.prevbuf_size;
+            gMA.prevbuf_size = 0;
+            gMA.status |= STATUS_UNK_15;
+            MA_TaskSet(TASK_UNK_12, 1);
+            ResetApiCallFlag();
+            return;
+        }
+
+        MAU_memcpy(pRecvData, gMA.prevbuf, recvBufSize);
+        gMA.prevbuf_size -= recvBufSize;
+        MAU_memcpy(gMA.prevbuf, &gMA.prevbuf[recvBufSize], gMA.prevbuf_size);
+        *pRecvSize = recvBufSize;
+        gMA.condition |= MA_CONDITION_BUFFER_FULL;
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (recvBufSize == 0) {
+        MA_TaskSet(TASK_UNK_20, 0);
+        ResetApiCallFlag();
+        return;
+    }
+
+    gMA.unk_140 = 0;
+    InitPrevBuf();
+    gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
+
+    MAU_strcpy(gMA.unk_880, POP3_Top);
+    MAU_itoa(mailNo, &gMA.unk_880[MAU_strlen(gMA.unk_880)], 10);
+    MAU_strcat(gMA.unk_880, POP3_Zero);
+
+    MA_TaskSet(TASK_UNK_12, 0);
+    ResetApiCallFlag();
+}
+
 #else
 void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize);
 asm("
