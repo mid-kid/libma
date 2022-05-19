@@ -8809,236 +8809,201 @@ CreateHttpRequestHeader:
 ");
 #endif
 
-#if 0
-#else
-asm("
-.lcomm step.268, 0x4
+static int HttpGetNextStep(int unk_1)
+{
+    static int step asm("step.268");
 
-.align 2
-.thumb_func
-HttpGetNextStep:
-    mov	r2, r0
-    cmp	r2, #1
-    beq	HttpGetNextStep+0xa0
-    cmp	r2, #1
-    bgt	HttpGetNextStep+0x10
-    cmp	r2, #0
-    beq	HttpGetNextStep+0x18
-    b	HttpGetNextStep+0x1a2
-    cmp	r2, #2
-    bne	HttpGetNextStep+0x16
-    b	HttpGetNextStep+0x120
-    b	HttpGetNextStep+0x1a2
-    ldr	r1, [pc, #12]
-    ldr	r0, [r1, #112]
-    cmp	r0, #22
-    beq	HttpGetNextStep+0x2c
-    cmp	r0, #23
-    beq	HttpGetNextStep+0x42
-    b	HttpGetNextStep+0x1a2
-.align 2
-    .word gMA
+    // ALL MAGIC
+    switch (unk_1) {
+    case 0:
+        switch ((u32)gMA.unk_112) {
+        case 0x16:
+            switch (gMA.unk_160) {
+            case 0:
+                step = 8;
+                break;
 
-    mov	r0, r1
-    add	r0, #160
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    beq	HttpGetNextStep+0x94
-    cmp	r0, #1
-    bcc	HttpGetNextStep+0x94
-    cmp	r0, #3
-    beq	HttpGetNextStep+0x40
-    b	HttpGetNextStep+0x1a2
-    b	HttpGetNextStep+0x94
-    mov	r0, r1
-    add	r0, #160
-    ldr	r0, [r0, #0]
-    cmp	r0, #2
-    beq	HttpGetNextStep+0x5c
-    cmp	r0, #2
-    bhi	HttpGetNextStep+0x56
-    cmp	r0, #0
-    beq	HttpGetNextStep+0x86
-    b	HttpGetNextStep+0x1a2
-    cmp	r0, #4
-    beq	HttpGetNextStep+0x72
-    b	HttpGetNextStep+0x1a2
-    mov	r0, r1
-    add	r0, #164
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    beq	HttpGetNextStep+0x94
-    cmp	r0, #1
-    bcc	HttpGetNextStep+0x94
-    cmp	r0, #2
-    beq	HttpGetNextStep+0x70
-    b	HttpGetNextStep+0x1a2
-    b	HttpGetNextStep+0x86
-    mov	r0, r1
-    add	r0, #164
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    beq	HttpGetNextStep+0x86
-    cmp	r0, #1
-    bcc	HttpGetNextStep+0x94
-    cmp	r0, #2
-    beq	HttpGetNextStep+0x94
-    b	HttpGetNextStep+0x1a2
-    ldr	r1, [pc, #8]
-    mov	r0, #100
-    str	r0, [r1, #0]
-    b	HttpGetNextStep+0x1a2
-.align 2
-    .word step.268
+            case 1:
+                step = 8;
+                break;
 
-    ldr	r1, [pc, #4]
-    mov	r0, #8
-    str	r0, [r1, #0]
-    b	HttpGetNextStep+0x1a2
-.align 2
-    .word step.268
+            case 3:
+                step = 8;
+                break;
+            }
+            break;
 
-    ldr	r1, [pc, #12]
-    ldr	r0, [r1, #112]
-    cmp	r0, #22
-    beq	HttpGetNextStep+0xb4
-    cmp	r0, #23
-    beq	HttpGetNextStep+0xec
-    b	HttpGetNextStep+0x1a2
-.align 2
-    .word gMA
+        case 0x17:
+            switch (gMA.unk_160) {
+            case 0:
+                step = 100;
+                break;
 
-    mov	r0, r1
-    add	r0, #160
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    beq	HttpGetNextStep+0xdc
-    cmp	r0, #1
-    bcc	HttpGetNextStep+0x114
-    cmp	r0, #3
-    bne	HttpGetNextStep+0x1a2
-    mov	r0, r1
-    add	r0, #164
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    bhi	HttpGetNextStep+0x1a2
-    mov	r0, #110
-    ldr	r1, [pc, #4]
-    str	r0, [r1, #0]
-    b	HttpGetNextStep+0x1a2
-.align 2
-    .word step.268
+            case 2:
+                switch (gMA.unk_164) {
+                case 0:
+                    step = 8;
+                    break;
 
-    mov	r0, r1
-    add	r0, #164
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    bls	HttpGetNextStep+0x114
-    cmp	r0, #2
-    bne	HttpGetNextStep+0x1a2
-    b	HttpGetNextStep+0x16c
-    mov	r0, r1
-    add	r0, #160
-    ldr	r0, [r0, #0]
-    cmp	r0, #2
-    beq	HttpGetNextStep+0xdc
-    cmp	r0, #2
-    bhi	HttpGetNextStep+0x100
-    cmp	r0, #0
-    beq	HttpGetNextStep+0x114
-    b	HttpGetNextStep+0x1a2
-    cmp	r0, #4
-    bne	HttpGetNextStep+0x1a2
-    mov	r0, r1
-    add	r0, #164
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    bls	HttpGetNextStep+0x114
-    cmp	r0, #2
-    beq	HttpGetNextStep+0x16c
-    b	HttpGetNextStep+0x1a2
-    ldr	r1, [pc, #4]
-    mov	r0, #110
-    str	r0, [r1, #0]
-    b	HttpGetNextStep+0x1a2
-.align 2
-    .word step.268
+                case 1:
+                    step = 8;
+                    break;
 
-    ldr	r1, [pc, #12]
-    ldr	r0, [r1, #112]
-    cmp	r0, #22
-    beq	HttpGetNextStep+0x134
-    cmp	r0, #23
-    beq	HttpGetNextStep+0x152
-    b	HttpGetNextStep+0x1a2
-.align 2
-    .word gMA
+                case 2:
+                    step = 100;
+                    break;
+                }
+                break;
 
-    mov	r0, r1
-    add	r0, #160
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    beq	HttpGetNextStep+0x190
-    cmp	r0, #1
-    bcc	HttpGetNextStep+0x16c
-    cmp	r0, #3
-    bne	HttpGetNextStep+0x1a2
-    mov	r0, r1
-    add	r0, #164
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    beq	HttpGetNextStep+0x19e
-    b	HttpGetNextStep+0xe6
-    mov	r0, r1
-    add	r0, #160
-    ldr	r0, [r0, #0]
-    cmp	r0, #2
-    beq	HttpGetNextStep+0x178
-    cmp	r0, #2
-    bhi	HttpGetNextStep+0x166
-    cmp	r0, #0
-    beq	HttpGetNextStep+0x16c
-    b	HttpGetNextStep+0x1a2
-    cmp	r0, #4
-    beq	HttpGetNextStep+0x190
-    b	HttpGetNextStep+0x1a2
-    ldr	r1, [pc, #4]
-    mov	r0, #255
-    str	r0, [r1, #0]
-    b	HttpGetNextStep+0x1a2
-.align 2
-    .word step.268
+            case 4:
+                switch (gMA.unk_164) {
+                case 0:
+                    step = 8;
+                    break;
 
-    mov	r0, r1
-    add	r0, #164
-    ldr	r0, [r0, #0]
-    cmp	r0, #2
-    bhi	HttpGetNextStep+0x1a2
-    cmp	r0, #1
-    bcc	HttpGetNextStep+0x1a2
-    ldr	r1, [pc, #4]
-    str	r2, [r1, #0]
-    b	HttpGetNextStep+0x1a2
-.align 2
-    .word step.268
+                case 1:
+                    step = 100;
+                    break;
 
-    mov	r0, r1
-    add	r0, #164
-    ldr	r0, [r0, #0]
-    cmp	r0, #2
-    bhi	HttpGetNextStep+0x1a2
-    cmp	r0, #1
-    bcc	HttpGetNextStep+0x1a2
-    ldr	r0, [pc, #8]
-    str	r2, [r0, #0]
-    ldr	r1, [pc, #4]
-    ldr	r0, [r1, #0]
-    bx	lr
-.align 2
-    .word step.268
-.size HttpGetNextStep, .-HttpGetNextStep
-");
-#endif
+                case 2:
+                    step = 8;
+                    break;
+                }
+                break;
+            }
+            break;
+        }
+        break;
+
+    case 1:
+        switch ((u32)gMA.unk_112) {
+        case 0x16:
+            switch (gMA.unk_160) {
+            case 0:
+                step = 0x6e;
+                break;
+
+            case 3:
+                switch (gMA.unk_164) {
+                case 0:
+                case 1:
+                    step = 0x6e;
+                    break;
+                }
+                break;
+
+            case 1:
+                switch (gMA.unk_164) {
+                case 0:
+                case 1:
+                    step = 0x6e;
+                    break;
+
+                case 2:
+                    step = 0xff;
+                    break;
+                }
+                break;
+            }
+            break;
+
+        case 0x17:
+            switch (gMA.unk_160) {
+            case 0:
+                step = 0x6e;
+                break;
+
+            case 2:
+                switch (gMA.unk_164) {
+                case 0:
+                case 1:
+                    step = 0x6e;
+                    break;
+
+                case 2:
+                    step = 0xff;
+                    break;
+                }
+                break;
+
+            case 4:
+                switch (gMA.unk_164) {
+                case 0:
+                case 1:
+                    step = 0x6e;
+                    break;
+
+                case 2:
+                    step = 0xff;
+                    break;
+                }
+                break;
+            }
+            break;
+        }
+        break;
+
+    case 2:
+        switch ((u32)gMA.unk_112) {
+        case 0x16:
+            switch (gMA.unk_160) {
+            case 0:
+                step = 0xff;
+                break;
+
+            case 1:
+                switch (gMA.unk_164) {
+                case 1:
+                case 2:
+                    step = 2;
+                    break;
+                }
+                break;
+
+            case 3:
+                switch (gMA.unk_164) {
+                case 1:
+                    step = 2;
+                    break;
+
+                case 2:
+                    step = 0xff;
+                    break;
+                }
+                break;
+            }
+            break;
+
+        case 0x17:
+            switch (gMA.unk_160) {
+            case 0:
+                step = 0xff;
+                break;
+
+            case 2:
+                switch (gMA.unk_164) {
+                case 1:
+                case 2:
+                    step = 2;
+                    break;
+                }
+                break;
+
+            case 4:
+                switch (gMA.unk_164) {
+                case 1:
+                case 2:
+                    step = 2;
+                    break;
+                }
+                break;
+            }
+            break;
+        }
+        break;
+    }
+    return step;
+}
 
 #if 0
 #else
