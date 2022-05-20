@@ -7755,16 +7755,24 @@ static char *ExtractServerName(char *unk_1, char *unk_2, u8 *unk_3, u8 *unk_4)
         *unk_4 = 1;
         *unk_3 = 1;
         tmpp = MAU_strrchr(unk_2, '/') + 1;
-        if (tmpp[0] < '0' || tmpp[0] > '9') *unk_3 = 0;
-        return cp;
+        if (tmpp[0] < '0' || tmpp[0] > '9') {
+            *unk_3 = 0;
+            return cp;
+        } else {
+            return cp;
+        }
     }
 
     if (MAU_strnicmp(unk_2, strUpload, sizeof(strUpload) - 1) == 0) {
         *unk_4 = 2;
         *unk_3 = 2;
         tmpp = MAU_strrchr(unk_2, '/') + 1;
-        if (tmpp[0] < '0' || tmpp[0] > '9') *unk_3 = 0;
-        return cp;
+        if (tmpp[0] < '0' || tmpp[0] > '9') {
+            *unk_3 = 0;
+            return cp;
+        } else {
+            return cp;
+        }
     }
 
     if (MAU_strnicmp(unk_2, strUtility, sizeof(strUtility) - 1) == 0) {
@@ -7777,9 +7785,15 @@ static char *ExtractServerName(char *unk_1, char *unk_2, u8 *unk_3, u8 *unk_4)
         *unk_4 = 4;
         *unk_3 = 4;
         tmpp = MAU_strrchr(unk_2, '/') + 1;
-        if (tmpp[0] < '0' || tmpp[0] > '9') *unk_3 = 0;
-        return cp;
+        if (tmpp[0] < '0' || tmpp[0] > '9') {
+            *unk_3 = 0;
+            return cp;
+        } else {
+            return cp;
+        }
     }
+
+    return cp;
 }
 
 #else
