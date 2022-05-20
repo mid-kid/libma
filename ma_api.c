@@ -8258,10 +8258,9 @@ static void ConcatUserAgent(char *user_agent)
     *tmpp = '\0';
 }
 
+static const char strNewl[] asm(".LstrHttpNewl") = "\"\r\n";
 asm("
 .section .rodata
-.align 2
-    .asciz \"\\\"\\r\\n\"
 .align 2
     .asciz \"HTTP\"
 .section .text
@@ -8324,207 +8323,123 @@ static int GetRequestType(void)
     return ret;
 }
 
-#if 0
-#else
-asm("
-.lcomm tmpLen.260, 0x4
-.lcomm bAddContentLength.261, 0x1
-.lcomm bAddContentLengthZero.262, 0x1
-.lcomm bAddAuthorization.263, 0x1
-.lcomm bAddAuthID.264, 0x1
+static void CreateHttpRequestHeader(void)
+{
+    static int tmpLen asm("tmpLen.260");
+    static char bAddContentLength asm("bAddContentLength.261");
+    static char bAddContentLengthZero asm("bAddContentLengthZero.262");
+    static char bAddAuthorization asm("bAddAuthorization.263");
+    static char bAddAuthID asm("bAddAuthID.264");
 
-.align 2
-.thumb_func
-CreateHttpRequestHeader:
-    push	{r4, r5, lr}
-    ldr	r2, [pc, #32]
-    mov	r1, #0
-    strb	r1, [r2, #0]
-    ldr	r0, [pc, #28]
-    strb	r1, [r0, #0]
-    ldr	r4, [pc, #28]
-    strb	r1, [r4, #0]
-    ldr	r5, [pc, #28]
-    strb	r1, [r5, #0]
-    ldr	r1, [pc, #28]
-    ldr	r0, [r1, #112]
-    cmp	r0, #22
-    beq	CreateHttpRequestHeader+0x38
-    cmp	r0, #23
-    beq	CreateHttpRequestHeader+0x72
-    b	CreateHttpRequestHeader+0xc8
-.align 2
-    .word bAddContentLength.261
-    .word bAddContentLengthZero.262
-    .word bAddAuthorization.263
-    .word bAddAuthID.264
-    .word gMA
+    bAddContentLength = FALSE;
+    bAddContentLengthZero = FALSE;
+    bAddAuthorization = FALSE;
+    bAddAuthID = FALSE;
 
-    mov	r0, r1
-    add	r0, #160
-    ldr	r3, [r0, #0]
-    cmp	r3, #1
-    beq	CreateHttpRequestHeader+0x56
-    cmp	r3, #1
-    bcc	CreateHttpRequestHeader+0xc8
-    cmp	r3, #3
-    bne	CreateHttpRequestHeader+0xc8
-    add	r0, #4
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    bne	CreateHttpRequestHeader+0xc8
-    strb	r0, [r4, #0]
-    b	CreateHttpRequestHeader+0xc8
-    mov	r0, r1
-    add	r0, #164
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    beq	CreateHttpRequestHeader+0x6a
-    cmp	r0, #1
-    bcc	CreateHttpRequestHeader+0xc8
-    cmp	r0, #2
-    beq	CreateHttpRequestHeader+0x6e
-    b	CreateHttpRequestHeader+0xc8
-    strb	r3, [r4, #0]
-    b	CreateHttpRequestHeader+0xc8
-    strb	r3, [r5, #0]
-    b	CreateHttpRequestHeader+0xc8
-    mov	r0, r1
-    add	r0, #160
-    ldr	r0, [r0, #0]
-    cmp	r0, #2
-    beq	CreateHttpRequestHeader+0x92
-    cmp	r0, #2
-    bhi	CreateHttpRequestHeader+0x86
-    cmp	r0, #0
-    beq	CreateHttpRequestHeader+0x8c
-    b	CreateHttpRequestHeader+0xc8
-    cmp	r0, #4
-    beq	CreateHttpRequestHeader+0xac
-    b	CreateHttpRequestHeader+0xc8
-    mov	r0, #1
-    strb	r0, [r2, #0]
-    b	CreateHttpRequestHeader+0xc8
-    mov	r0, r1
-    add	r0, #164
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    beq	CreateHttpRequestHeader+0x52
-    cmp	r0, #1
-    bcc	CreateHttpRequestHeader+0xc8
-    cmp	r0, #2
-    bne	CreateHttpRequestHeader+0xc8
-    mov	r0, #1
-    strb	r0, [r5, #0]
-    strb	r0, [r2, #0]
-    b	CreateHttpRequestHeader+0xc8
-    mov	r0, r1
-    add	r0, #164
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    beq	CreateHttpRequestHeader+0xc0
-    cmp	r0, #1
-    bcc	CreateHttpRequestHeader+0xc8
-    cmp	r0, #2
-    beq	CreateHttpRequestHeader+0xc4
-    b	CreateHttpRequestHeader+0xc8
-    strb	r0, [r2, #0]
-    b	CreateHttpRequestHeader+0x52
-    mov	r0, #1
-    strb	r0, [r5, #0]
-    ldrb	r0, [r2, #0]
-    cmp	r0, #1
-    bne	CreateHttpRequestHeader+0x104
-    ldr	r4, [pc, #172]
-    ldr	r1, [pc, #172]
-    mov	r0, r4
-    bl	MAU_strcat
-    ldr	r1, [pc, #168]
-    mov	r0, r4
-    bl	MAU_strcat
-    mov	r0, r4
-    bl	MAU_strlen
-    mov	r1, r0
-    ldr	r0, [pc, #156]
-    str	r1, [r0, #0]
-    ldr	r2, [pc, #156]
-    add	r0, r4, r2
-    ldr	r0, [r0, #0]
-    sub	r2, r4, #3
-    add	r1, r1, r2
-    mov	r2, #10
-    bl	MAU_itoa
-    ldr	r1, [pc, #144]
-    mov	r0, r4
-    bl	MAU_strcat
-    ldr	r0, [pc, #140]
-    ldrb	r0, [r0, #0]
-    cmp	r0, #1
-    bne	CreateHttpRequestHeader+0x11e
-    ldr	r4, [pc, #108]
-    ldr	r1, [pc, #112]
-    mov	r0, r4
-    bl	MAU_strcat
-    ldr	r1, [pc, #108]
-    mov	r0, r4
-    bl	MAU_strcat
-    ldr	r0, [pc, #120]
-    ldrb	r0, [r0, #0]
-    cmp	r0, #1
-    bne	CreateHttpRequestHeader+0x142
-    ldr	r4, [pc, #84]
-    ldr	r1, [pc, #112]
-    mov	r0, r4
-    bl	MAU_strcat
-    ldr	r0, [pc, #108]
-    add	r1, r4, r0
-    mov	r0, r4
-    bl	MAU_strcat
-    ldr	r1, [pc, #104]
-    mov	r0, r4
-    bl	MAU_strcat
-    ldr	r0, [pc, #100]
-    ldrb	r0, [r0, #0]
-    cmp	r0, #1
-    bne	CreateHttpRequestHeader+0x166
-    ldr	r4, [pc, #48]
-    ldr	r1, [pc, #92]
-    mov	r0, r4
-    bl	MAU_strcat
-    ldr	r2, [pc, #72]
-    add	r1, r4, r2
-    mov	r0, r4
-    bl	MAU_strcat
-    ldr	r1, [pc, #48]
-    mov	r0, r4
-    bl	MAU_strcat
-    ldr	r4, [pc, #20]
-    ldr	r1, [pc, #68]
-    mov	r0, r4
-    bl	MAU_strcat
-    mov	r0, r4
-    bl	ConcatUserAgent
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word gMA+0x370
-    .word strHttpContentType
-    .word strHttpContentLength
-    .word tmpLen.260
-    .word 0xfffffd18
-    .word strEndMultiLine.25+0x18
-    .word bAddContentLengthZero.262
-    .word bAddAuthorization.263
-    .word strHttpAuthorization
-    .word 0x00000396
-    .word hexChar.252+0x14
-    .word bAddAuthID.264
-    .word strHttpGbAuthID
-    .word strHttpUserAgent
-.size CreateHttpRequestHeader, .-CreateHttpRequestHeader
-");
-#endif
+    // ALL MAGIC
+    switch ((u32)gMA.unk_112) {
+    case 0x16:
+        switch (gMA.unk_160) {
+        case 0:
+            break;
+
+        case 3:
+            switch (gMA.unk_164) {
+            case 1:
+                bAddAuthorization = TRUE;
+                break;
+
+            case 2:
+                break;
+            }
+            break;
+
+        case 1:
+            switch (gMA.unk_164) {
+            case 0:
+                break;
+
+            case 1:
+                bAddAuthorization = TRUE;
+                break;
+
+            case 2:
+                bAddAuthID = TRUE;
+                break;
+            }
+            break;
+        }
+        break;
+
+    case 0x17:
+        switch (gMA.unk_160) {
+        case 0:
+            bAddContentLength = TRUE;
+            break;
+
+        case 2:
+            switch (gMA.unk_164) {
+            case 0:
+                break;
+
+            case 1:
+                bAddAuthorization = TRUE;
+                break;
+
+            case 2:
+                bAddAuthID = TRUE;
+                bAddContentLength = TRUE;
+                break;
+            }
+            break;
+
+        case 4:
+            switch (gMA.unk_164) {
+            case 0:
+                break;
+
+            case 1:
+                bAddContentLength = TRUE;
+                bAddAuthorization = TRUE;
+                break;
+
+            case 2:
+                bAddAuthID = TRUE;
+                break;
+            }
+            break;
+        }
+        break;
+    }
+
+    if (bAddContentLength == TRUE) {
+        MAU_strcat(gMA.unk_880, strHttpContentType);
+        MAU_strcat(gMA.unk_880, strHttpContentLength);
+        tmpLen = MAU_strlen(gMA.unk_880);
+        MAU_itoa(gMA.unk_136, &gMA.unk_880[tmpLen - 3], 10);
+        MAU_strcat(gMA.unk_880, POP3_Newl);
+    }
+
+    if (bAddContentLengthZero == TRUE) {
+        MAU_strcat(gMA.unk_880, strHttpContentType);
+        MAU_strcat(gMA.unk_880, strHttpContentLength);
+    }
+
+    if (bAddAuthorization == TRUE) {
+        MAU_strcat(gMA.unk_880, strHttpAuthorization);
+        MAU_strcat(gMA.unk_880, gMA.unk_1798);
+        MAU_strcat(gMA.unk_880, strNewl);
+    }
+
+    if (bAddAuthID == TRUE) {
+        MAU_strcat(gMA.unk_880, strHttpGbAuthID);
+        MAU_strcat(gMA.unk_880, gMA.unk_1798);
+        MAU_strcat(gMA.unk_880, POP3_Newl);
+    }
+
+    MAU_strcat(gMA.unk_880, strHttpUserAgent);
+    ConcatUserAgent(gMA.unk_880);
+}
 
 static int HttpGetNextStep(int unk_1)
 {

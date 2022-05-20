@@ -159,7 +159,8 @@ typedef struct {
     u32 unk_116;
     u32 unk_120;
     u32 unk_124;
-    u8 _128[12];
+    u8 _128[8];
+    u32 unk_136;
     u32 unk_140;
     u8 _144[16];
     u32 unk_160;
@@ -198,7 +199,8 @@ typedef struct {
     u8 unk_1788[6];
     u16 unk_1794;
     u16 unk_1796;
-    u8 _1798[94];
+    u8 unk_1798[2];
+    u8 _1800[92];
 } MA_VAR;
 
 extern MA_VAR gMA;
