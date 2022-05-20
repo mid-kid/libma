@@ -6092,7 +6092,7 @@ void MA_POP3_Retr(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
             MA_TaskSet(TASK_UNK_12, 1);
         } else {
             MAU_memcpy(pRecvData, gMA.prevbuf, recvBufSize);
-            gMA.prevbuf_size = gMA.prevbuf_size - recvBufSize;
+            gMA.prevbuf_size -= recvBufSize;
             MAU_memcpy(gMA.prevbuf, &gMA.prevbuf[recvBufSize], gMA.prevbuf_size);
             *pRecvSize = recvBufSize;
 
@@ -6109,12 +6109,13 @@ void MA_POP3_Retr(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
 
         gMA.unk_140 = 0;
         InitPrevBuf();
-
         gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
         gMA.status &= ~STATUS_UNK_15;
+
         MAU_strcpy(gMA.unk_880, POP3_Retr);
-        MAU_itoa(mailNo, gMA.unk_880 + MAU_strlen(gMA.unk_880), 10);
+        MAU_itoa(mailNo, &gMA.unk_880[MAU_strlen(gMA.unk_880)], 10);
         MAU_strcat(gMA.unk_880, POP3_Newl);
+
         MA_TaskSet(TASK_UNK_12, 0);
     }
 
@@ -6876,8 +6877,6 @@ MATASK_POP3_Dele:
 ");
 #endif
 
-#if 0
-
 void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
 {
     SetApiCallFlag();
@@ -6899,219 +6898,43 @@ void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
             gMA.unk_112 = (u8 *)(u32)recvBufSize;
             gMA.unk_120 = recvBufSize;
             MA_TaskSet(TASK_UNK_12, 1);
-            ResetApiCallFlag();
-            return;
-        }
-
-        if (gMA.prevbuf_size == 0 || gMA.prevbuf_size > recvBufSize) {
+        } else if (gMA.prevbuf_size != 0 && gMA.prevbuf_size <= recvBufSize) {
             MAU_memcpy(pRecvData, gMA.prevbuf, gMA.prevbuf_size);
-            *pRecvSize += gMA.prevbuf_size;
+            *pRecvSize = gMA.prevbuf_size + *pRecvSize;
             gMA.prevbuf_size = 0;
+
             gMA.status |= STATUS_UNK_15;
             MA_TaskSet(TASK_UNK_12, 1);
+        } else {
+            MAU_memcpy(pRecvData, gMA.prevbuf, recvBufSize);
+            gMA.prevbuf_size -= recvBufSize;
+            MAU_memcpy(gMA.prevbuf, &gMA.prevbuf[recvBufSize], gMA.prevbuf_size);
+            *pRecvSize = recvBufSize;
+
+            gMA.condition |= MA_CONDITION_BUFFER_FULL;
+            ResetApiCallFlag();
+            return;
+        }
+    } else {
+        if (recvBufSize == 0) {
+            MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
             ResetApiCallFlag();
             return;
         }
 
-        MAU_memcpy(pRecvData, gMA.prevbuf, recvBufSize);
-        gMA.prevbuf_size -= recvBufSize;
-        MAU_memcpy(gMA.prevbuf, &gMA.prevbuf[recvBufSize], gMA.prevbuf_size);
-        *pRecvSize = recvBufSize;
-        gMA.condition |= MA_CONDITION_BUFFER_FULL;
-        ResetApiCallFlag();
-        return;
+        gMA.unk_140 = 0;
+        InitPrevBuf();
+        gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
+
+        MAU_strcpy(gMA.unk_880, POP3_Top);
+        MAU_itoa(mailNo, &gMA.unk_880[MAU_strlen(gMA.unk_880)], 10);
+        MAU_strcat(gMA.unk_880, POP3_Zero);
+
+        MA_TaskSet(TASK_UNK_12, 0);
     }
 
-    if (recvBufSize == 0) {
-        MA_TaskSet(TASK_UNK_20, 0);
-        ResetApiCallFlag();
-        return;
-    }
-
-    gMA.unk_140 = 0;
-    InitPrevBuf();
-    gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
-
-    MAU_strcpy(gMA.unk_880, POP3_Top);
-    MAU_itoa(mailNo, &gMA.unk_880[MAU_strlen(gMA.unk_880)], 10);
-    MAU_strcat(gMA.unk_880, POP3_Zero);
-
-    MA_TaskSet(TASK_UNK_12, 0);
     ResetApiCallFlag();
 }
-
-#else
-void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize);
-asm("
-.align 2
-.thumb_func
-.global MA_POP3_Head
-MA_POP3_Head:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, r9
-    mov	r6, r8
-    push	{r6, r7}
-    mov	r9, r1
-    mov	r8, r3
-    lsl	r0, r0, #16
-    lsr	r6, r0, #16
-    lsl	r2, r2, #16
-    lsr	r5, r2, #16
-    mov	r7, r5
-    bl	SetApiCallFlag
-    mov	r0, #18
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_POP3_Head+0x2a
-    bl	ResetApiCallFlag
-    b	MA_POP3_Head+0x156
-    mov	r0, #0
-    mov	r1, r8
-    strh	r0, [r1, #0]
-    ldr	r4, [pc, #48]
-    mov	r0, r9
-    str	r0, [r4, #112]
-    str	r5, [r4, #116]
-    str	r1, [r4, #120]
-    ldrh	r1, [r4, #2]
-    mov	r0, #4
-    and	r0, r1
-    lsl	r0, r0, #16
-    lsr	r1, r0, #16
-    cmp	r1, #0
-    beq	MA_POP3_Head+0xfc
-    ldrh	r1, [r4, #2]
-    ldr	r0, [pc, #28]
-    and	r0, r1
-    ldrh	r1, [r4, #2]
-    strh	r0, [r4, #2]
-    ldr	r0, [r4, #64]
-    ldr	r1, [pc, #20]
-    and	r0, r1
-    str	r0, [r4, #64]
-    cmp	r5, #0
-    bne	MA_POP3_Head+0x70
-    str	r5, [r4, #112]
-    str	r5, [r4, #120]
-    b	MA_POP3_Head+0xa4
-.align 2
-    .word gMA
-    .word 0x0000fffb
-    .word 0xffff7fff
-
-    ldr	r1, [pc, #60]
-    add	r6, r4, r1
-    ldrh	r0, [r6, #0]
-    cmp	r0, #0
-    beq	MA_POP3_Head+0xb8
-    cmp	r0, r5
-    bhi	MA_POP3_Head+0xb8
-    ldr	r0, [pc, #52]
-    add	r1, r4, r0
-    ldrh	r2, [r6, #0]
-    mov	r0, r9
-    bl	MAU_memcpy
-    mov	r1, r8
-    ldrh	r0, [r1, #0]
-    ldrh	r1, [r6, #0]
-    add	r0, r0, r1
-    mov	r1, r8
-    strh	r0, [r1, #0]
-    mov	r0, #0
-    strh	r0, [r6, #0]
-    ldr	r0, [r4, #64]
-    mov	r1, #128
-    lsl	r1, r1, #8
-    orr	r0, r1
-    str	r0, [r4, #64]
-    mov	r0, #18
-    mov	r1, #1
-    bl	MA_TaskSet
-    b	MA_POP3_Head+0x152
-    lsl	r0, r0, #0
-    lsl	r2, r7, #27
-    lsl	r0, r0, #0
-    lsl	r5, r7, #17
-    lsl	r0, r0, #0
-    ldr	r4, [pc, #52]
-    mov	r0, r9
-    mov	r1, r4
-    mov	r2, r7
-    bl	MAU_memcpy
-    ldr	r0, [pc, #44]
-    add	r5, r4, r0
-    ldr	r1, [pc, #44]
-    add	r2, r4, r1
-    ldrh	r0, [r2, #0]
-    sub	r0, r0, r7
-    strh	r0, [r2, #0]
-    add	r1, r7, r4
-    ldrh	r2, [r2, #0]
-    mov	r0, r4
-    bl	MAU_memcpy
-    mov	r0, r8
-    strh	r7, [r0, #0]
-    ldrh	r1, [r5, #2]
-    mov	r0, #4
-    ldrh	r2, [r5, #2]
-    orr	r0, r1
-    strh	r0, [r5, #2]
-    bl	ResetApiCallFlag
-    b	MA_POP3_Head+0x156
-.align 2
-    .word gMA+0x47d
-    .word 0xfffffb83
-    .word 0x0000027d
-
-    cmp	r7, #0
-    bne	MA_POP3_Head+0x10e
-    mov	r0, #32
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_POP3_Head+0x156
-    mov	r0, r4
-    add	r0, #140
-    str	r1, [r0, #0]
-    bl	InitPrevBuf
-    ldrh	r1, [r4, #2]
-    ldr	r0, [pc, #72]
-    and	r0, r1
-    ldrh	r1, [r4, #2]
-    strh	r0, [r4, #2]
-    mov	r1, #220
-    lsl	r1, r1, #2
-    add	r4, r4, r1
-    ldr	r1, [pc, #60]
-    mov	r0, r4
-    bl	MAU_strcpy
-    mov	r0, r4
-    bl	MAU_strlen
-    mov	r1, r0
-    add	r1, r1, r4
-    mov	r0, r6
-    mov	r2, #10
-    bl	MAU_itoa
-    ldr	r1, [pc, #40]
-    mov	r0, r4
-    bl	MAU_strcat
-    mov	r0, #18
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r3, r4}
-    mov	r8, r3
-    mov	r9, r4
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word 0x0000fffb
-    .word strEndMultiLine.25+0x70
-    .word strEndMultiLine.25+0x78
-.size MA_POP3_Head, .-MA_POP3_Head
-");
-#endif
 
 #if 0
 #else
