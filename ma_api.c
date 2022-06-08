@@ -1943,235 +1943,98 @@ void MA_Receive(void)
     }
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MATASK_Receive:
-    push	{r4, r5, lr}
-    ldr	r4, [pc, #32]
-    mov	r0, r4
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    cmp	r0, #238
-    bne	MATASK_Receive+0x64
-    mov	r0, r4
-    add	r0, #80
-    ldrb	r0, [r0, #0]
-    cmp	r0, #20
-    beq	MATASK_Receive+0x3e
-    cmp	r0, #20
-    bgt	MATASK_Receive+0x28
-    cmp	r0, #17
-    beq	MATASK_Receive+0x64
-    b	MATASK_Receive+0x56
-.align 2
-    .word gMA
+static void MATASK_Receive(void)
+{
+    if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY)) {
+        switch (gMA.unk_80) {
+        case 0x11:
+            break;
 
-    cmp	r0, #25
-    bgt	MATASK_Receive+0x56
-    cmp	r0, #24
-    blt	MATASK_Receive+0x56
-    bl	MA_DefaultNegaResProc
-    mov	r0, r4
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    mov	r1, #250
-    b	MATASK_Receive+0x62
-    mov	r0, r4
-    add	r0, #81
-    ldrb	r0, [r0, #0]
-    cmp	r0, #0
-    beq	MATASK_Receive+0x64
-    bl	MA_DefaultNegaResProc
-    mov	r0, r4
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    mov	r1, #250
-    b	MATASK_Receive+0x62
-    bl	MA_DefaultNegaResProc
-    ldr	r0, [pc, #40]
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    mov	r1, #251
-    strb	r1, [r0, #0]
-    ldr	r5, [pc, #28]
-    mov	r4, r5
-    add	r4, #98
-    ldrb	r0, [r4, #0]
-    cmp	r0, #3
-    beq	MATASK_Receive+0xb8
-    cmp	r0, #3
-    bgt	MATASK_Receive+0x88
-    cmp	r0, #1
-    beq	MATASK_Receive+0xa2
-    cmp	r0, #1
-    bgt	MATASK_Receive+0xb2
-    cmp	r0, #0
-    beq	MATASK_Receive+0x9c
-    b	MATASK_Receive+0x1c0
-.align 2
-    .word gMA
+        case 0x14:
+            if (gMA.unk_81 != 0) {
+                MA_DefaultNegaResProc();
+                gMA.task_unk_98 = 0xfa;
+            }
+            break;
 
-    cmp	r0, #250
-    beq	MATASK_Receive+0x10e
-    cmp	r0, #250
-    bgt	MATASK_Receive+0x96
-    cmp	r0, #4
-    beq	MATASK_Receive+0xc8
-    b	MATASK_Receive+0x1c0
-    cmp	r0, #251
-    beq	MATASK_Receive+0x11c
-    b	MATASK_Receive+0x1c0
-    bl	MABIOS_Start
-    b	MATASK_Receive+0x112
-    ldrb	r0, [r4, #0]
-    add	r0, #1
-    ldrb	r1, [r4, #0]
-    strb	r0, [r4, #0]
-    mov	r0, #1
-    bl	MABIOS_ChangeClock
-    b	MATASK_Receive+0x1c0
-    bl	MABIOS_WaitCall
-    b	MATASK_Receive+0x112
-    mov	r0, r5
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    cmp	r0, #148
-    beq	MATASK_Receive+0x112
-    ldrb	r0, [r4, #0]
-    sub	r0, #1
-    b	MATASK_Receive+0x116
-    ldr	r0, [r5, #64]
-    mov	r1, #128
-    lsl	r1, r1, #2
-    orr	r0, r1
-    str	r0, [r5, #64]
-    mov	r1, r5
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    mov	r2, #0
-    mov	r0, #8
-    strb	r0, [r1, #0]
-    ldrh	r1, [r5, #2]
-    mov	r0, #255
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    mov	r3, #192
-    lsl	r3, r3, #2
-    mov	r0, r3
-    ldrh	r3, [r5, #2]
-    orr	r0, r1
-    strh	r0, [r5, #2]
-    str	r2, [r5, #112]
-    mov	r1, #240
-    lsl	r1, r1, #1
-    add	r0, r5, r1
-    strh	r2, [r0, #0]
-    bl	InitPrevBuf
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    b	MATASK_Receive+0x1c0
-    bl	MABIOS_End
-    ldrb	r0, [r4, #0]
-    add	r0, #1
-    ldrb	r1, [r4, #0]
-    strb	r0, [r4, #0]
-    b	MATASK_Receive+0x1c0
-    mov	r0, r5
-    add	r0, #92
-    ldrb	r1, [r0, #0]
-    mov	r4, #0
-    strb	r4, [r0, #0]
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    ldrb	r0, [r5, #5]
-    lsl	r0, r0, #1
-    mov	r1, r5
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r5, #12]
-    mov	r1, #0
-    strh	r0, [r5, #12]
-    str	r4, [r5, #60]
-    ldrb	r0, [r5, #4]
-    strb	r1, [r5, #4]
-    ldr	r0, [r5, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #116]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #112]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #108]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #96]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #88]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    mov	r4, #255
-    mov	r0, r4
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    bl	MAU_Socket_Clear
-    ldrh	r0, [r5, #2]
-    and	r4, r0
-    ldrh	r0, [r5, #2]
-    strh	r4, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    mov	r0, r5
-    add	r0, #102
-    ldrb	r0, [r0, #0]
-    mov	r1, r5
-    add	r1, #94
-    ldrh	r1, [r1, #0]
-    bl	MA_SetApiError
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word 0xfffffdff
-    .word 0xfffffbff
-    .word 0xffffdfff
-    .word 0x0000fff7
-    .word 0x0000ffef
-.size MATASK_Receive, .-MATASK_Receive
-");
-#endif
+        case 0x18:
+        case 0x19:
+            MA_DefaultNegaResProc();
+            gMA.task_unk_98 = 0xfa;
+            break;
+
+        default:
+            MA_DefaultNegaResProc();
+            gMA.task_unk_98 = 0xfb;
+            break;
+        }
+    }
+
+    switch (gMA.task_unk_98) {
+    case 0:
+        MABIOS_Start();
+        gMA.task_unk_98++;
+        break;
+
+    case 1:
+        gMA.task_unk_98++;
+        MABIOS_ChangeClock(MA_SIO_WORD);
+        break;
+
+    case 2:
+        MABIOS_WaitCall();
+        gMA.task_unk_98++;
+        break;
+
+    case 3:
+        if (gMA.recv_cmd != (MACMD_WAITCALL | MAPROT_REPLY)) {
+            gMA.task_unk_98--;
+            break;
+        }
+        gMA.task_unk_98++;
+        break;
+
+    case 4:
+        gMA.status |= STATUS_UNK_9;
+        gMA.unk_92 = 8;
+        gMA.condition &= ~MA_CONDITION_MASK;
+        gMA.condition |= MA_CONDITION_P2P_RECV << MA_CONDITION_SHIFT;
+        gMA.unk_112 = NULL;
+        gMA.buffer_unk_480.size = 0;
+        InitPrevBuf();
+        MA_TaskSet(TASK_UNK_00, 0);
+        break;
+
+    case 0xfa:
+        MABIOS_End();
+        gMA.task_unk_98++;
+        break;
+
+    case 0xfb:
+        gMA.unk_92 = 0;
+        MA_ChangeSIOMode(MA_SIO_BYTE);
+        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
+        gMA.counter = 0;
+        gMA.intr_sio_mode = 0;
+        gMA.status &= ~STATUS_UNK_0;
+        gMA.status &= ~STATUS_UNK_9;
+        gMA.status &= ~STATUS_UNK_10;
+        gMA.status &= ~STATUS_UNK_13;
+        gMA.status &= ~STATUS_UNK_2;
+        gMA.condition &= ~MA_CONDITION_PTP_GET;
+        gMA.condition &= ~MA_CONDITION_CONNECT;
+
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+        MAU_Socket_Clear();
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+
+        MA_SetApiError(gMA.unk_102, gMA.unk_94);
+        MA_TaskSet(TASK_UNK_00, 0);
+        break;
+    }
+}
 
 void MA_SData(const u8 *pSendData, u8 sendSize, u8 *pResult)
 {
