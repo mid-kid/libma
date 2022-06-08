@@ -910,12 +910,16 @@ void MA_TCP_Connect(u8 *unk_1, u8 *unk_2, u16 unk_3)
 static void MATASK_TCP_Connect(void)
 {
     if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY)) {
-        if (gMA.unk_80 == 0x23) {  // MAGIC
+        switch (gMA.unk_80) {
+        case 0x23:
             gMA.unk_102 = 0x24;  // MAGIC
             gMA.unk_104 = 0;
             gMA.task_unk_98 = 0xf0;
-        } else {
+            break;
+
+        default:
             MA_DefaultNegaResProc();
+            break;
         }
     }
 
@@ -969,9 +973,15 @@ void MA_TCP_Disconnect(u8 unk_1)
 
 static void MATASK_TCP_Disconnect(void)
 {
-    if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY) &&
-            gMA.unk_80 != 0x24) {  // MAGIC
-        MA_DefaultNegaResProc();
+    if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY)) {
+        switch (gMA.unk_80) {
+        case 0x24:
+            break;
+
+        default:
+            MA_DefaultNegaResProc();
+            break;
+        }
     }
 
     switch (gMA.task_unk_98) {
@@ -1029,12 +1039,16 @@ void MA_TCP_SendRecv(u8 unk_1, int unk_2, u8 unk_3, int unk_4)
 static void MATASK_TCP_SendRecv(void)
 {
     if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY)) {
-        if (gMA.unk_80 == 0x15) {  // MAGIC
+        switch (gMA.unk_80) {
+        case 0x15:
             MA_DefaultNegaResProc();
             gMA.task_unk_98 = 0xf0;
             MAU_Socket_Delete((u32)gMA.unk_112);
-        } else {
+            break;
+
+        default:
             MA_DefaultNegaResProc();
+            break;
         }
     }
 
@@ -1087,12 +1101,16 @@ void MA_GetHostAddress(u8 *unk_1, char *unk_2)
 static void MATASK_GetHostAddress(void)
 {
     if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY)) {
-        if (gMA.unk_80 == 0x28) {  // MAGIC
+        switch (gMA.unk_80) {
+        case 0x28:
             gMA.unk_102 = 0x24;  // MAGIC
             gMA.unk_104 = 0;
             gMA.task_unk_98 = 0xf0;
-        } else {
+            break;
+
+        default:
             MA_DefaultNegaResProc();
+            break;
         }
     }
 
@@ -1964,31 +1982,33 @@ static void MATASK_P2P(void)
         gMA.condition &= ~MA_CONDITION_APIWAIT;
     }
 
-    if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY) &&
-            gMA.unk_80 == 0x15) {  // MAGIC
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
+    if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY)) {
+        switch (gMA.unk_80) {
+        case 0x15:
+            MA_ChangeSIOMode(MA_SIO_BYTE);
+            gMA.unk_92 = 0;
+            MA_ChangeSIOMode(MA_SIO_BYTE);
+            gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
+            gMA.counter = 0;
+            gMA.intr_sio_mode = 0;
+            gMA.status &= ~STATUS_UNK_0;
+            gMA.status &= ~STATUS_UNK_9;
+            gMA.status &= ~STATUS_UNK_10;
+            gMA.status &= ~STATUS_UNK_13;
+            gMA.status &= ~STATUS_UNK_2;
+            gMA.condition &= ~MA_CONDITION_PTP_GET;
+            gMA.condition &= ~MA_CONDITION_CONNECT;
 
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
+            gMA.condition &= 0xff;
+            gMA.condition = gMA.condition;
+            MAU_Socket_Clear();
+            gMA.condition &= 0xff;
+            gMA.condition = gMA.condition;
 
-        MA_SetApiError(MAAPIE_OFFLINE, 0);
-        MA_TaskSet(TASK_UNK_00, 0);
-        return;
+            MA_SetApiError(MAAPIE_OFFLINE, 0);
+            MA_TaskSet(TASK_UNK_00, 0);
+            return;
+        }
     }
 
     if (gMA.buffer_unk_480.size <= 1) return;
