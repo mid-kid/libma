@@ -629,254 +629,90 @@ void MA_InitLibraryMain(u8 *pHardwareType, int task)
     }
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MATASK_InitLibrary:
-    push	{r4, r5, lr}
-    ldr	r4, [pc, #60]
-    mov	r0, r4
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    cmp	r0, #238
-    bne	MATASK_InitLibrary+0x26
-    mov	r0, r4
-    add	r0, #80
-    ldrb	r0, [r0, #0]
-    cmp	r0, #17
-    beq	MATASK_InitLibrary+0x26
-    bl	MA_DefaultNegaResProc
-    mov	r0, r4
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    mov	r1, #251
-    strb	r1, [r0, #0]
-    ldr	r5, [pc, #24]
-    mov	r4, r5
-    add	r4, #98
-    ldrb	r0, [r4, #0]
-    cmp	r0, #2
-    beq	MATASK_InitLibrary+0x66
-    cmp	r0, #2
-    bgt	MATASK_InitLibrary+0x44
-    cmp	r0, #0
-    beq	MATASK_InitLibrary+0x58
-    cmp	r0, #1
-    beq	MATASK_InitLibrary+0x5e
-    b	MATASK_InitLibrary+0x1e6
-.align 2
-    .word gMA
+static void MATASK_InitLibrary(void)
+{
+    if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY)) {
+        switch (gMA.unk_80) {
+        case 0x11:
+            break;
 
-    cmp	r0, #250
-    beq	MATASK_InitLibrary+0x134
-    cmp	r0, #250
-    bgt	MATASK_InitLibrary+0x52
-    cmp	r0, #3
-    beq	MATASK_InitLibrary+0x7c
-    b	MATASK_InitLibrary+0x1e6
-    cmp	r0, #251
-    beq	MATASK_InitLibrary+0x142
-    b	MATASK_InitLibrary+0x1e6
-    bl	MABIOS_Start
-    b	MATASK_InitLibrary+0x138
-    ldrb	r0, [r4, #0]
-    add	r0, #1
-    ldrb	r1, [r4, #0]
-    strb	r0, [r4, #0]
-    bl	MABIOS_End
-    ldr	r0, [pc, #12]
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    add	r1, #1
-    ldrb	r2, [r0, #0]
-    strb	r1, [r0, #0]
-    b	MATASK_InitLibrary+0x1e6
-.align 2
-    .word gMA
+        default:
+            MA_DefaultNegaResProc();
+            gMA.task_unk_98 = 0xfb;
+            break;
+        }
+    }
 
-    ldr	r1, [r5, #112]
-    ldrb	r0, [r5, #6]
-    add	r0, #120
-    strb	r0, [r1, #0]
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    mov	r0, r5
-    add	r0, #92
-    ldrb	r1, [r0, #0]
-    mov	r4, #0
-    strb	r4, [r0, #0]
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    ldrb	r0, [r5, #5]
-    lsl	r0, r0, #1
-    mov	r1, r5
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r5, #12]
-    mov	r1, #0
-    strh	r0, [r5, #12]
-    str	r4, [r5, #60]
-    ldrb	r0, [r5, #4]
-    strb	r1, [r5, #4]
-    ldr	r0, [r5, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #96]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #92]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #88]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #72]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #68]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    mov	r4, #255
-    mov	r0, r4
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    bl	MAU_Socket_Clear
-    ldrh	r0, [r5, #2]
-    and	r4, r0
-    ldrh	r0, [r5, #2]
-    strh	r4, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    b	MATASK_InitLibrary+0x1e6
-.align 2
-    .word 0xfffffdff
-    .word 0xfffffbff
-    .word 0xffffdfff
-    .word 0x0000fff7
-    .word 0x0000ffef
+    switch (gMA.task_unk_98) {
+    case 0:
+        MABIOS_Start();
+        gMA.task_unk_98++;
+        break;
 
-    bl	MABIOS_End
-    ldrb	r0, [r4, #0]
-    add	r0, #1
-    ldrb	r1, [r4, #0]
-    strb	r0, [r4, #0]
-    b	MATASK_InitLibrary+0x1e6
-    mov	r0, r5
-    add	r0, #92
-    ldrb	r1, [r0, #0]
-    mov	r4, #0
-    strb	r4, [r0, #0]
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    ldrb	r0, [r5, #5]
-    lsl	r0, r0, #1
-    mov	r1, r5
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r5, #12]
-    mov	r1, #0
-    strh	r0, [r5, #12]
-    str	r4, [r5, #60]
-    ldrb	r0, [r5, #4]
-    strb	r1, [r5, #4]
-    ldr	r0, [r5, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #116]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #112]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #108]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #92]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #88]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    mov	r4, #255
-    mov	r0, r4
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    bl	MAU_Socket_Clear
-    ldrh	r0, [r5, #2]
-    and	r4, r0
-    ldrh	r0, [r5, #2]
-    strh	r4, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    mov	r0, r5
-    add	r0, #102
-    ldrb	r0, [r0, #0]
-    mov	r1, r5
-    add	r1, #104
-    ldrh	r1, [r1, #0]
-    bl	MA_SetApiError
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    pop	{r4, r5}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word 0xfffffdff
-    .word 0xfffffbff
-    .word 0xffffdfff
-    .word 0x0000fff7
-    .word 0x0000ffef
-.size MATASK_InitLibrary, .-MATASK_InitLibrary
-");
-#endif
+    case 1:
+        gMA.task_unk_98++;
+
+    case 2:
+        MABIOS_End();
+        gMA.task_unk_98++;
+        break;
+
+    case 3:
+        *gMA.unk_112 = gMA.adapter_type + 0x78;  // MAGIC
+
+        MA_ChangeSIOMode(MA_SIO_BYTE);
+        gMA.unk_92 = 0;
+        MA_ChangeSIOMode(MA_SIO_BYTE);
+        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
+        gMA.counter = 0;
+        gMA.intr_sio_mode = 0;
+        gMA.status &= ~STATUS_UNK_0;
+        gMA.status &= ~STATUS_UNK_9;
+        gMA.status &= ~STATUS_UNK_10;
+        gMA.status &= ~STATUS_UNK_13;
+        gMA.status &= ~STATUS_UNK_2;
+        gMA.condition &= ~MA_CONDITION_PTP_GET;
+        gMA.condition &= ~MA_CONDITION_CONNECT;
+
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+        MAU_Socket_Clear();
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+
+        MA_TaskSet(TASK_UNK_00, 0);
+        break;
+
+    case 0xfa:
+        MABIOS_End();
+        gMA.task_unk_98++;
+        break;
+
+    case 0xfb:
+        gMA.unk_92 = 0;
+        MA_ChangeSIOMode(MA_SIO_BYTE);
+        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
+        gMA.counter = 0;
+        gMA.intr_sio_mode = 0;
+        gMA.status &= ~STATUS_UNK_0;
+        gMA.status &= ~STATUS_UNK_9;
+        gMA.status &= ~STATUS_UNK_10;
+        gMA.status &= ~STATUS_UNK_13;
+        gMA.status &= ~STATUS_UNK_2;
+        gMA.condition &= ~MA_CONDITION_PTP_GET;
+        gMA.condition &= ~MA_CONDITION_CONNECT;
+
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+        MAU_Socket_Clear();
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+
+        MA_SetApiError(gMA.unk_102, gMA.unk_104);
+        MA_TaskSet(TASK_UNK_00, 0);
+        break;
+    }
+}
 
 void MA_TCP_Connect(u8 *unk_1, u8 *unk_2, u16 unk_3)
 {
