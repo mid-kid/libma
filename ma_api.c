@@ -2216,305 +2216,98 @@ void MA_Offline(void)
     ResetApiCallFlag();
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MATASK_Offline:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, r8
-    push	{r7}
-    ldr	r1, [pc, #60]
-    mov	r0, r1
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    mov	r3, r1
-    cmp	r0, #238
-    bne	MATASK_Offline+0x26
-    mov	r0, r3
-    add	r0, #80
-    ldrb	r0, [r0, #0]
-    cmp	r0, #21
-    bne	MATASK_Offline+0x26
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    mov	r0, #0
-    strb	r0, [r1, #0]
-    mov	r7, r3
-    mov	r6, r7
-    add	r6, #98
-    ldrb	r0, [r6, #0]
-    cmp	r0, #3
-    beq	MATASK_Offline+0x9c
-    cmp	r0, #3
-    bgt	MATASK_Offline+0x48
-    cmp	r0, #1
-    beq	MATASK_Offline+0x90
-    cmp	r0, #1
-    bgt	MATASK_Offline+0x96
-    cmp	r0, #0
-    beq	MATASK_Offline+0x68
-    b	MATASK_Offline+0x25c
-.align 2
-    .word gMA
+static void MATASK_Offline(void)
+{
+    if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY)) {
+        switch (gMA.unk_80) {
+        case 0x15:
+            gMA.task_unk_98 = 0;
+            break;
+        }
+    }
 
-    cmp	r0, #101
-    bne	MATASK_Offline+0x4e
-    b	MATASK_Offline+0x1a4
-    cmp	r0, #101
-    bgt	MATASK_Offline+0x5a
-    cmp	r0, #100
-    bne	MATASK_Offline+0x58
-    b	MATASK_Offline+0x160
-    b	MATASK_Offline+0x25c
-    cmp	r0, #102
-    bne	MATASK_Offline+0x60
-    b	MATASK_Offline+0x204
-    cmp	r0, #103
-    bne	MATASK_Offline+0x66
-    b	MATASK_Offline+0x228
-    b	MATASK_Offline+0x25c
-    mov	r1, r7
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    cmp	r0, #7
-    beq	MATASK_Offline+0x7c
-    ldrb	r0, [r1, #0]
-    cmp	r0, #8
-    beq	MATASK_Offline+0x7c
-    bl	MABIOS_PPPDisconnect
-    ldr	r0, [pc, #12]
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    add	r1, #1
-    ldrb	r2, [r0, #0]
-    strb	r1, [r0, #0]
-    b	MATASK_Offline+0x25c
-.align 2
-    .word gMA
+    switch (gMA.task_unk_98) {
+    case 0:
+        if (gMA.unk_92 != 7 && gMA.unk_92 != 8) {
+            MABIOS_PPPDisconnect();
+        }
+        gMA.task_unk_98++;
+        break;
 
-    bl	MABIOS_Offline
-    b	MATASK_Offline+0x21e
-    bl	MABIOS_End
-    b	MATASK_Offline+0x21e
-    ldrh	r1, [r7, #2]
-    ldr	r4, [pc, #172]
-    mov	r0, r4
-    and	r0, r1
-    ldrh	r1, [r7, #2]
-    mov	r5, #0
-    mov	r1, #0
-    mov	r8, r1
-    strh	r0, [r7, #2]
-    ldr	r0, [r7, #64]
-    ldr	r6, [pc, #156]
-    and	r0, r6
-    str	r0, [r7, #64]
-    mov	r0, r7
-    add	r0, #92
-    ldrb	r1, [r0, #0]
-    strb	r5, [r0, #0]
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    ldrb	r0, [r7, #5]
-    lsl	r0, r0, #1
-    mov	r1, r7
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r7, #12]
-    strh	r0, [r7, #12]
-    mov	r2, r8
-    str	r2, [r7, #60]
-    ldrb	r0, [r7, #4]
-    strb	r5, [r7, #4]
-    ldr	r0, [r7, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r7, #64]
-    ldr	r0, [r7, #64]
-    and	r0, r6
-    str	r0, [r7, #64]
-    ldr	r0, [r7, #64]
-    ldr	r1, [pc, #100]
-    and	r0, r1
-    str	r0, [r7, #64]
-    ldr	r0, [r7, #64]
-    ldr	r1, [pc, #96]
-    and	r0, r1
-    str	r0, [r7, #64]
-    ldr	r0, [r7, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r7, #64]
-    ldrh	r0, [r7, #2]
-    and	r4, r0
-    ldrh	r0, [r7, #2]
-    strh	r4, [r7, #2]
-    ldrh	r1, [r7, #2]
-    ldr	r0, [pc, #72]
-    and	r0, r1
-    ldrh	r1, [r7, #2]
-    strh	r0, [r7, #2]
-    ldrh	r1, [r7, #2]
-    mov	r4, #255
-    mov	r0, r4
-    and	r0, r1
-    ldrh	r1, [r7, #2]
-    strh	r0, [r7, #2]
-    ldrh	r0, [r7, #2]
-    ldrh	r1, [r7, #2]
-    strh	r0, [r7, #2]
-    bl	MAU_Socket_Clear
-    ldrh	r0, [r7, #2]
-    and	r4, r0
-    ldrh	r0, [r7, #2]
-    strh	r4, [r7, #2]
-    ldrh	r0, [r7, #2]
-    ldrh	r1, [r7, #2]
-    strh	r0, [r7, #2]
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    b	MATASK_Offline+0x25c
-.align 2
-    .word 0x0000fff7
-    .word 0xfffffdff
-    .word 0xfffffbff
-    .word 0xffffdfff
-    .word 0x0000ffef
+    case 1:
+        MABIOS_Offline();
+        gMA.task_unk_98++;
+        break;
 
-    bl	InitPrevBuf
-    mov	r4, #220
-    lsl	r4, r4, #2
-    add	r5, r7, r4
-    ldr	r1, [pc, #52]
-    mov	r0, r5
-    bl	MAU_strcpy
-    mov	r0, #240
-    lsl	r0, r0, #1
-    add	r4, r7, r0
-    mov	r0, #0
-    strh	r0, [r4, #0]
-    mov	r0, r7
-    add	r0, #212
-    str	r0, [r4, #4]
-    mov	r0, r5
-    bl	MAU_strlen
-    mov	r2, r0
-    lsl	r2, r2, #24
-    lsr	r2, r2, #24
-    mov	r0, r7
-    add	r0, #99
-    ldrb	r3, [r0, #0]
-    mov	r0, r4
-    mov	r1, r5
-    bl	MABIOS_Data
-    b	MATASK_Offline+0x21e
-.align 2
-    .word strEndMultiLine.25+0x8
+    case 2:
+        MABIOS_End();
+        gMA.task_unk_98++;
+        break;
 
-    mov	r1, #242
-    lsl	r1, r1, #1
-    add	r0, r7, r1
-    ldr	r0, [r0, #0]
-    add	r0, #1
-    mov	r2, #240
-    lsl	r2, r2, #1
-    add	r4, r7, r2
-    ldrh	r1, [r4, #0]
-    sub	r1, #1
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    bl	ConcatPrevBuf
-    ldr	r1, [pc, #40]
-    add	r0, r7, r1
-    ldr	r2, [pc, #40]
-    add	r1, r7, r2
-    ldrh	r1, [r1, #0]
-    bl	MAU_CheckCRLF
-    cmp	r0, #0
-    bne	MATASK_Offline+0x1f4
-    strh	r0, [r4, #0]
-    mov	r0, r7
-    add	r0, #212
-    str	r0, [r4, #4]
-    sub	r0, #113
-    ldrb	r3, [r0, #0]
-    mov	r0, r4
-    mov	r1, #0
-    mov	r2, #0
-    bl	MABIOS_Data
-    b	MATASK_Offline+0x25c
-    lsl	r0, r0, #0
-    lsl	r5, r7, #17
-    lsl	r0, r0, #0
-    lsl	r2, r7, #27
-    lsl	r0, r0, #0
-    ldrb	r0, [r7, #5]
-    lsl	r0, r0, #2
-    mov	r1, r7
-    add	r1, #44
-    add	r0, r0, r1
-    ldr	r0, [r0, #0]
-    str	r0, [r7, #112]
-    b	MATASK_Offline+0x21e
-    ldr	r0, [r7, #112]
-    sub	r0, #1
-    str	r0, [r7, #112]
-    cmp	r0, #0
-    bne	MATASK_Offline+0x25c
-    mov	r4, #240
-    lsl	r4, r4, #1
-    add	r0, r7, r4
-    mov	r1, r7
-    add	r1, #99
-    ldrb	r1, [r1, #0]
-    bl	MABIOS_TCPDisconnect
-    ldrb	r0, [r6, #0]
-    add	r0, #1
-    ldrb	r1, [r6, #0]
-    strb	r0, [r6, #0]
-    b	MATASK_Offline+0x25c
-    mov	r1, r3
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    mov	r0, #3
-    strb	r0, [r1, #0]
-    ldrh	r1, [r3, #2]
-    mov	r0, #255
-    and	r0, r1
-    ldrh	r1, [r3, #2]
-    mov	r2, #0
-    strh	r0, [r3, #2]
-    ldrh	r0, [r3, #2]
-    mov	r4, #128
-    lsl	r4, r4, #1
-    mov	r1, r4
-    orr	r0, r1
-    ldrh	r1, [r3, #2]
-    orr	r0, r2
-    strh	r0, [r3, #2]
-    mov	r0, r3
-    add	r0, #99
-    strb	r2, [r0, #0]
-    add	r0, #105
-    strb	r2, [r0, #0]
-    ldrb	r0, [r6, #0]
-    strb	r2, [r6, #0]
-    pop	{r3}
-    mov	r8, r3
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.size MATASK_Offline, .-MATASK_Offline
-");
-#endif
+    case 3:
+        gMA.condition &= ~MA_CONDITION_PTP_GET;
+        gMA.status &= ~STATUS_UNK_9;
+
+        gMA.unk_92 = 0;
+        MA_ChangeSIOMode(MA_SIO_BYTE);
+        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
+        gMA.counter = 0;
+        gMA.intr_sio_mode = 0;
+        gMA.status &= ~STATUS_UNK_0;
+        gMA.status &= ~STATUS_UNK_9;
+        gMA.status &= ~STATUS_UNK_10;
+        gMA.status &= ~STATUS_UNK_13;
+        gMA.status &= ~STATUS_UNK_2;
+        gMA.condition &= ~MA_CONDITION_PTP_GET;
+        gMA.condition &= ~MA_CONDITION_CONNECT;
+
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+        MAU_Socket_Clear();
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+
+        MA_TaskSet(TASK_UNK_00, 0);
+        MA_ChangeSIOMode(MA_SIO_BYTE);
+        break;
+
+    case 100:
+        InitPrevBuf();
+        MAU_strcpy(gMA.unk_880, POP3_Quit);
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_Data(&gMA.buffer_unk_480, gMA.unk_880, MAU_strlen(gMA.unk_880), gMA.sockets[0]);
+        gMA.task_unk_98++;
+        break;
+
+    case 101:
+        ConcatPrevBuf(gMA.buffer_unk_480.data + 1, gMA.buffer_unk_480.size - 1);
+        if (!MAU_CheckCRLF(gMA.prevbuf, gMA.prevbuf_size)) {
+            (&gMA.buffer_unk_480)->size = 0;
+            (&gMA.buffer_unk_480)->data = gMA.unk_212;
+            MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, gMA.sockets[0]);
+            break;
+        }
+        gMA.unk_112 = (u8 *)gMA.counter_timeout200msec[gMA.sio_mode];
+        gMA.task_unk_98++;
+        break;
+
+    case 102:
+        if (--gMA.unk_112 != 0) break;
+        MABIOS_TCPDisconnect(&gMA.buffer_unk_480, gMA.sockets[0]);
+        gMA.task_unk_98++;
+        break;
+
+    case 103:
+        gMA.unk_92 = 3;
+        gMA.condition &= ~MA_CONDITION_MASK;
+        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        gMA.sockets[0] = 0;
+        gMA.sockets_used[0] = FALSE;
+        gMA.task_unk_98 = 0;
+        break;
+    }
+}
 
 static int CheckSMTPResponse(char *response)
 {
