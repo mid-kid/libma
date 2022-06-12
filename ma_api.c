@@ -1055,456 +1055,165 @@ void MA_TelServer(const char *pTelNo, const char *pUserID, const char *pPassword
     }
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MATASK_TelServer:
-    push	{r4, r5, r6, r7, lr}
-    sub	sp, #4
-    ldr	r1, [pc, #32]
-    mov	r0, r1
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    cmp	r0, #238
-    bne	MATASK_TelServer+0xde
-    mov	r0, r1
-    add	r0, #80
-    ldrb	r0, [r0, #0]
-    sub	r0, #17
-    cmp	r0, #16
-    bhi	MATASK_TelServer+0xd0
-    lsl	r0, r0, #2
-    ldr	r1, [pc, #12]
-    add	r0, r0, r1
-    ldr	r0, [r0, #0]
-    mov	pc, r0
-.align 2
-    .word gMA
-    .word .L_MATASK_TelServer.0x30
-.L_MATASK_TelServer.0x30:
-    .word .L_MATASK_TelServer.0x30+0xae
-    .word .L_MATASK_TelServer.0x30+0x44
-    .word .L_MATASK_TelServer.0x30+0xae
-    .word .L_MATASK_TelServer.0x30+0xa0
-    .word .L_MATASK_TelServer.0x30+0xa0
-    .word .L_MATASK_TelServer.0x30+0xa0
-    .word .L_MATASK_TelServer.0x30+0x44
-    .word .L_MATASK_TelServer.0x30+0x44
-    .word .L_MATASK_TelServer.0x30+0x58
-    .word .L_MATASK_TelServer.0x30+0xa0
-    .word .L_MATASK_TelServer.0x30+0xa0
-    .word .L_MATASK_TelServer.0x30+0xa0
-    .word .L_MATASK_TelServer.0x30+0xa0
-    .word .L_MATASK_TelServer.0x30+0xa0
-    .word .L_MATASK_TelServer.0x30+0xa0
-    .word .L_MATASK_TelServer.0x30+0xa0
-    .word .L_MATASK_TelServer.0x30+0x7c
+static void MATASK_TelServer(void)
+{
+    if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY)) {
+        switch(gMA.unk_80) {
+        case 0x11:
+        case 0x13:
+            break;
 
-    bl	MA_DefaultNegaResProc
-    ldr	r0, [pc, #8]
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    mov	r1, #250
-    b	MATASK_TelServer+0xdc
-.align 2
-    .word gMA
+        case 0x12:
+        case 0x17:
+        case 0x18:
+            MA_DefaultNegaResProc();
+            gMA.task_unk_98 = 0xfa;
+            break;
 
-    ldr	r2, [pc, #28]
-    mov	r3, r2
-    add	r3, #102
-    mov	r1, #0
-    mov	r0, #20
-    strb	r0, [r3, #0]
-    mov	r0, r2
-    add	r0, #104
-    strh	r1, [r0, #0]
-    mov	r1, r2
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    mov	r0, #250
-    strb	r0, [r1, #0]
-    b	MATASK_TelServer+0xde
-.align 2
-    .word gMA
+        case 0x19:
+            gMA.unk_102 = 0x14;  // MAGIC
+            gMA.unk_104 = 0;
+            gMA.task_unk_98 = 0xfa;
+            break;
 
-    ldr	r2, [pc, #28]
-    mov	r3, r2
-    add	r3, #102
-    mov	r1, #0
-    mov	r0, #34
-    strb	r0, [r3, #0]
-    mov	r0, r2
-    add	r0, #104
-    strh	r1, [r0, #0]
-    mov	r1, r2
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    mov	r0, #249
-    strb	r0, [r1, #0]
-    b	MATASK_TelServer+0xde
-.align 2
-    .word gMA
+        case 0x21:
+            gMA.unk_102 = 0x22;  // MAGIC
+            gMA.unk_104 = 0;
+            gMA.task_unk_98 = 0xf9;
+            break;
 
-    bl	MA_DefaultNegaResProc
-    ldr	r0, [pc, #44]
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    mov	r1, #251
-    strb	r1, [r0, #0]
-    ldr	r5, [pc, #36]
-    mov	r6, r5
-    add	r6, #98
-    ldrb	r0, [r6, #0]
-    cmp	r0, #6
-    bne	MATASK_TelServer+0xec
-    b	MATASK_TelServer+0x242
-    cmp	r0, #6
-    bgt	MATASK_TelServer+0x128
-    cmp	r0, #2
-    beq	MATASK_TelServer+0x170
-    cmp	r0, #2
-    bgt	MATASK_TelServer+0x108
-    cmp	r0, #0
-    beq	MATASK_TelServer+0x15a
-    cmp	r0, #1
-    beq	MATASK_TelServer+0x160
-    b	MATASK_TelServer+0x3ae
-.align 2
-    .word gMA
+        default:
+            MA_DefaultNegaResProc();
+            gMA.task_unk_98 = 0xfb;
+            break;
+        }
+    }
 
-    cmp	r0, #4
-    beq	MATASK_TelServer+0x1b0
-    cmp	r0, #4
-    bgt	MATASK_TelServer+0x1f8
-    mov	r1, #242
-    lsl	r1, r1, #1
-    add	r0, r5, r1
-    ldr	r0, [r0, #0]
-    ldrb	r0, [r0, #0]
-    cmp	r0, #255
-    bne	MATASK_TelServer+0x186
-    mov	r2, r5
-    add	r2, #102
-    mov	r1, #0
-    mov	r0, #17
-    b	MATASK_TelServer+0x220
-    cmp	r0, #9
-    bne	MATASK_TelServer+0x12e
-    b	MATASK_TelServer+0x2a6
-    cmp	r0, #9
-    bgt	MATASK_TelServer+0x140
-    cmp	r0, #7
-    bne	MATASK_TelServer+0x138
-    b	MATASK_TelServer+0x26c
-    cmp	r0, #8
-    bne	MATASK_TelServer+0x13e
-    b	MATASK_TelServer+0x27e
-    b	MATASK_TelServer+0x3ae
-    cmp	r0, #250
-    bne	MATASK_TelServer+0x146
-    b	MATASK_TelServer+0x2fc
-    cmp	r0, #250
-    bgt	MATASK_TelServer+0x152
-    cmp	r0, #249
-    bne	MATASK_TelServer+0x150
-    b	MATASK_TelServer+0x2f6
-    b	MATASK_TelServer+0x3ae
-    cmp	r0, #251
-    bne	MATASK_TelServer+0x158
-    b	MATASK_TelServer+0x30a
-    b	MATASK_TelServer+0x3ae
-    bl	MABIOS_Start
-    b	MATASK_TelServer+0x300
-    ldrb	r0, [r6, #0]
-    add	r0, #1
-    ldrb	r1, [r6, #0]
-    strb	r0, [r6, #0]
-    mov	r0, #1
-    bl	MABIOS_ChangeClock
-    b	MATASK_TelServer+0x3ae
-    mov	r2, #240
-    lsl	r2, r2, #1
-    add	r0, r5, r2
-    mov	r1, #0
-    strh	r1, [r0, #0]
-    mov	r1, r5
-    add	r1, #84
-    str	r1, [r0, #4]
-    bl	MABIOS_CheckStatus
-    b	MATASK_TelServer+0x300
-    mov	r0, r5
-    add	r0, #101
-    ldrb	r1, [r0, #0]
-    cmp	r1, #0
-    bne	MATASK_TelServer+0x1a8
-    mov	r4, #240
-    lsl	r4, r4, #1
-    add	r0, r5, r4
-    strh	r1, [r0, #0]
-    mov	r1, r5
-    add	r1, #212
-    str	r1, [r0, #4]
-    mov	r1, #0
-    mov	r2, #128
-    bl	MABIOS_EEPROM_Read
-    b	MATASK_TelServer+0x300
-    ldrb	r0, [r6, #0]
-    mov	r0, #6
-    strb	r0, [r6, #0]
-    b	MATASK_TelServer+0x3ae
-    mov	r0, r5
-    add	r0, #213
-    bl	EEPROMRegistrationCheck
-    mov	r1, r0
-    cmp	r1, #0
-    bne	MATASK_TelServer+0x1c6
-    mov	r2, r5
-    add	r2, #102
-    mov	r0, #37
-    b	MATASK_TelServer+0x220
-    ldr	r7, [pc, #44]
-    add	r0, r5, r7
-    mov	r2, #242
-    lsl	r2, r2, #1
-    add	r1, r5, r2
-    ldr	r1, [r1, #0]
-    add	r1, #1
-    mov	r2, #128
-    bl	MAU_memcpy
-    mov	r4, #240
-    lsl	r4, r4, #1
-    add	r0, r5, r4
-    mov	r1, #0
-    strh	r1, [r0, #0]
-    mov	r1, r5
-    add	r1, #212
-    str	r1, [r0, #4]
-    mov	r1, #128
-    mov	r2, #64
-    bl	MABIOS_EEPROM_Read
-    b	MATASK_TelServer+0x300
-    lsl	r5, r7, #17
-    lsl	r0, r0, #0
-    ldr	r7, [pc, #52]
-    add	r0, r5, r7
-    mov	r2, #242
-    lsl	r2, r2, #1
-    add	r1, r5, r2
-    ldr	r1, [r1, #0]
-    add	r1, #1
-    mov	r2, #64
-    bl	MAU_memcpy
-    ldr	r4, [pc, #36]
-    add	r0, r5, r4
-    bl	EEPROMSumCheck
-    mov	r1, r0
-    cmp	r1, #0
-    bne	MATASK_TelServer+0x238
-    mov	r2, r5
-    add	r2, #102
-    mov	r0, #20
-    strb	r0, [r2, #0]
-    mov	r0, r5
-    add	r0, #104
-    strh	r1, [r0, #0]
-    ldrb	r0, [r6, #0]
-    mov	r0, #250
-    strb	r0, [r6, #0]
-    b	MATASK_TelServer+0x3ae
-    lsl	r5, r7, #19
-    lsl	r0, r0, #0
-    lsl	r5, r7, #17
-    lsl	r0, r0, #0
-    mov	r1, r5
-    add	r1, #101
-    mov	r0, #1
-    strb	r0, [r1, #0]
-    b	MATASK_TelServer+0x300
-    mov	r7, #207
-    lsl	r7, r7, #2
-    add	r0, r5, r7
-    ldr	r2, [pc, #24]
-    add	r1, r5, r2
-    mov	r2, #8
-    bl	MAU_memcpy
-    mov	r4, #209
-    lsl	r4, r4, #2
-    add	r0, r5, r4
-    ldr	r7, [pc, #12]
-    add	r1, r5, r7
-    mov	r2, #44
-    bl	MAU_memcpy
-    b	MATASK_TelServer+0x300
-    lsl	r1, r0, #18
-    lsl	r0, r0, #0
-    lsl	r7, r0, #19
-    lsl	r0, r0, #0
-    ldrb	r0, [r5, #6]
-    bl	MA_GetCallTypeFromHarwareType
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    ldr	r1, [r5, #112]
-    bl	MABIOS_Tel
-    b	MATASK_TelServer+0x300
-    mov	r1, #240
-    lsl	r1, r1, #1
-    add	r0, r5, r1
-    mov	r1, #0
-    strh	r1, [r0, #0]
-    mov	r1, r5
-    add	r1, #212
-    str	r1, [r0, #4]
-    ldr	r1, [r5, #116]
-    ldr	r2, [r5, #120]
-    mov	r4, #207
-    lsl	r4, r4, #2
-    add	r3, r5, r4
-    mov	r7, #208
-    lsl	r7, r7, #2
-    add	r4, r5, r7
-    str	r4, [sp, #0]
-    bl	MABIOS_PPPConnect
-    b	MATASK_TelServer+0x300
-    mov	r1, #242
-    lsl	r1, r1, #1
-    add	r0, r5, r1
-    ldr	r1, [r0, #0]
-    ldrb	r0, [r1, #0]
-    mov	r2, r5
-    add	r2, #206
-    strb	r0, [r2, #0]
-    ldrb	r0, [r1, #1]
-    add	r2, #1
-    strb	r0, [r2, #0]
-    ldrb	r2, [r1, #2]
-    mov	r0, r5
-    add	r0, #208
-    strb	r2, [r0, #0]
-    ldrb	r0, [r1, #3]
-    mov	r1, r5
-    add	r1, #209
-    strb	r0, [r1, #0]
-    sub	r1, #117
-    ldrb	r0, [r1, #0]
-    mov	r0, #3
-    strb	r0, [r1, #0]
-    ldrh	r1, [r5, #2]
-    mov	r0, #255
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    mov	r2, #128
-    lsl	r2, r2, #1
-    mov	r0, r2
-    ldrh	r2, [r5, #2]
-    orr	r0, r1
-    strh	r0, [r5, #2]
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    b	MATASK_TelServer+0x3ae
-    bl	MABIOS_Offline
-    b	MATASK_TelServer+0x300
-    bl	MABIOS_End
-    ldrb	r0, [r6, #0]
-    add	r0, #1
-    ldrb	r1, [r6, #0]
-    strb	r0, [r6, #0]
-    b	MATASK_TelServer+0x3ae
-    mov	r0, r5
-    add	r0, #92
-    ldrb	r1, [r0, #0]
-    mov	r4, #0
-    strb	r4, [r0, #0]
-    mov	r0, #0
-    bl	MA_ChangeSIOMode
-    ldrb	r0, [r5, #5]
-    lsl	r0, r0, #1
-    mov	r1, r5
-    add	r1, #8
-    add	r0, r0, r1
-    ldrh	r0, [r0, #0]
-    ldrh	r1, [r5, #12]
-    mov	r1, #0
-    strh	r0, [r5, #12]
-    str	r4, [r5, #60]
-    ldrb	r0, [r5, #4]
-    strb	r1, [r5, #4]
-    ldr	r0, [r5, #64]
-    mov	r1, #2
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #120]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #116]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #112]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r0, [r5, #64]
-    mov	r1, #5
-    neg	r1, r1
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #96]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #92]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    mov	r4, #255
-    mov	r0, r4
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    bl	MAU_Socket_Clear
-    ldrh	r0, [r5, #2]
-    and	r4, r0
-    ldrh	r0, [r5, #2]
-    strh	r4, [r5, #2]
-    ldrh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    mov	r0, r5
-    add	r0, #102
-    ldrb	r0, [r0, #0]
-    mov	r1, r5
-    add	r1, #104
-    ldrh	r1, [r1, #0]
-    bl	MA_SetApiError
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    add	sp, #4
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word 0xfffffdff
-    .word 0xfffffbff
-    .word 0xffffdfff
-    .word 0x0000fff7
-    .word 0x0000ffef
-.size MATASK_TelServer, .-MATASK_TelServer
-");
-#endif
+    switch (gMA.task_unk_98) {
+    case 0:
+        MABIOS_Start();
+        gMA.task_unk_98++;
+        break;
+
+    case 1:
+        gMA.task_unk_98++;
+        MABIOS_ChangeClock(MA_SIO_WORD);
+        break;
+
+    case 2:
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_84;
+        MABIOS_CheckStatus(&gMA.buffer_unk_480);
+        gMA.task_unk_98++;
+        break;
+
+    case 3:
+        if (gMA.buffer_unk_480.data[0] == 0xff) {
+            gMA.unk_102 = 0x11;
+            gMA.unk_104 = 0;
+            gMA.task_unk_98 = 0xfa;
+            break;
+        }
+        if (gMA.unk_101 == 0) {
+            (&gMA.buffer_unk_480)->size = 0;
+            (&gMA.buffer_unk_480)->data = gMA.unk_212;
+            MABIOS_EEPROM_Read(&gMA.buffer_unk_480, 0, 0x80);
+            gMA.task_unk_98++;
+            break;
+        }
+        gMA.task_unk_98 = 6;
+        break;
+
+    case 4:
+        if (!EEPROMRegistrationCheck(&gMA.unk_212[1])) {
+            gMA.unk_102 = 0x25;  // MAGIC
+            gMA.unk_104 = 0;
+            gMA.task_unk_98 = 0xfa;
+            return;
+        }
+        MAU_memcpy(gMA.prevbuf, &gMA.buffer_unk_480.data[1], 0x80);
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_EEPROM_Read(&gMA.buffer_unk_480, 0x80, 0x40);
+        gMA.task_unk_98++;
+        break;
+
+    case 5:
+        MAU_memcpy(&gMA.eeprom_unk_1275[2], &gMA.buffer_unk_480.data[1], 0x40);
+        if (!EEPROMSumCheck(gMA.prevbuf)) {
+            gMA.unk_102 = 0x14;
+            gMA.unk_104 = 0;
+            gMA.task_unk_98 = 0xfa;
+            return;
+        }
+        gMA.unk_101 = 1;
+        gMA.task_unk_98++;
+        break;
+
+    case 6:
+        MAU_memcpy(gMA.unk_828, &gMA.prevbuf[4], 8);
+        MAU_memcpy(gMA.smtp_server, gMA.eeprom_unk_1223, 0x2c);
+        gMA.task_unk_98++;
+        break;
+
+    case 7:
+        MABIOS_Tel(MA_GetCallTypeFromHarwareType(gMA.adapter_type), gMA.unk_112);
+        gMA.task_unk_98++;
+        break;
+
+    case 8:
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_PPPConnect(&gMA.buffer_unk_480, (char *)gMA.unk_116, (char *)gMA.unk_120, gMA.unk_828, gMA.unk_832);
+        gMA.task_unk_98++;
+        break;
+
+    case 9:
+        gMA.local_address[0] = gMA.buffer_unk_480.data[0];
+        gMA.local_address[1] = gMA.buffer_unk_480.data[1];
+        gMA.local_address[2] = gMA.buffer_unk_480.data[2];
+        gMA.local_address[3] = gMA.buffer_unk_480.data[3];
+        gMA.unk_92 = 3;
+        gMA.condition &= ~MA_CONDITION_MASK;
+        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_TaskSet(TASK_UNK_00, 0);
+        break;
+
+    case 0xf9:
+        MABIOS_Offline();
+        gMA.task_unk_98++;
+        break;
+
+    case 0xfa:
+        MABIOS_End();
+        gMA.task_unk_98++;
+        break;
+
+    case 0xfb:
+        gMA.unk_92 = 0;
+        MA_ChangeSIOMode(MA_SIO_BYTE);
+        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
+        gMA.counter = 0;
+        gMA.intr_sio_mode = 0;
+        gMA.status &= ~STATUS_UNK_0;
+        gMA.status &= ~STATUS_UNK_9;
+        gMA.status &= ~STATUS_UNK_10;
+        gMA.status &= ~STATUS_UNK_13;
+        gMA.status &= ~STATUS_UNK_2;
+        gMA.condition &= ~MA_CONDITION_PTP_GET;
+        gMA.condition &= ~MA_CONDITION_CONNECT;
+
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+        MAU_Socket_Clear();
+        gMA.condition &= 0xff;
+        gMA.condition = gMA.condition;
+
+        MA_SetApiError(gMA.unk_102, gMA.unk_104);
+        MA_TaskSet(TASK_UNK_00, 0);
+        break;
+    }
+}
 
 void MA_Tel(const char *pTelNo)
 {

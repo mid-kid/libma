@@ -181,7 +181,8 @@ typedef struct {
     MA_BUF buffer_recv;
     MA_BUF *buffer_recv_ptr;
     MA_IOBUF *iobuf_sio_tx;
-    u8 _828[8];
+    u8 unk_828[4];
+    u8 unk_832[4];
     u8 smtp_server[20];
     u8 pop3_server[20];
     u8 _876[4];
@@ -190,7 +191,7 @@ typedef struct {
     u8 prevbuf[12];
     u8 eeprom_unk_1161[32];
     u8 eeprom_unk_1193[30];
-    u8 _1223[44];
+    u8 eeprom_unk_1223[44];
     u8 eeprom_telno[EEPROM_TELNO_SIZE];
     u8 eeprom_unk_1275[16];
     u8 _1291[495];
