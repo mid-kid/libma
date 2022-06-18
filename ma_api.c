@@ -219,17 +219,17 @@ static int MA_ApiPreExe(u8 unk_1)
     return TRUE;
 }
 
-static void MakeEndLineBuffer(u8 *unk_1, int size)
+static void MakeEndLineBuffer(u8 *end, int size)
 {
     gMA.unk_1788[5] = 0;
     if (size == 0) return;
-    if (unk_1 == NULL) return;
+    if (end == NULL) return;
 
     if (size >= 5) {
-        MAU_memcpy(gMA.unk_1788, unk_1, 5);
+        MAU_memcpy(gMA.unk_1788, end, 5);
     } else {
-        MAU_memcpy(gMA.unk_1788, gMA.unk_1788 + size, 5 - size);
-        MAU_memcpy(&gMA.unk_1788[5 - size], unk_1, size);
+        MAU_memcpy(gMA.unk_1788, &gMA.unk_1788[size], 5 - size);
+        MAU_memcpy(&gMA.unk_1788[5 - size], end, size);
     }
 }
 
@@ -257,7 +257,7 @@ static const char POP3_Stat[] asm(".LPOP3_Stat") = "STAT\r\n";
 static const char POP3_List[] asm(".LPOP3_List") = "LIST ";
 static const char POP3_Retr[] asm(".LPOP3_Retr") = "RETR ";
 static const char POP3_Dele[] asm(".LPOP3_Dele") = "DELE ";
-static const char POP3_Top[]  asm(".LPOP3_Top") = "TOP ";
+static const char POP3_Top[] asm(".LPOP3_Top") = "TOP ";
 static const char POP3_Zero[] asm(".LPOP3_Zero") = " 0\r\n";
 
 static void InitPrevBuf(void)
@@ -1109,7 +1109,7 @@ static void MATASK_TelServer(void)
 
     case 3:
         if (gMA.buffer_unk_480.data[0] == 0xff) {
-            gMA.unk_102 = 0x11;
+            gMA.unk_102 = 0x11;  // MAGIC
             gMA.unk_104 = 0;
             gMA.task_unk_98 = 0xfa;
             break;
@@ -2251,11 +2251,10 @@ MATASK_SMTP_Connect:
     mov	r2, #0
     bl	MABIOS_Data
     b	MATASK_SMTP_Connect+0x446
-    lsl	r0, r0, #0
-    lsl	r5, r7, #17
-    lsl	r0, r0, #0
-    lsl	r2, r7, #27
-    lsl	r0, r0, #0
+.align 2
+    .word 0x0000047d
+    .word 0x000006fa
+
     mov	r0, r4
     bl	CheckSMTPResponse
     ldr	r1, [pc, #76]
@@ -2996,11 +2995,10 @@ MATASK_SMTP_Send:
     mov	r2, #0
     bl	MABIOS_Data
     b	MATASK_SMTP_Send+0x42a
-    lsl	r0, r0, #0
-    lsl	r5, r7, #17
-    lsl	r0, r0, #0
-    lsl	r2, r7, #27
-    lsl	r0, r0, #0
+.align 2
+    .word 0x0000047d
+    .word 0x000006fa
+
     mov	r0, r4
     bl	CheckSMTPResponse
     ldr	r1, [pc, #72]
@@ -3542,10 +3540,10 @@ MATASK_POP3_Connect:
     ldrb	r3, [r0, #0]
     mov	r0, r7
     b	MATASK_POP3_Connect+0x33e
-    lsl	r5, r7, #17
-    lsl	r0, r0, #0
-    lsl	r2, r7, #27
-    lsl	r0, r0, #0
+.align 2
+    .word 0x0000047d
+    .word 0x000006fa
+
     mov	r0, r4
     bl	CheckPOP3Response
     mov	r1, r0
@@ -3626,11 +3624,10 @@ MATASK_POP3_Connect:
     ldrb	r3, [r0, #0]
     mov	r0, r7
     b	MATASK_POP3_Connect+0x33e
-    lsl	r0, r0, #0
-    lsl	r5, r7, #17
-    lsl	r0, r0, #0
-    lsl	r2, r7, #27
-    lsl	r0, r0, #0
+.align 2
+    .word 0x0000047d
+    .word 0x000006fa
+
     mov	r0, r4
     bl	CheckPOP3Response
     mov	r1, r0
@@ -3713,10 +3710,10 @@ MATASK_POP3_Connect:
     mov	r2, #0
     bl	MABIOS_Data
     b	MATASK_POP3_Connect+0x422
-    lsl	r5, r7, #17
-    lsl	r0, r0, #0
-    lsl	r2, r7, #27
-    lsl	r0, r0, #0
+.align 2
+    .word 0x0000047d
+    .word 0x000006fa
+
     mov	r0, r7
     bl	CheckPOP3Response
     mov	r1, r0
@@ -4750,485 +4747,146 @@ void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
     ResetApiCallFlag();
 }
 
-#if 0
-#else
-asm("
-.lcomm cp.223, 0x4
-.lcomm dataLen.224, 0x4
-.lcomm pop3res.225, 0x4
+static void MATASK_POP3_Head(void)
+{
+    static const char *cp asm("cp.223");
+    static int dataLen asm("dataLen.224");
+    static int pop3res asm("pop3res.225");
 
-.align 2
-.thumb_func
-MATASK_POP3_Head:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, sl
-    mov	r6, r9
-    mov	r5, r8
-    push	{r5, r6, r7}
-    ldr	r4, [pc, #48]
-    mov	r0, r4
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    cmp	r0, #238
-    bne	MATASK_POP3_Head+0x52
-    mov	r0, r4
-    add	r0, #80
-    ldrb	r0, [r0, #0]
-    cmp	r0, #21
-    bne	MATASK_POP3_Head+0x40
-    mov	r2, r4
-    add	r2, #102
-    mov	r1, #0
-    mov	r0, #36
-    strb	r0, [r2, #0]
-    mov	r0, r4
-    add	r0, #104
-    strh	r1, [r0, #0]
-    mov	r1, r4
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    mov	r0, #240
-    strb	r0, [r1, #0]
-    b	MATASK_POP3_Head+0x52
-.align 2
-    .word gMA
+    if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY)) {
+        switch (gMA.unk_80) {
+        case 0x15:
+            gMA.unk_102 = 0x24;
+            gMA.unk_104 = 0;
+            gMA.task_unk_98 = 0xf0;
+            break;
 
-    cmp	r0, #36
-    beq	MATASK_POP3_Head+0x52
-    bl	MA_DefaultNegaResProc
-    mov	r0, r4
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    mov	r1, #241
-    strb	r1, [r0, #0]
-    bl	MA_GetCondition
-    mov	r1, #64
-    and	r1, r0
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    mov	r9, r1
-    cmp	r1, #0
-    beq	MATASK_POP3_Head+0xa4
-    ldr	r3, [pc, #56]
-    mov	r1, r3
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    mov	r0, #3
-    strb	r0, [r1, #0]
-    ldrh	r1, [r3, #2]
-    mov	r0, #255
-    and	r0, r1
-    ldrh	r1, [r3, #2]
-    mov	r2, #0
-    strh	r0, [r3, #2]
-    ldrh	r0, [r3, #2]
-    mov	r4, #128
-    lsl	r4, r4, #1
-    mov	r1, r4
-    orr	r0, r1
-    ldrh	r1, [r3, #2]
-    orr	r0, r2
-    strh	r0, [r3, #2]
-    mov	r0, r3
-    add	r0, #99
-    strb	r2, [r0, #0]
-    add	r0, #105
-    strb	r2, [r0, #0]
-    mov	r0, #49
-    mov	r1, #0
-    bl	MA_SetApiError
-    b	MATASK_POP3_Head+0x358
-.align 2
-    .word gMA
+        case 0x24:
+            break;
 
-    ldr	r6, [pc, #32]
-    mov	r0, #98
-    add	r0, r0, r6
-    mov	r8, r0
-    ldrb	r0, [r0, #0]
-    mov	r4, r0
-    mov	r7, r6
-    cmp	r4, #100
-    bne	MATASK_POP3_Head+0xb8
-    b	MATASK_POP3_Head+0x358
-    cmp	r4, #100
-    bgt	MATASK_POP3_Head+0xcc
-    cmp	r4, #0
-    beq	MATASK_POP3_Head+0xda
-    cmp	r4, #1
-    beq	MATASK_POP3_Head+0x11a
-    b	MATASK_POP3_Head+0x3ca
-.align 2
-    .word gMA
+        default:
+            MA_DefaultNegaResProc();
+            gMA.task_unk_98 = 0xf1;
+            break;
+        }
+    }
 
-    cmp	r4, #240
-    bne	MATASK_POP3_Head+0xd2
-    b	MATASK_POP3_Head+0x362
-    cmp	r4, #241
-    bne	MATASK_POP3_Head+0xd8
-    b	MATASK_POP3_Head+0x386
-    b	MATASK_POP3_Head+0x3ca
-    bl	InitPrevBuf
-    mov	r1, #240
-    lsl	r1, r1, #1
-    add	r4, r6, r1
-    mov	r2, r9
-    strh	r2, [r4, #0]
-    mov	r0, r6
-    add	r0, #212
-    str	r0, [r4, #4]
-    mov	r3, #220
-    lsl	r3, r3, #2
-    add	r5, r6, r3
-    mov	r0, r5
-    bl	MAU_strlen
-    mov	r2, r0
-    lsl	r2, r2, #24
-    lsr	r2, r2, #24
-    mov	r0, r6
-    add	r0, #99
-    ldrb	r3, [r0, #0]
-    mov	r0, r4
-    mov	r1, r5
-    bl	MABIOS_Data
-    mov	r4, r8
-    ldrb	r0, [r4, #0]
-    add	r0, #1
-    ldrb	r1, [r4, #0]
-    strb	r0, [r4, #0]
-    b	MATASK_POP3_Head+0x3ca
-    ldr	r2, [pc, #108]
-    mov	r0, #240
-    lsl	r0, r0, #1
-    add	r0, r0, r6
-    mov	sl, r0
-    ldrh	r0, [r0, #0]
-    sub	r3, r0, #1
-    str	r3, [r2, #0]
-    ldr	r0, [r6, #64]
-    mov	r1, #128
-    lsl	r1, r1, #8
-    and	r0, r1
-    cmp	r0, #0
-    beq	MATASK_POP3_Head+0x138
-    b	MATASK_POP3_Head+0x2cc
-    ldr	r0, [r6, #112]
-    cmp	r0, #0
-    bne	MATASK_POP3_Head+0x140
-    b	MATASK_POP3_Head+0x2d4
-    cmp	r3, #1
-    bgt	MATASK_POP3_Head+0x146
-    b	MATASK_POP3_Head+0x2d4
-    ldr	r1, [pc, #68]
-    ldr	r0, [r1, #0]
-    cmp	r0, #0
-    bne	MATASK_POP3_Head+0x216
-    ldr	r7, [pc, #64]
-    mov	r2, #242
-    lsl	r2, r2, #1
-    add	r5, r6, r2
-    ldr	r0, [r5, #0]
-    add	r0, #1
-    mov	r1, r3
-    bl	MAU_SearchCRLF
-    mov	r1, r0
-    str	r1, [r7, #0]
-    cmp	r1, #0
-    bne	MATASK_POP3_Head+0x194
-    ldr	r0, [r5, #0]
-    add	r0, #1
-    ldr	r3, [pc, #24]
-    ldrh	r1, [r3, #0]
-    bl	ConcatPrevBuf
-    mov	r0, r9
-    mov	r4, sl
-    strh	r0, [r4, #0]
-    mov	r0, r6
-    add	r0, #212
-    str	r0, [r4, #4]
-    sub	r0, #113
-    ldrb	r3, [r0, #0]
-    mov	r0, sl
-    b	MATASK_POP3_Head+0x342
-.align 2
-    .word dataLen.224
-    .word gMA+0x8c
-    .word cp.223
+    if (MA_GetCondition() & MA_CONDITION_UNK_6) {
+        gMA.unk_92 = 3;
+        gMA.condition &= ~MA_CONDITION_MASK;
+        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        gMA.sockets[0] = 0;
+        gMA.sockets_used[0] = FALSE;
+        MA_SetApiError(MAAPIE_POP3, 0);
+        MA_TaskSet(TASK_UNK_00, 0);
+        return;
+    }
 
-    ldr	r2, [r5, #0]
-    add	r0, r2, #1
-    sub	r1, #1
-    sub	r1, r1, r2
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    bl	ConcatPrevBuf
-    ldr	r1, [pc, #40]
-    add	r0, r6, r1
-    bl	CheckPOP3Response
-    mov	r1, r0
-    ldr	r0, [pc, #36]
-    str	r1, [r0, #0]
-    cmp	r1, #0
-    bne	MATASK_POP3_Head+0x1e0
-    ldr	r2, [r7, #0]
-    sub	r2, #1
-    ldr	r1, [r5, #0]
-    sub	r1, r2, r1
-    ldr	r3, [pc, #24]
-    ldr	r0, [r3, #0]
-    sub	r0, r0, r1
-    str	r0, [r3, #0]
-    str	r2, [r5, #0]
-    ldr	r0, [pc, #16]
-    str	r4, [r0, #0]
-    mov	r7, r6
-    b	MATASK_POP3_Head+0x216
-.align 2
-    .word 0x0000047d
-    .word pop3res.225
-    .word dataLen.224
-    .word gMA+0x8c
+    switch (gMA.task_unk_98) {
+    case 0:
+        InitPrevBuf();
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_Data(&gMA.buffer_unk_480, gMA.unk_880, MAU_strlen(gMA.unk_880), gMA.sockets[0]);
+        gMA.task_unk_98++;
+        return;
 
-    cmp	r1, #1
-    bne	MATASK_POP3_Head+0x1fc
-    mov	r1, r6
-    add	r1, #102
-    mov	r0, #49
-    strb	r0, [r1, #0]
-    add	r1, #2
-    mov	r0, #4
-    strh	r0, [r1, #0]
-    mov	r1, r8
-    ldrb	r0, [r1, #0]
-    mov	r0, #240
-    strb	r0, [r1, #0]
-    b	MATASK_POP3_Head+0x3ca
-    mov	r1, r6
-    add	r1, #102
-    mov	r0, #49
-    strb	r0, [r1, #0]
-    mov	r0, r6
-    add	r0, #104
-    mov	r2, r9
-    strh	r2, [r0, #0]
-    mov	r3, r8
-    ldrb	r0, [r3, #0]
-    mov	r0, #240
-    strb	r0, [r3, #0]
-    b	MATASK_POP3_Head+0x3ca
-    ldr	r3, [r7, #116]
-    ldr	r4, [pc, #56]
-    ldr	r2, [r4, #0]
-    cmp	r3, r2
-    bcc	MATASK_POP3_Head+0x25c
-    ldr	r0, [r7, #112]
-    mov	r3, #242
-    lsl	r3, r3, #1
-    add	r1, r7, r3
-    ldr	r1, [r1, #0]
-    add	r1, #1
-    bl	MAU_memcpy
-    ldr	r0, [r7, #112]
-    ldr	r2, [r4, #0]
-    add	r0, r0, r2
-    str	r0, [r7, #112]
-    ldr	r0, [r7, #116]
-    sub	r0, r0, r2
-    str	r0, [r7, #116]
-    ldrh	r1, [r7, #2]
-    ldr	r0, [pc, #20]
-    and	r0, r1
-    ldrh	r1, [r7, #2]
-    strh	r0, [r7, #2]
-    ldr	r1, [r7, #120]
-    ldrh	r0, [r1, #0]
-    add	r0, r0, r2
-    strh	r0, [r1, #0]
-    b	MATASK_POP3_Head+0x2d4
-.align 2
-    .word dataLen.224
-    .word 0x0000fffb
+    case 1:
+        dataLen = gMA.buffer_unk_480.size - 1;
+        if (!(gMA.status & STATUS_UNK_15)) {
+            if (gMA.unk_112 != 0 && dataLen > 1) {
+                if (gMA.unk_140 == 0) {
+                    cp = MAU_SearchCRLF(&gMA.buffer_unk_480.data[1], dataLen);
+                    if (cp == NULL) {
+                        ConcatPrevBuf(&gMA.buffer_unk_480.data[1], dataLen);
+                        (&gMA.buffer_unk_480)->size = 0;
+                        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+                        MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, gMA.sockets[0]);
+                        return;
+                    }
+                    ConcatPrevBuf(&gMA.buffer_unk_480.data[1], cp - (char *)&gMA.buffer_unk_480.data[1]);
+                    pop3res = CheckPOP3Response(gMA.prevbuf);
+                    if (pop3res == 0) {
+                        dataLen -= cp - (char *)&gMA.buffer_unk_480.data[1];
+                        gMA.buffer_unk_480.data = (char *)&cp[-1];
+                        gMA.unk_140 = 1;
+                    } else if (pop3res == 1) {
+                        gMA.unk_102 = 0x31;
+                        gMA.unk_104 = 4;
+                        gMA.task_unk_98 = 0xf0;
+                        return;
+                    } else {
+                        gMA.unk_102 = 0x31;
+                        gMA.unk_104 = 0;
+                        gMA.task_unk_98 = 0xf0;
+                        return;
+                    }
+                }
 
-    ldr	r0, [r7, #112]
-    mov	r1, #242
-    lsl	r1, r1, #1
-    add	r4, r7, r1
-    ldr	r1, [r4, #0]
-    add	r1, #1
-    mov	r2, r3
-    bl	MAU_memcpy
-    ldr	r2, [pc, #80]
-    ldr	r1, [r2, #0]
-    ldr	r0, [r7, #116]
-    sub	r1, r1, r0
-    ldr	r0, [pc, #76]
-    add	r3, r7, r0
-    mov	r6, #0
-    mov	r5, #0
-    strh	r1, [r3, #0]
-    ldr	r1, [pc, #68]
-    add	r0, r7, r1
-    ldr	r2, [r7, #116]
-    add	r2, #1
-    ldr	r1, [r4, #0]
-    add	r1, r1, r2
-    ldrh	r2, [r3, #0]
-    bl	MAU_memcpy
-    ldr	r2, [r7, #120]
-    ldr	r1, [r7, #116]
-    ldrh	r0, [r2, #0]
-    add	r0, r0, r1
-    strh	r0, [r2, #0]
-    str	r5, [r7, #116]
-    ldrh	r0, [r7, #2]
-    mov	r1, #4
-    orr	r0, r1
-    ldrh	r1, [r7, #2]
-    orr	r0, r6
-    strh	r0, [r7, #2]
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    ldrh	r0, [r7, #2]
-    mov	r1, #1
-    orr	r0, r1
-    ldrh	r1, [r7, #2]
-    orr	r0, r6
-    strh	r0, [r7, #2]
-    b	MATASK_POP3_Head+0x3ca
-.align 2
-    .word dataLen.224
-    .word 0x000006fa
-    .word 0x0000047d
+                if (gMA.unk_116 >= dataLen) {
+                    MAU_memcpy(gMA.unk_112, &gMA.buffer_unk_480.data[1], dataLen);
+                    gMA.unk_112 += dataLen;
+                    gMA.unk_116 -= dataLen;
+                    gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
+                    *(u16 *)gMA.unk_120 += dataLen;
+                } else {
+                    MAU_memcpy(gMA.unk_112, &gMA.buffer_unk_480.data[1], gMA.unk_116);
+                    gMA.prevbuf_size = dataLen - gMA.unk_116;
+                    MAU_memcpy(gMA.prevbuf, &gMA.buffer_unk_480.data[gMA.unk_116 + 1], gMA.prevbuf_size);
+                    *(u16 *)gMA.unk_120 += gMA.unk_116;
+                    gMA.unk_116 = 0;
+                    gMA.condition |= MA_CONDITION_BUFFER_FULL;
+                    MA_TaskSet(TASK_UNK_00, 0);
+                    gMA.condition |= MA_CONDITION_APIWAIT;
+                    return;
+                }
+            }
+        }
+        else {
+            gMA.status &= ~STATUS_UNK_15;
+        }
 
-    ldr	r0, [r6, #64]
-    ldr	r1, [pc, #40]
-    and	r0, r1
-    str	r0, [r6, #64]
-    ldr	r0, [pc, #36]
-    ldr	r1, [r0, #0]
-    cmp	r1, #4
-    ble	MATASK_POP3_Head+0x304
-    ldr	r4, [pc, #32]
-    mov	r3, #242
-    lsl	r3, r3, #1
-    add	r2, r4, r3
-    mov	r1, #240
-    lsl	r1, r1, #1
-    add	r0, r4, r1
-    ldrh	r1, [r0, #0]
-    ldr	r0, [r2, #0]
-    add	r0, r0, r1
-    sub	r0, #5
-    mov	r1, #5
-    b	MATASK_POP3_Head+0x314
-.align 2
-    .word 0xffff7fff
-    .word dataLen.224
-    .word gMA
+        if (dataLen >= 5) {
+            MakeEndLineBuffer(gMA.buffer_unk_480.data + gMA.buffer_unk_480.size - 5, 5);
+            if (IsEndMultiLine() == TRUE) {
+                gMA.task_unk_98 = 100;
+                return;
+            }
+        } else {
+            if (dataLen != 0) {
+                MakeEndLineBuffer(&gMA.buffer_unk_480.data[1], dataLen);
+                if (IsEndMultiLine() == TRUE) {
+                    gMA.task_unk_98 = 100;
+                    return;
+                }
+            }
+        }
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, gMA.sockets[0]);
+        return;
 
-    cmp	r1, #0
-    beq	MATASK_POP3_Head+0x330
-    ldr	r4, [pc, #32]
-    mov	r2, #242
-    lsl	r2, r2, #1
-    add	r0, r4, r2
-    ldr	r0, [r0, #0]
-    add	r0, #1
-    bl	MakeEndLineBuffer
-    bl	IsEndMultiLine
-    cmp	r0, #1
-    bne	MATASK_POP3_Head+0x330
-    mov	r0, r4
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    mov	r1, #100
-    strb	r1, [r0, #0]
-    b	MATASK_POP3_Head+0x3ca
-.align 2
-    .word gMA
+    case 100:
+        MA_TaskSet(TASK_UNK_00, 0);
+        return;
 
-    ldr	r0, [pc, #24]
-    mov	r1, #0
-    strh	r1, [r0, #0]
-    ldr	r3, [pc, #24]
-    add	r1, r0, r3
-    str	r1, [r0, #4]
-    ldr	r4, [pc, #20]
-    add	r1, r0, r4
-    ldrb	r3, [r1, #0]
-    mov	r1, #0
-    mov	r2, #0
-    bl	MABIOS_Data
-    b	MATASK_POP3_Head+0x3ca
-.align 2
-    .word gMA+0x1e0
-    .word 0xfffffef4
-    .word 0xfffffe83
+    case 0xf0:
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_TCPDisconnect(&gMA.buffer_unk_480, gMA.sockets[0]);
+        gMA.task_unk_98++;
+        return;
 
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    b	MATASK_POP3_Head+0x3ca
-    mov	r1, #240
-    lsl	r1, r1, #1
-    add	r0, r6, r1
-    mov	r2, r9
-    strh	r2, [r0, #0]
-    mov	r1, r6
-    add	r1, #212
-    str	r1, [r0, #4]
-    sub	r1, #113
-    ldrb	r1, [r1, #0]
-    bl	MABIOS_TCPDisconnect
-    mov	r3, r8
-    ldrb	r0, [r3, #0]
-    add	r0, #1
-    ldrb	r1, [r3, #0]
-    strb	r0, [r3, #0]
-    b	MATASK_POP3_Head+0x3ca
-    mov	r1, r6
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    mov	r0, #3
-    strb	r0, [r1, #0]
-    ldrh	r1, [r6, #2]
-    mov	r0, #255
-    and	r0, r1
-    ldrh	r1, [r6, #2]
-    mov	r4, #0
-    strh	r0, [r6, #2]
-    ldrh	r0, [r6, #2]
-    mov	r2, #128
-    lsl	r2, r2, #1
-    mov	r1, r2
-    orr	r0, r1
-    ldrh	r1, [r6, #2]
-    orr	r0, r4
-    strh	r0, [r6, #2]
-    mov	r0, r6
-    add	r0, #102
-    ldrb	r0, [r0, #0]
-    mov	r1, r6
-    add	r1, #104
-    ldrh	r1, [r1, #0]
-    bl	MA_SetApiError
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    mov	r0, r6
-    add	r0, #204
-    strb	r4, [r0, #0]
-    pop	{r3, r4, r5}
-    mov	r8, r3
-    mov	r9, r4
-    mov	sl, r5
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.size MATASK_POP3_Head, .-MATASK_POP3_Head
-");
-#endif
+    case 0xf1:
+        gMA.unk_92 = 3;
+        gMA.condition &= ~MA_CONDITION_MASK;
+        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetApiError(gMA.unk_102, gMA.unk_104);
+        MA_TaskSet(TASK_UNK_00, 0);
+        gMA.sockets_used[0] = FALSE;
+        return;
+    }
+}
 
 #if 0
 
@@ -7637,10 +7295,10 @@ MATASK_HTTP_GetPost:
     orr	r0, r5
     strh	r0, [r7, #2]
     b	MATASK_HTTP_GetPost+0xb22
-    lsl	r2, r7, #27
-    lsl	r0, r0, #0
-    lsl	r5, r7, #17
-    lsl	r0, r0, #0
+.align 2
+    .word 0x000006fa
+    .word 0x0000047d
+
     ldr	r0, [r7, #64]
     ldr	r1, [pc, #48]
     and	r0, r1
