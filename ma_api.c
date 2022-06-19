@@ -46,7 +46,7 @@ static void MA_ConditionMain(u8 *pCondition, int task);
 //static void MATASK_POP3_Dele();
 //static void MATASK_POP3_Head();
 //static void ExtractServerName();
-//static void MA_HTTP_GetPost();
+static void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword, int unk_1);
 //static void ConcatUserAgent();
 //static void GetRequestType();
 //static void CreateHttpRequestHeader();
@@ -4377,83 +4377,16 @@ static const char strHttpLocation[] = "Location: ";
 static const char strHttpUserAgent[] = "User-Agent: AGB-";
 static const char strServerRoot[] = "/";
 asm(".word 0x00000000\n");
-asm(".section .text\n");
 
-#if 0
-#else
-void MA_HTTP_Get(const char *pURL, char *pHeadBuf, u16 headBufSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword);
-asm("
-.align 2
-.thumb_func
-.global MA_HTTP_Get
-MA_HTTP_Get:
-    push	{r4, r5, r6, r7, lr}
-    sub	sp, #28
-    ldr	r5, [sp, #48]
-    ldr	r6, [sp, #52]
-    ldr	r7, [sp, #56]
-    ldr	r4, [sp, #60]
-    str	r4, [sp, #20]
-    lsl	r2, r2, #16
-    lsr	r2, r2, #16
-    lsl	r5, r5, #16
-    lsr	r5, r5, #16
-    mov	r4, #0
-    str	r4, [sp, #0]
-    str	r3, [sp, #4]
-    str	r5, [sp, #8]
-    str	r6, [sp, #12]
-    str	r7, [sp, #16]
-    mov	r3, #22
-    str	r3, [sp, #24]
-    mov	r3, #0
-    bl	MA_HTTP_GetPost
-    add	sp, #28
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.size MA_HTTP_Get, .-MA_HTTP_Get
-");
-#endif
+void MA_HTTP_Get(const char *pURL, char *pHeadBuf, u16 headBufSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword)
+{
+    MA_HTTP_GetPost(pURL, pHeadBuf, headBufSize, NULL, 0, pRecvData, recvBufSize, pRecvSize, pUserID, pPassword, 0x16);
+}
 
-#if 0
-#else
-void MA_HTTP_Post(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword);
-asm("
-.align 2
-.thumb_func
-.global MA_HTTP_Post
-MA_HTTP_Post:
-    push	{r4, r5, r6, r7, lr}
-    sub	sp, #28
-    ldr	r4, [sp, #48]
-    ldr	r6, [sp, #52]
-    ldr	r5, [sp, #56]
-    ldr	r7, [sp, #60]
-    str	r7, [sp, #12]
-    ldr	r7, [sp, #64]
-    str	r7, [sp, #16]
-    ldr	r7, [sp, #68]
-    str	r7, [sp, #20]
-    lsl	r2, r2, #16
-    lsr	r2, r2, #16
-    lsl	r4, r4, #16
-    lsr	r4, r4, #16
-    lsl	r5, r5, #16
-    lsr	r5, r5, #16
-    str	r4, [sp, #0]
-    str	r6, [sp, #4]
-    str	r5, [sp, #8]
-    mov	r4, #23
-    str	r4, [sp, #24]
-    bl	MA_HTTP_GetPost
-    add	sp, #28
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.size MA_HTTP_Post, .-MA_HTTP_Post
-");
-#endif
+void MA_HTTP_Post(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword)
+{
+    MA_HTTP_GetPost(pURL, pHeadBuf, headBufSize, pSendData, sendSize, pRecvData, recvBufSize, pRecvSize, pUserID, pPassword, 0x17);
+}
 
 #if 0
 #else
