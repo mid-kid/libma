@@ -362,8 +362,6 @@ static void MATASK_Stop(void)
     }
 }
 
-#if 0
-
 void MA_TCP_Cut(void)
 {
     SetApiCallFlag();
@@ -390,7 +388,12 @@ void MA_TCP_Cut(void)
         return;
     }
 
-    if (gMA.task == TASK_UNK_1F || gMA.task == TASK_UNK_1E) {
+    if (gMA.task == TASK_UNK_1F) {
+        ResetApiCallFlag();
+        return;
+    }
+
+    if (gMA.task == TASK_UNK_1E) {
         MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
         ResetApiCallFlag();
         return;
@@ -401,138 +404,13 @@ void MA_TCP_Cut(void)
     if (!(gMA.condition & MA_CONDITION_UNK_5 || gMA.unk_92 == 3)) {
         gMA.condition |= MA_CONDITION_APIWAIT;
         MA_TaskSet(TASK_UNK_1F, 2);
+        ResetApiCallFlag();
     } else {
         gMA.condition |= MA_CONDITION_APIWAIT;
         MA_TaskSet(TASK_UNK_1F, 0);
+        ResetApiCallFlag();
     }
-    ResetApiCallFlag();
 }
-
-#else
-void MA_TCP_Cut(void);
-asm("
-.align 2
-.thumb_func
-.global MA_TCP_Cut
-MA_TCP_Cut:
-    push	{lr}
-    bl	SetApiCallFlag
-    ldr	r2, [pc, #20]
-    ldr	r1, [r2, #88]
-    ldr	r0, [pc, #20]
-    cmp	r1, r0
-    beq	MA_TCP_Cut+0x24
-    mov	r0, #33
-    mov	r1, #0
-    bl	MA_SetApiError
-    b	MA_TCP_Cut+0xf2
-.align 2
-    .word gMA
-    .word 0x4247414d
-
-    mov	r0, r2
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    cmp	r0, #3
-    bne	MA_TCP_Cut+0x38
-    mov	r0, r2
-    add	r0, #97
-    ldrb	r0, [r0, #0]
-    cmp	r0, #0
-    beq	MA_TCP_Cut+0x8c
-    ldr	r1, [pc, #88]
-    mov	r2, r1
-    add	r2, #92
-    ldrb	r0, [r2, #0]
-    mov	r3, r1
-    cmp	r0, #6
-    beq	MA_TCP_Cut+0x6a
-    ldrb	r0, [r2, #0]
-    cmp	r0, #4
-    beq	MA_TCP_Cut+0x6a
-    ldrb	r0, [r2, #0]
-    cmp	r0, #5
-    beq	MA_TCP_Cut+0x6a
-    add	r1, #97
-    ldrb	r0, [r1, #0]
-    cmp	r0, #10
-    bls	MA_TCP_Cut+0x84
-    ldrb	r0, [r1, #0]
-    cmp	r0, #23
-    bhi	MA_TCP_Cut+0x84
-    ldrh	r1, [r3, #2]
-    mov	r0, #1
-    and	r0, r1
-    cmp	r0, #0
-    beq	MA_TCP_Cut+0x84
-    ldrh	r1, [r3, #2]
-    mov	r0, #2
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_TCP_Cut+0x84
-    mov	r1, r3
-    add	r1, #97
-    ldrb	r0, [r1, #0]
-    cmp	r0, #31
-    beq	MA_TCP_Cut+0x8c
-    ldrb	r0, [r1, #0]
-    cmp	r0, #30
-    bne	MA_TCP_Cut+0x98
-    mov	r0, #33
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_TCP_Cut+0xf2
-.align 2
-    .word gMA
-
-    mov	r0, r3
-    add	r0, #68
-    ldrb	r0, [r0, #0]
-    str	r0, [r3, #112]
-    ldrh	r1, [r3, #2]
-    ldr	r0, [pc, #52]
-    and	r0, r1
-    ldrh	r1, [r3, #2]
-    strh	r0, [r3, #2]
-    ldrh	r1, [r3, #2]
-    mov	r0, #32
-    and	r0, r1
-    cmp	r0, #0
-    bne	MA_TCP_Cut+0xdc
-    mov	r0, r3
-    add	r0, #92
-    ldrb	r0, [r0, #0]
-    cmp	r0, #3
-    beq	MA_TCP_Cut+0xdc
-    ldrh	r0, [r3, #2]
-    mov	r1, #1
-    orr	r0, r1
-    ldrh	r1, [r3, #2]
-    mov	r1, #0
-    orr	r0, r1
-    strh	r0, [r3, #2]
-    mov	r0, #31
-    mov	r1, #2
-    bl	MA_TaskSet
-    b	MA_TCP_Cut+0x8c
-.align 2
-    .word 0x0000fffb
-
-    ldrh	r0, [r3, #2]
-    mov	r1, #1
-    ldrh	r2, [r3, #2]
-    orr	r1, r0
-    strh	r1, [r3, #2]
-    mov	r0, #31
-    mov	r1, #0
-    bl	MA_TaskSet
-    bl	ResetApiCallFlag
-    pop	{r0}
-    bx	r0
-.size MA_TCP_Cut, .-MA_TCP_Cut
-");
-#endif
 
 static void MATASK_TCP_Cut(void)
 {
