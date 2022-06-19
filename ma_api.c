@@ -3301,528 +3301,173 @@ void MA_POP3_Connect(const char *pUserID, const char *pPassword)
     ResetApiCallFlag();
 }
 
-#if 0
-#else
-asm("
-.lcomm pop3res.184, 0x4
+static void MATASK_POP3_Connect(void)
+{
+    static int pop3res asm("pop3res.184");
 
-.align 2
-.thumb_func
-MATASK_POP3_Connect:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, r8
-    push	{r7}
-    ldr	r2, [pc, #32]
-    mov	r0, r2
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    cmp	r0, #238
-    bne	MATASK_POP3_Connect+0x82
-    mov	r0, r2
-    add	r0, #80
-    ldrb	r0, [r0, #0]
-    cmp	r0, #35
-    beq	MATASK_POP3_Connect+0x52
-    cmp	r0, #35
-    bgt	MATASK_POP3_Connect+0x2c
-    cmp	r0, #21
-    beq	MATASK_POP3_Connect+0x36
-    b	MATASK_POP3_Connect+0x74
-.align 2
-    .word gMA
+    if (gMA.recv_cmd == (MACMD_ERROR | MAPROT_REPLY)) {
+        switch (gMA.unk_80) {
+        case 0x15:
+            gMA.unk_102 = 0x24;
+            gMA.unk_104 = 0;
+            gMA.task_unk_98 = 0xf0;
+            break;
 
-    cmp	r0, #36
-    beq	MATASK_POP3_Connect+0x82
-    cmp	r0, #40
-    beq	MATASK_POP3_Connect+0x52
-    b	MATASK_POP3_Connect+0x74
-    mov	r3, r2
-    add	r3, #102
-    mov	r1, #0
-    mov	r0, #36
-    strb	r0, [r3, #0]
-    mov	r0, r2
-    add	r0, #104
-    strh	r1, [r0, #0]
-    mov	r1, r2
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    mov	r0, #240
-    strb	r0, [r1, #0]
-    b	MATASK_POP3_Connect+0x82
-    ldr	r2, [pc, #28]
-    mov	r3, r2
-    add	r3, #102
-    mov	r1, #0
-    mov	r0, #36
-    strb	r0, [r3, #0]
-    mov	r0, r2
-    add	r0, #104
-    strh	r1, [r0, #0]
-    mov	r1, r2
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    mov	r0, #241
-    strb	r0, [r1, #0]
-    b	MATASK_POP3_Connect+0x82
-.align 2
-    .word gMA
+        case 0x23:
+        case 0x28:
+            gMA.unk_102 = 0x24;
+            gMA.unk_104 = 0;
+            gMA.task_unk_98 = 0xf1;
+            break;
 
-    bl	MA_DefaultNegaResProc
-    ldr	r0, [pc, #84]
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    mov	r1, #241
-    strb	r1, [r0, #0]
-    bl	MA_GetCondition
-    mov	r1, #64
-    and	r1, r0
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    mov	r8, r1
-    cmp	r1, #0
-    beq	MATASK_POP3_Connect+0xd4
-    ldr	r3, [pc, #56]
-    mov	r1, r3
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    mov	r0, #3
-    strb	r0, [r1, #0]
-    ldrh	r1, [r3, #2]
-    mov	r0, #255
-    and	r0, r1
-    ldrh	r1, [r3, #2]
-    mov	r2, #0
-    strh	r0, [r3, #2]
-    ldrh	r0, [r3, #2]
-    mov	r4, #128
-    lsl	r4, r4, #1
-    mov	r1, r4
-    orr	r0, r1
-    ldrh	r1, [r3, #2]
-    orr	r0, r2
-    strh	r0, [r3, #2]
-    mov	r0, r3
-    add	r0, #99
-    strb	r2, [r0, #0]
-    add	r0, #105
-    strb	r2, [r0, #0]
-    mov	r0, #49
-    mov	r1, #0
-    bl	MA_SetApiError
-    b	MATASK_POP3_Connect+0x3b2
-.align 2
-    .word gMA
+        case 0x24:
+            break;
 
-    ldr	r5, [pc, #28]
-    mov	r6, r5
-    add	r6, #98
-    ldrb	r0, [r6, #0]
-    cmp	r0, #4
-    bne	MATASK_POP3_Connect+0xe2
-    b	MATASK_POP3_Connect+0x24c
-    cmp	r0, #4
-    bgt	MATASK_POP3_Connect+0x102
-    cmp	r0, #1
-    beq	MATASK_POP3_Connect+0x134
-    cmp	r0, #1
-    bgt	MATASK_POP3_Connect+0xf8
-    cmp	r0, #0
-    beq	MATASK_POP3_Connect+0x11c
-    b	MATASK_POP3_Connect+0x422
-.align 2
-    .word gMA
+        default:
+            MA_DefaultNegaResProc();
+            gMA.task_unk_98 = 0xf1;
+            break;
+        }
+    }
 
-    cmp	r0, #2
-    beq	MATASK_POP3_Connect+0x162
-    cmp	r0, #3
-    beq	MATASK_POP3_Connect+0x19a
-    b	MATASK_POP3_Connect+0x422
-    cmp	r0, #6
-    bne	MATASK_POP3_Connect+0x108
-    b	MATASK_POP3_Connect+0x390
-    cmp	r0, #6
-    bge	MATASK_POP3_Connect+0x10e
-    b	MATASK_POP3_Connect+0x2fe
-    cmp	r0, #240
-    bne	MATASK_POP3_Connect+0x114
-    b	MATASK_POP3_Connect+0x3bc
-    cmp	r0, #241
-    bne	MATASK_POP3_Connect+0x11a
-    b	MATASK_POP3_Connect+0x3de
-    b	MATASK_POP3_Connect+0x422
-    mov	r1, #240
-    lsl	r1, r1, #1
-    add	r0, r5, r1
-    mov	r2, r8
-    strh	r2, [r0, #0]
-    mov	r1, r5
-    add	r1, #212
-    str	r1, [r0, #4]
-    ldr	r1, [r5, #112]
-    bl	MABIOS_DNSRequest
-    b	MATASK_POP3_Connect+0x3d4
-    mov	r4, r5
-    add	r4, #106
-    mov	r1, #242
-    lsl	r1, r1, #1
-    add	r0, r5, r1
-    ldr	r1, [r0, #0]
-    mov	r0, r4
-    mov	r2, #4
-    bl	MAU_memcpy
-    mov	r2, #240
-    lsl	r2, r2, #1
-    add	r0, r5, r2
-    mov	r1, r8
-    strh	r1, [r0, #0]
-    mov	r1, r5
-    add	r1, #212
-    str	r1, [r0, #4]
-    mov	r1, r4
-    mov	r2, #110
-    bl	MABIOS_TCPConnect
-    b	MATASK_POP3_Connect+0x3d4
-    mov	r2, #242
-    lsl	r2, r2, #1
-    add	r0, r5, r2
-    ldr	r0, [r0, #0]
-    ldrb	r0, [r0, #0]
-    mov	r4, r5
-    add	r4, #99
-    strb	r0, [r4, #0]
-    mov	r1, r5
-    add	r1, #204
-    mov	r0, #1
-    strb	r0, [r1, #0]
-    bl	InitPrevBuf
-    mov	r1, #240
-    lsl	r1, r1, #1
-    add	r0, r5, r1
-    mov	r2, r8
-    strh	r2, [r0, #0]
-    mov	r1, r5
-    add	r1, #212
-    str	r1, [r0, #4]
-    ldrb	r3, [r4, #0]
-    mov	r1, #0
-    mov	r2, #0
-    bl	MABIOS_Data
-    b	MATASK_POP3_Connect+0x3d4
-    mov	r4, #242
-    lsl	r4, r4, #1
-    add	r0, r5, r4
-    ldr	r0, [r0, #0]
-    add	r0, #1
-    mov	r1, #240
-    lsl	r1, r1, #1
-    add	r7, r5, r1
-    ldrh	r1, [r7, #0]
-    sub	r1, #1
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    bl	ConcatPrevBuf
-    ldr	r2, [pc, #36]
-    add	r4, r5, r2
-    ldr	r1, [pc, #36]
-    add	r0, r5, r1
-    ldrh	r1, [r0, #0]
-    mov	r0, r4
-    bl	MAU_CheckCRLF
-    cmp	r0, #0
-    bne	MATASK_POP3_Connect+0x1e4
-    mov	r2, r8
-    strh	r2, [r7, #0]
-    mov	r0, r5
-    add	r0, #212
-    str	r0, [r7, #4]
-    sub	r0, #113
-    ldrb	r3, [r0, #0]
-    mov	r0, r7
-    b	MATASK_POP3_Connect+0x33e
-.align 2
-    .word 0x0000047d
-    .word 0x000006fa
+    if (MA_GetCondition() & MA_CONDITION_UNK_6) {
+        gMA.unk_92 = 3;
+        gMA.condition &= ~MA_CONDITION_MASK;
+        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        gMA.sockets[0] = 0;
+        gMA.sockets_used[0] = FALSE;
+        MA_SetApiError(MAAPIE_POP3, 0);
+        MA_TaskSet(TASK_UNK_00, 0);
+        return;
+    }
 
-    mov	r0, r4
-    bl	CheckPOP3Response
-    mov	r1, r0
-    ldr	r0, [pc, #48]
-    str	r1, [r0, #0]
-    cmp	r1, #0
-    bne	MATASK_POP3_Connect+0x224
-    bl	InitPrevBuf
-    mov	r4, r8
-    strh	r4, [r7, #0]
-    mov	r0, r5
-    add	r0, #212
-    str	r0, [r7, #4]
-    ldr	r4, [r5, #116]
-    mov	r0, r4
-    bl	MAU_strlen
-    mov	r2, r0
-    lsl	r2, r2, #24
-    lsr	r2, r2, #24
-    mov	r0, r5
-    add	r0, #99
-    ldrb	r3, [r0, #0]
-    mov	r0, r7
-    mov	r1, r4
-    bl	MABIOS_Data
-    b	MATASK_POP3_Connect+0x3d4
-.align 2
-    .word pop3res.184
+    switch (gMA.task_unk_98) {
+    case 0:
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_DNSRequest(&gMA.buffer_unk_480, gMA.unk_112);
+        gMA.task_unk_98++;
+        break;
 
-    cmp	r1, #1
-    bne	MATASK_POP3_Connect+0x23a
-    mov	r1, r5
-    add	r1, #102
-    mov	r0, #49
-    strb	r0, [r1, #0]
-    mov	r0, r5
-    add	r0, #104
-    mov	r1, r8
-    strh	r1, [r0, #0]
-    b	MATASK_POP3_Connect+0x388
-    mov	r2, r5
-    add	r2, #102
-    mov	r1, #0
-    mov	r0, #49
-    strb	r0, [r2, #0]
-    mov	r0, r5
-    add	r0, #104
-    strh	r1, [r0, #0]
-    b	MATASK_POP3_Connect+0x388
-    mov	r2, #242
-    lsl	r2, r2, #1
-    add	r0, r5, r2
-    ldr	r0, [r0, #0]
-    add	r0, #1
-    mov	r4, #240
-    lsl	r4, r4, #1
-    add	r7, r5, r4
-    ldrh	r1, [r7, #0]
-    sub	r1, #1
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    bl	ConcatPrevBuf
-    ldr	r0, [pc, #36]
-    add	r4, r5, r0
-    ldr	r1, [pc, #36]
-    add	r0, r5, r1
-    ldrh	r1, [r0, #0]
-    mov	r0, r4
-    bl	MAU_CheckCRLF
-    cmp	r0, #0
-    bne	MATASK_POP3_Connect+0x298
-    mov	r2, r8
-    strh	r2, [r7, #0]
-    mov	r0, r5
-    add	r0, #212
-    str	r0, [r7, #4]
-    sub	r0, #113
-    ldrb	r3, [r0, #0]
-    mov	r0, r7
-    b	MATASK_POP3_Connect+0x33e
-.align 2
-    .word 0x0000047d
-    .word 0x000006fa
+    case 1:
+        MAU_memcpy(gMA.ipaddr, gMA.buffer_unk_480.data, sizeof(gMA.ipaddr));
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_TCPConnect(&gMA.buffer_unk_480, gMA.ipaddr, 110);  // MAGIC
+        gMA.task_unk_98++;
+        break;
 
-    mov	r0, r4
-    bl	CheckPOP3Response
-    mov	r1, r0
-    ldr	r0, [pc, #48]
-    str	r1, [r0, #0]
-    cmp	r1, #0
-    bne	MATASK_POP3_Connect+0x2d8
-    bl	InitPrevBuf
-    mov	r4, r8
-    strh	r4, [r7, #0]
-    mov	r0, r5
-    add	r0, #212
-    str	r0, [r7, #4]
-    ldr	r4, [r5, #120]
-    mov	r0, r4
-    bl	MAU_strlen
-    mov	r2, r0
-    lsl	r2, r2, #24
-    lsr	r2, r2, #24
-    mov	r0, r5
-    add	r0, #99
-    ldrb	r3, [r0, #0]
-    mov	r0, r7
-    mov	r1, r4
-    bl	MABIOS_Data
-    b	MATASK_POP3_Connect+0x3d4
-.align 2
-    .word pop3res.184
+    case 2:
+        gMA.sockets[0] = gMA.buffer_unk_480.data[0];
+        gMA.sockets_used[0] = TRUE;
+        InitPrevBuf();
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, gMA.sockets[0]);
+        gMA.task_unk_98++;
+        break;
 
-    cmp	r1, #1
-    bne	MATASK_POP3_Connect+0x2ec
-    mov	r1, r5
-    add	r1, #102
-    mov	r0, #49
-    strb	r0, [r1, #0]
-    add	r1, #2
-    mov	r0, #2
-    strh	r0, [r1, #0]
-    b	MATASK_POP3_Connect+0x388
-    mov	r1, r5
-    add	r1, #102
-    mov	r0, #49
-    strb	r0, [r1, #0]
-    mov	r0, r5
-    add	r0, #104
-    mov	r1, r8
-    strh	r1, [r0, #0]
-    b	MATASK_POP3_Connect+0x388
-    mov	r2, #242
-    lsl	r2, r2, #1
-    add	r0, r5, r2
-    ldr	r0, [r0, #0]
-    add	r0, #1
-    mov	r1, #240
-    lsl	r1, r1, #1
-    add	r4, r5, r1
-    ldrh	r1, [r4, #0]
-    sub	r1, #1
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    bl	ConcatPrevBuf
-    ldr	r2, [pc, #44]
-    add	r7, r5, r2
-    ldr	r1, [pc, #44]
-    add	r0, r5, r1
-    ldrh	r1, [r0, #0]
-    mov	r0, r7
-    bl	MAU_CheckCRLF
-    cmp	r0, #0
-    bne	MATASK_POP3_Connect+0x350
-    mov	r2, r8
-    strh	r2, [r4, #0]
-    mov	r0, r5
-    add	r0, #212
-    str	r0, [r4, #4]
-    sub	r0, #113
-    ldrb	r3, [r0, #0]
-    mov	r0, r4
-    mov	r1, #0
-    mov	r2, #0
-    bl	MABIOS_Data
-    b	MATASK_POP3_Connect+0x422
-.align 2
-    .word 0x0000047d
-    .word 0x000006fa
+    case 3:
+        ConcatPrevBuf(&gMA.buffer_unk_480.data[1], gMA.buffer_unk_480.size - 1);
+        if (!MAU_CheckCRLF(gMA.prevbuf, gMA.prevbuf_size)) {
+            (&gMA.buffer_unk_480)->size = 0;
+            (&gMA.buffer_unk_480)->data = gMA.unk_212;
+            MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, gMA.sockets[0]);
+            break;
+        }
 
-    mov	r0, r7
-    bl	CheckPOP3Response
-    mov	r1, r0
-    ldr	r0, [pc, #24]
-    str	r1, [r0, #0]
-    cmp	r1, #0
-    beq	MATASK_POP3_Connect+0x3d4
-    cmp	r1, #1
-    bne	MATASK_POP3_Connect+0x378
-    mov	r1, r5
-    add	r1, #102
-    mov	r0, #49
-    strb	r0, [r1, #0]
-    add	r1, #2
-    mov	r0, #3
-    strh	r0, [r1, #0]
-    b	MATASK_POP3_Connect+0x388
-.align 2
-    .word pop3res.184
+        pop3res = CheckPOP3Response(gMA.prevbuf);
+        if (pop3res == 0) {
+            InitPrevBuf();
+            (&gMA.buffer_unk_480)->size = 0;
+            (&gMA.buffer_unk_480)->data = gMA.unk_212;
+            MABIOS_Data(&gMA.buffer_unk_480, (char *)gMA.unk_116, MAU_strlen((char *)gMA.unk_116), gMA.sockets[0]);
+            gMA.task_unk_98++;
+        } else if (pop3res == 1) {
+            gMA.unk_102 = 0x31;
+            gMA.unk_104 = 0;
+            gMA.task_unk_98 = 0xf0;
+        } else {
+            gMA.unk_102 = 0x31;
+            gMA.unk_104 = 0;
+            gMA.task_unk_98 = 0xf0;
+        }
+        break;
 
-    mov	r1, r5
-    add	r1, #102
-    mov	r0, #49
-    strb	r0, [r1, #0]
-    mov	r0, r5
-    add	r0, #104
-    mov	r4, r8
-    strh	r4, [r0, #0]
-    ldrb	r0, [r6, #0]
-    mov	r0, #240
-    strb	r0, [r6, #0]
-    b	MATASK_POP3_Connect+0x422
-    mov	r1, r5
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    mov	r0, #5
-    strb	r0, [r1, #0]
-    ldrh	r1, [r5, #2]
-    mov	r0, #255
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    strh	r0, [r5, #2]
-    ldrh	r1, [r5, #2]
-    mov	r2, #160
-    lsl	r2, r2, #3
-    mov	r0, r2
-    ldrh	r2, [r5, #2]
-    orr	r0, r1
-    strh	r0, [r5, #2]
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    b	MATASK_POP3_Connect+0x422
-    mov	r4, #240
-    lsl	r4, r4, #1
-    add	r0, r5, r4
-    mov	r1, r8
-    strh	r1, [r0, #0]
-    mov	r1, r5
-    add	r1, #212
-    str	r1, [r0, #4]
-    sub	r1, #113
-    ldrb	r1, [r1, #0]
-    bl	MABIOS_TCPDisconnect
-    ldrb	r0, [r6, #0]
-    add	r0, #1
-    ldrb	r1, [r6, #0]
-    strb	r0, [r6, #0]
-    b	MATASK_POP3_Connect+0x422
-    mov	r1, r5
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    mov	r0, #3
-    strb	r0, [r1, #0]
-    ldrh	r1, [r5, #2]
-    mov	r0, #255
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    mov	r4, #0
-    strh	r0, [r5, #2]
-    ldrh	r0, [r5, #2]
-    mov	r2, #128
-    lsl	r2, r2, #1
-    mov	r1, r2
-    orr	r0, r1
-    ldrh	r1, [r5, #2]
-    orr	r0, r4
-    strh	r0, [r5, #2]
-    mov	r0, r5
-    add	r0, #102
-    ldrb	r0, [r0, #0]
-    mov	r1, r5
-    add	r1, #104
-    ldrh	r1, [r1, #0]
-    bl	MA_SetApiError
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    mov	r0, r5
-    add	r0, #204
-    strb	r4, [r0, #0]
-    pop	{r3}
-    mov	r8, r3
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.size MATASK_POP3_Connect, .-MATASK_POP3_Connect
-");
-#endif
+    case 4:
+        ConcatPrevBuf(&gMA.buffer_unk_480.data[1], gMA.buffer_unk_480.size - 1);
+        if (!MAU_CheckCRLF(gMA.prevbuf, gMA.prevbuf_size)) {
+            (&gMA.buffer_unk_480)->size = 0;
+            (&gMA.buffer_unk_480)->data = gMA.unk_212;
+            MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, gMA.sockets[0]);
+            break;
+        }
+
+        pop3res = CheckPOP3Response(gMA.prevbuf);
+        if (pop3res == 0) {
+            InitPrevBuf();
+            (&gMA.buffer_unk_480)->size = 0;
+            (&gMA.buffer_unk_480)->data = gMA.unk_212;
+            MABIOS_Data(&gMA.buffer_unk_480, (char *)gMA.unk_120, MAU_strlen((char *)gMA.unk_120), gMA.sockets[0]);
+            gMA.task_unk_98++;
+        } else if (pop3res == 1) {
+            gMA.unk_102 = 0x31;
+            gMA.unk_104 = 2;
+            gMA.task_unk_98 = 0xf0;
+        } else {
+            gMA.unk_102 = 0x31;
+            gMA.unk_104 = 0;
+            gMA.task_unk_98 = 0xf0;
+        }
+        break;
+
+    case 5:
+        ConcatPrevBuf(&gMA.buffer_unk_480.data[1], gMA.buffer_unk_480.size - 1);
+        if (!MAU_CheckCRLF(gMA.prevbuf, gMA.prevbuf_size)) {
+            (&gMA.buffer_unk_480)->size = 0;
+            (&gMA.buffer_unk_480)->data = gMA.unk_212;
+            MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, gMA.sockets[0]);
+            break;
+        }
+
+        pop3res = CheckPOP3Response(gMA.prevbuf);
+        if (pop3res == 0) {
+            gMA.task_unk_98++;
+        } else if (pop3res == 1) {
+            gMA.unk_102 = 0x31;
+            gMA.unk_104 = 3;
+            gMA.task_unk_98 = 0xf0;
+        } else {
+            gMA.unk_102 = 0x31;
+            gMA.unk_104 = 0;
+            gMA.task_unk_98 = 0xf0;
+        }
+        break;
+
+    case 6:
+        gMA.unk_92 = 5;
+        gMA.condition &= ~MA_CONDITION_MASK;
+        gMA.condition |= MA_CONDITION_POP3 << MA_CONDITION_SHIFT;
+        MA_TaskSet(TASK_UNK_00, 0);
+        break;
+
+    case 0xf0:
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_TCPDisconnect(&gMA.buffer_unk_480, gMA.sockets[0]);
+        gMA.task_unk_98++;
+        break;
+
+    case 0xf1:
+        gMA.unk_92 = 3;
+        gMA.condition &= ~MA_CONDITION_MASK;
+        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetApiError(gMA.unk_102, gMA.unk_104);
+        MA_TaskSet(TASK_UNK_00, 0);
+        gMA.sockets_used[0] = FALSE;
+        break;
+    }
+}
 
 void MA_POP3_Stat(u16 *pNum, u32 *pSize)
 {
