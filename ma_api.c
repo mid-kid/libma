@@ -88,7 +88,7 @@ static void MA_SetApiError(u8 error, u16 unk_2)
 
 static int ApiValisStatusCheck(u8 unk_1)
 {
-    static int ret asm("ret.15");
+    static int ret;
 
     ret = TRUE;
     switch (unk_1) {
@@ -235,9 +235,9 @@ static void MakeEndLineBuffer(u8 *end, int size)
 
 static int IsEndMultiLine(void)
 {
-    static const char strEndMultiline[] asm("strEndMultiLine.25") = "\r\n.\r\n";
+    static const char strEndMultiLine[] = "\r\n.\r\n";
 
-    if (MAU_strcmp(gMA.unk_1788, strEndMultiline) == 0) {
+    if (MAU_strcmp(gMA.unk_1788, strEndMultiLine) == 0) {
         return TRUE;
     } else {
         return FALSE;
@@ -867,9 +867,9 @@ void MA_GetLocalAddress(u8 *address)
 
 static int EEPROMSumCheck(u8 *data)
 {
-    static u16 tmp asm("tmp.89");
-    static u16 sum asm("sum.90");
-    static int i asm("i.91");
+    static u16 tmp;
+    static u16 sum;
+    static int i;
 
     sum = 0;
     for (i = 0; i < 0xbe; i++) {
@@ -1744,9 +1744,8 @@ void MA_SMTP_Connect(const char *pMailAddress)
 
 static void MATASK_SMTP_Connect(void)
 {
-    static char *cp1 asm("cp1.149");
-    static const char *cp2 asm("cp2.150");
-    static int smtpRes asm("smtpRes.151");
+    static char *cp1, *cp2;
+    static int smtpRes;
 
     if (gMA.cmd_recv == (MACMD_ERROR | MAPROT_REPLY)) {
         switch (gMA.cmd_last) {
@@ -1948,7 +1947,7 @@ void MA_SMTP_Sender(const char * const pRecipients[])
 
 static void MATASK_SMTP_Sender(void)
 {
-    static int smtpRes asm("smtpRes.158");
+    static int smtpRes;
 
     if (gMA.cmd_recv == (MACMD_ERROR | MAPROT_REPLY)) {
         switch (gMA.cmd_last) {
@@ -2118,7 +2117,7 @@ void MA_SMTP_Send(const char *pSendData, u16 sendSize, int endFlag)
 
 static void MATASK_SMTP_Send(void)
 {
-    static int smtpRes asm("smtpRes.165");
+    static int smtpRes;
 
     if (gMA.cmd_recv == (MACMD_ERROR | MAPROT_REPLY)) {
         switch (gMA.cmd_last) {
@@ -2469,7 +2468,7 @@ void MA_POP3_Connect(const char *pUserID, const char *pPassword)
 
 static void MATASK_POP3_Connect(void)
 {
-    static int pop3res asm("pop3res.184");
+    static int pop3res;
 
     if (gMA.cmd_recv == (MACMD_ERROR | MAPROT_REPLY)) {
         switch (gMA.cmd_last) {
@@ -2651,8 +2650,8 @@ void MA_POP3_Stat(u16 *pNum, u32 *pSize)
 
 static void MATASK_POP3_Stat(void)
 {
-    static const char *cp asm("cp.191");
-    static int pop3res asm("pop3res.192");
+    static const char *cp;
+    static int pop3res;
 
     if (gMA.cmd_recv == (MACMD_ERROR | MAPROT_REPLY)) {
         switch (gMA.cmd_last) {
@@ -2767,8 +2766,8 @@ void MA_POP3_List(u16 mailNo, u32 *pSize)
 
 static void MATASK_POP3_List(void)
 {
-    static const char *cp asm("cp.199");
-    static int pop3res asm("pop3res.200");
+    static const char *cp;
+    static int pop3res;
 
     if (gMA.cmd_recv == (MACMD_ERROR | MAPROT_REPLY)) {
         switch (gMA.cmd_last) {
@@ -2918,9 +2917,9 @@ void MA_POP3_Retr(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
 
 static void MATASK_POP3_Retr(void)
 {
-    static const char *cp asm("cp.207");
-    static int dataLen asm("dataLen.208");
-    static int pop3res asm("pop3res.209");
+    static const char *cp;
+    static int dataLen;
+    static int pop3res;
 
     if (gMA.cmd_recv == (MACMD_ERROR | MAPROT_REPLY)) {
         switch (gMA.cmd_last) {
@@ -3074,7 +3073,7 @@ void MA_POP3_Dele(u16 mailNo)
 
 static void MATASK_POP3_Dele(void)
 {
-    static int pop3res asm("pop3res.216");
+    static int pop3res;
 
     if (gMA.cmd_recv == (MACMD_ERROR | MAPROT_REPLY)) {
         switch (gMA.cmd_last) {
@@ -3220,9 +3219,9 @@ void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
 
 static void MATASK_POP3_Head(void)
 {
-    static const char *cp asm("cp.223");
-    static int dataLen asm("dataLen.224");
-    static int pop3res asm("pop3res.225");
+    static const char *cp;
+    static int dataLen;
+    static int pop3res;
 
     if (gMA.cmd_recv == (MACMD_ERROR | MAPROT_REPLY)) {
         switch (gMA.cmd_last) {
@@ -3360,15 +3359,15 @@ static void MATASK_POP3_Head(void)
 
 static char *ExtractServerName(char *unk_1, char *unk_2, u8 *unk_3, u8 *unk_4)
 {
-    static const char strDownload[] asm("strDownload.229") = "gameboy.datacenter.ne.jp/cgb/download";
-    static const char strUpload[] asm("strUpload.230") = "gameboy.datacenter.ne.jp/cgb/upload";
-    static const char strUtility[] asm("strUtility.231") = "gameboy.datacenter.ne.jp/cgb/utility";
-    static const char strRanking[] asm("strRanking.232") = "gameboy.datacenter.ne.jp/cgb/ranking";
-    static const char strHttp[] asm("strHttp.233") = "http://";
+    static const char strDownload[] = "gameboy.datacenter.ne.jp/cgb/download";
+    static const char strUpload[] = "gameboy.datacenter.ne.jp/cgb/upload";
+    static const char strUtility[] = "gameboy.datacenter.ne.jp/cgb/utility";
+    static const char strRanking[] = "gameboy.datacenter.ne.jp/cgb/ranking";
+    static const char strHttp[] = "http://";
 
-    static char *cp asm("cp.234");
-    static char *tmpp asm("tmpp.235");
-    static int len asm("len.236");
+    static char *cp;
+    static char *tmpp;
+    static int len;
 
     if (MAU_strnicmp(unk_2, strHttp, sizeof(strHttp) - 1) == 0) {
         unk_2 += sizeof(strHttp) - 1;
@@ -3883,8 +3882,6 @@ MA_HTTP_GetPost:
     } \
 }
 
-asm(".section .rodata\n");
-
 static void ConcatUserAgent(char *user_agent)
 {
     static int tmpLen asm("tmpLen.249");
@@ -4293,6 +4290,7 @@ static int HttpGetNextStep(int unk_1)
 
 #if 0
 #else
+void MATASK_HTTP_GetPost(void);
 asm("
 .lcomm curCp.272, 0x4
 .lcomm nextCp.273, 0x4
@@ -6133,52 +6131,45 @@ void MA_GetPOP3ServerName(char *dest)
     CopyEEPROMString(dest, gMA.pop3_server, sizeof(gMA.pop3_server));
 }
 
-extern void (*taskProcTable[])(void);
-asm("
-.section .rodata
-.align 2
-.type taskProcTable, object
-taskProcTable:
-    .word 0x00000000
-    .word MATASK_InitLibrary
-    .word MATASK_InitLibrary
-    .word MATASK_TelServer
-    .word MATASK_Tel
-    .word MATASK_Receive
-    .word 0x00000000
-    .word 0x00000000
-    .word MATASK_Condition
-    .word MATASK_Condition
-    .word MATASK_Offline
-    .word MATASK_SMTP_Connect
-    .word MATASK_SMTP_Sender
-    .word MATASK_SMTP_Send
-    .word MATASK_SMTP_POP3_Quit
-    .word MATASK_POP3_Connect
-    .word MATASK_POP3_Stat
-    .word MATASK_POP3_List
-    .word MATASK_POP3_Retr
-    .word MATASK_POP3_Dele
-    .word MATASK_POP3_Head
-    .word MATASK_SMTP_POP3_Quit
-    .word MATASK_HTTP_GetPost
-    .word MATASK_HTTP_GetPost
-    .word 0x00000000
-    .word 0x00000000
-    .word 0x00000000
-    .word MATASK_GetEEPROMData
-    .word MATASK_EEPROM_Read
-    .word MATASK_EEPROM_Write
-    .word MATASK_Stop
-    .word MATASK_TCP_Cut
-    .word MATASK_TCP_Connect
-    .word MATASK_TCP_Disconnect
-    .word MATASK_TCP_SendRecv
-    .word MATASK_GetHostAddress
-    .word 0x00000000
-.size taskProcTable, .-taskProcTable
-.section .text
-");
+static void (*const taskProcTable[])(void) = {
+    NULL,
+    MATASK_InitLibrary,
+    MATASK_InitLibrary,
+    MATASK_TelServer,
+    MATASK_Tel,
+    MATASK_Receive,
+    NULL,
+    NULL,
+    MATASK_Condition,
+    MATASK_Condition,
+    MATASK_Offline,
+    MATASK_SMTP_Connect,
+    MATASK_SMTP_Sender,
+    MATASK_SMTP_Send,
+    MATASK_SMTP_POP3_Quit,
+    MATASK_POP3_Connect,
+    MATASK_POP3_Stat,
+    MATASK_POP3_List,
+    MATASK_POP3_Retr,
+    MATASK_POP3_Dele,
+    MATASK_POP3_Head,
+    MATASK_SMTP_POP3_Quit,
+    MATASK_HTTP_GetPost,
+    MATASK_HTTP_GetPost,
+    NULL,
+    NULL,
+    NULL,
+    MATASK_GetEEPROMData,
+    MATASK_EEPROM_Read,
+    MATASK_EEPROM_Write,
+    MATASK_Stop,
+    MATASK_TCP_Cut,
+    MATASK_TCP_Connect,
+    MATASK_TCP_Disconnect,
+    MATASK_TCP_SendRecv,
+    MATASK_GetHostAddress,
+    NULL
+};
 
 void MAAPI_Main(void)
 {
