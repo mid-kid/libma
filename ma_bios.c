@@ -227,7 +227,7 @@ void MABIOS_Init(void)
     gMA.status = 0;
     gMA.iobuf_sio_tx = NULL;
     gMA.cmd_cur = 0;
-    gMA.recv_cmd = 0;
+    gMA.cmd_recv = 0;
     gMA.recv_checksum = 0;
     gMA.send_footer[0] = 0;
     gMA.send_footer[1] = 0;
@@ -385,7 +385,7 @@ static int MA_PreSend(void)
     gMA.status &= ~STATUS_UNK_3;
     gMA.counter = flag;
     gMA.cmd_cur = 0;
-    gMA.recv_cmd = 0;
+    gMA.cmd_recv = 0;
     return TRUE;
 }
 
@@ -1083,7 +1083,7 @@ void MA_RecvRetry(void)
     gMA.status &= ~STATUS_UNK_3;
     gMA.intr_sio_mode = 2;
     gMA.iobuf_packet_send.state = 0;
-    gMA.unk_80 = 0;
+    gMA.cmd_last = 0;
     gMA.unk_81 = 0;
 }
 
@@ -1321,22 +1321,22 @@ static void ConvertNegaErrToApiErr(void)
         MAAPIE_CONNECT
     };
 
-    gMA.unk_102 = errTable[gMA.unk_81];
-    gMA.unk_104 = 0;
+    gMA.task_error = errTable[gMA.unk_81];
+    gMA.task_error_unk_2 = 0;
 }
 
 void MA_DefaultNegaResProc(void)
 {
-    switch(gMA.unk_80) {
+    switch(gMA.cmd_last) {
     case MACMD_TEL:
         switch(gMA.unk_81) {  // MAGIC
-            case 0: gMA.unk_102 = MAAPIE_BUSY; break;
-            case 1: gMA.unk_102 = MAAPIE_CONNECT; break;
-            case 2: gMA.unk_102 = MAAPIE_ILLEGAL_PARAMETER_LOW; break;
-            case 3: gMA.unk_102 = MAAPIE_CONNECT; break;
-            case 4: gMA.unk_102 = MAAPIE_CONNECT; break;
+            case 0: gMA.task_error = MAAPIE_BUSY; break;
+            case 1: gMA.task_error = MAAPIE_CONNECT; break;
+            case 2: gMA.task_error = MAAPIE_ILLEGAL_PARAMETER_LOW; break;
+            case 3: gMA.task_error = MAAPIE_CONNECT; break;
+            case 4: gMA.task_error = MAAPIE_CONNECT; break;
         }
-        gMA.unk_104 = 0;
+        gMA.task_error_unk_2 = 0;
         break;
 
     case MACMD_START:
@@ -1418,10 +1418,10 @@ static void MA_ProcessRecvPacket(u8 cmd)
             break;
 
         case MAPROT_REPLY | MACMD_ERROR:
-            gMA.unk_80 = gMA.iobuf_packet_recv.writeptr[0];
+            gMA.cmd_last = gMA.iobuf_packet_recv.writeptr[0];
             gMA.unk_81 = gMA.iobuf_packet_recv.writeptr[1];
 
-            if (gMA.unk_80 == MACMD_TCPCONNECT && ++gMA.unk_83 != 5) {
+            if (gMA.cmd_last == MACMD_TCPCONNECT && ++gMA.unk_83 != 5) {
                 gMA.timer_unk_12 = -0x4003;  // MAGIC
                 gMA.status |= STATUS_UNK_3;
                 gMA.intr_sio_mode = 3;  // MAGIC
@@ -1472,7 +1472,7 @@ void MA_IntrTimer(void)
     }
 
     if (gMA.status & STATUS_UNK_6) {
-        MA_ProcessRecvPacket(gMA.recv_cmd);
+        MA_ProcessRecvPacket(gMA.cmd_recv);
         gMA.status &= ~STATUS_UNK_7;
         *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE |
             TMR_PRESCALER_1024CK | gMA.timer_unk_12;
@@ -1687,7 +1687,7 @@ static void MA_IntrSio_Send(void)
     gMA.intr_sio_mode = 2;
     gMA.iobuf_packet_send.state = 0;
     gMA.counter = 0;
-    gMA.unk_80 = 0;
+    gMA.cmd_last = 0;
     gMA.unk_81 = 0;
 }
 
@@ -1746,7 +1746,7 @@ static void MA_IntrSio_Recv(u8 byte)
         // Parse the header
         switch (gMA.iobuf_packet_recv.readcnt) {
         case 0:  // Command
-            gMA.recv_cmd = recvByte;
+            gMA.cmd_recv = recvByte;
             break;
 
         case 1:  // Unused
@@ -1816,7 +1816,7 @@ static void MA_IntrSio_Recv(u8 byte)
             gMA.buffer_footer[1] = MAPROT_ERR_CHECKSUM;
             gMA.status |= STATUS_UNK_4;
         } else {
-            gMA.buffer_footer[1] = gMA.recv_cmd;
+            gMA.buffer_footer[1] = gMA.cmd_recv;
         }
         gMA.buffer_footer[3] = 0;
         gMA.buffer_footer[2] = 0;
