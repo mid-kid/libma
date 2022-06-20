@@ -4070,8 +4070,6 @@ static void MATASK_POP3_Head(void)
     }
 }
 
-#if 0
-
 static char *ExtractServerName(char *unk_1, char *unk_2, u8 *unk_3, u8 *unk_4)
 {
     static const char strDownload[] asm("strDownload.229") = "gameboy.datacenter.ne.jp/cgb/download";
@@ -4096,272 +4094,53 @@ static char *ExtractServerName(char *unk_1, char *unk_2, u8 *unk_3, u8 *unk_4)
         }
         MAU_strcpy(unk_1, unk_2);
         *unk_3 = 0;
-        return NULL;
-    }
-
-    len = cp - unk_2;
-    if (len > 0xff) {
-        *unk_1 = '\0';
-        return NULL;
-    }
-
-    MAU_memcpy(unk_1, unk_2, len);
-    unk_1[len] = '\0';
-
-    if (MAU_strnicmp(unk_2, strDownload, sizeof(strDownload) - 1) == 0) {
-        *unk_4 = 1;
-        *unk_3 = 1;
-        tmpp = MAU_strrchr(unk_2, '/') + 1;
-        if (tmpp[0] < '0' || tmpp[0] > '9') {
-            *unk_3 = 0;
-            return cp;
-        } else {
-            return cp;
+    } else {
+        len = cp - unk_2;
+        if (len > 0xff) {
+            *unk_1 = '\0';
+            return NULL;
         }
-    }
 
-    if (MAU_strnicmp(unk_2, strUpload, sizeof(strUpload) - 1) == 0) {
-        *unk_4 = 2;
-        *unk_3 = 2;
-        tmpp = MAU_strrchr(unk_2, '/') + 1;
-        if (tmpp[0] < '0' || tmpp[0] > '9') {
-            *unk_3 = 0;
-            return cp;
+        MAU_memcpy(unk_1, unk_2, len);
+        unk_1[len] = '\0';
+
+        if (MAU_strnicmp(unk_2, strDownload, sizeof(strDownload) - 1) == 0) {
+            *unk_4 = 1;
+            tmpp = MAU_strrchr(unk_2, '/');
+            tmpp++;
+            if (tmpp[0] >= '0' && tmpp[0] <= '9') {
+                *unk_3 = 1;
+            } else {
+                *unk_3 = 0;
+            }
+        } else if (MAU_strnicmp(unk_2, strUpload, sizeof(strUpload) - 1) == 0) {
+            *unk_4 = 2;
+            tmpp = MAU_strrchr(unk_2, '/');
+            tmpp++;
+            if (tmpp[0] >= '0' && tmpp[0] <= '9') {
+                *unk_3 = 2;
+            } else {
+                *unk_3 = 0;
+            }
+        } else if (MAU_strnicmp(unk_2, strUtility, sizeof(strUtility) - 1) == 0) {
+            *unk_4 = 3;
+            *unk_3 = 3;
+        } else if (MAU_strnicmp(unk_2, strRanking, sizeof(strRanking) - 1) == 0) {
+            *unk_4 = 4;
+            tmpp = MAU_strrchr(unk_2, '/');
+            tmpp++;
+            if (tmpp[0] >= '0' && tmpp[0] <= '9') {
+                *unk_3 = 4;
+            } else {
+                *unk_3 = 0;
+            }
         } else {
-            return cp;
-        }
-    }
-
-    if (MAU_strnicmp(unk_2, strUtility, sizeof(strUtility) - 1) == 0) {
-        *unk_4 = 3;
-        *unk_3 = 3;
-        return cp;
-    }
-
-    if (MAU_strnicmp(unk_2, strRanking, sizeof(strRanking) - 1) == 0) {
-        *unk_4 = 4;
-        *unk_3 = 4;
-        tmpp = MAU_strrchr(unk_2, '/') + 1;
-        if (tmpp[0] < '0' || tmpp[0] > '9') {
             *unk_3 = 0;
-            return cp;
-        } else {
-            return cp;
         }
     }
 
     return cp;
 }
-
-#else
-asm("
-.section .rodata
-.align 2
-.type strDownload.229, object
-strDownload.229:
-    .asciz \"gameboy.datacenter.ne.jp/cgb/download\"
-.size strDownload.229, .-strDownload.229
-
-.align 2
-.type strUpload.230, object
-strUpload.230:
-    .asciz \"gameboy.datacenter.ne.jp/cgb/upload\"
-.size strUpload.230, .-strUpload.230
-
-.align 2
-.type strUtility.231, object
-strUtility.231:
-    .asciz \"gameboy.datacenter.ne.jp/cgb/utility\"
-.size strUtility.231, .-strUtility.231
-
-.align 2
-.type strRanking.232, object
-strRanking.232:
-    .asciz \"gameboy.datacenter.ne.jp/cgb/ranking\"
-.size strRanking.232, .-strRanking.232
-
-.align 2
-.type strHttp.233, object
-strHttp.233:
-    .asciz \"http://\"
-.size strHttp.233, .-strHttp.233
-.section .text
-
-.lcomm cp.234, 0x4
-.lcomm tmpp.235, 0x4
-.lcomm len.236, 0x4
-
-.align 2
-.thumb_func
-ExtractServerName:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, r9
-    mov	r6, r8
-    push	{r6, r7}
-    mov	r6, r0
-    mov	r4, r1
-    mov	r7, r2
-    mov	r9, r3
-    ldr	r1, [pc, #52]
-    mov	r0, r4
-    mov	r2, #7
-    bl	MAU_strnicmp
-    cmp	r0, #0
-    bne	ExtractServerName+0x20
-    add	r4, #7
-    mov	r0, r4
-    mov	r1, #47
-    bl	MAU_strchr
-    mov	r5, r0
-    ldr	r0, [pc, #32]
-    str	r5, [r0, #0]
-    cmp	r5, #0
-    bne	ExtractServerName+0x5c
-    mov	r0, r4
-    mov	r1, #0
-    bl	MAU_strchr
-    sub	r0, r0, r4
-    cmp	r0, #255
-    ble	ExtractServerName+0x50
-    strb	r5, [r6, #0]
-    mov	r0, #0
-    b	ExtractServerName+0x14e
-.align 2
-    .word strHttp.233
-    .word cp.234
-
-    mov	r0, r6
-    mov	r1, r4
-    bl	MAU_strcpy
-    strb	r5, [r7, #0]
-    b	ExtractServerName+0x14a
-    ldr	r0, [pc, #16]
-    mov	r8, r0
-    sub	r2, r5, r4
-    str	r2, [r0, #0]
-    cmp	r2, #255
-    ble	ExtractServerName+0x74
-    mov	r0, #0
-    strb	r0, [r6, #0]
-    mov	r0, #0
-    b	ExtractServerName+0x14e
-.align 2
-    .word len.236
-
-    mov	r0, r6
-    mov	r1, r4
-    bl	MAU_memcpy
-    mov	r1, r8
-    ldr	r0, [r1, #0]
-    add	r0, r6, r0
-    mov	r6, #0
-    strb	r6, [r0, #0]
-    ldr	r1, [pc, #48]
-    mov	r0, r4
-    mov	r2, #37
-    bl	MAU_strnicmp
-    mov	r5, r0
-    cmp	r5, #0
-    bne	ExtractServerName+0xc0
-    mov	r6, #1
-    mov	r0, r9
-    strb	r6, [r0, #0]
-    mov	r0, r4
-    mov	r1, #47
-    bl	MAU_strrchr
-    ldr	r2, [pc, #20]
-    add	r1, r0, #1
-    str	r1, [r2, #0]
-    ldrb	r0, [r0, #1]
-    sub	r0, #48
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #9
-    bls	ExtractServerName+0x148
-    b	ExtractServerName+0x58
-.align 2
-    .word strDownload.229
-    .word tmpp.235
-
-    ldr	r1, [pc, #48]
-    mov	r0, r4
-    mov	r2, #35
-    bl	MAU_strnicmp
-    mov	r5, r0
-    cmp	r5, #0
-    bne	ExtractServerName+0xfc
-    mov	r6, #2
-    mov	r1, r9
-    strb	r6, [r1, #0]
-    mov	r0, r4
-    mov	r1, #47
-    bl	MAU_strrchr
-    ldr	r2, [pc, #24]
-    add	r1, r0, #1
-    str	r1, [r2, #0]
-    ldrb	r0, [r0, #1]
-    sub	r0, #48
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #9
-    bls	ExtractServerName+0x148
-    b	ExtractServerName+0x58
-.align 2
-    .word strUpload.230
-    .word tmpp.235
-
-    ldr	r1, [pc, #20]
-    mov	r0, r4
-    mov	r2, #36
-    bl	MAU_strnicmp
-    cmp	r0, #0
-    bne	ExtractServerName+0x118
-    mov	r0, #3
-    mov	r1, r9
-    strb	r0, [r1, #0]
-    strb	r0, [r7, #0]
-    b	ExtractServerName+0x14a
-.align 2
-    .word strUtility.231
-
-    ldr	r1, [pc, #64]
-    mov	r0, r4
-    mov	r2, #36
-    bl	MAU_strnicmp
-    mov	r5, r0
-    cmp	r5, #0
-    bne	ExtractServerName+0x148
-    mov	r6, #4
-    mov	r0, r9
-    strb	r6, [r0, #0]
-    mov	r0, r4
-    mov	r1, #47
-    bl	MAU_strrchr
-    ldr	r2, [pc, #40]
-    add	r1, r0, #1
-    str	r1, [r2, #0]
-    ldrb	r0, [r0, #1]
-    sub	r0, #48
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #9
-    bhi	ExtractServerName+0x58
-    strb	r6, [r7, #0]
-    ldr	r0, [pc, #24]
-    ldr	r0, [r0, #0]
-    pop	{r3, r4}
-    mov	r8, r3
-    mov	r9, r4
-    pop	{r4, r5, r6, r7}
-    pop	{r1}
-    bx	r1
-.align 2
-    .word strRanking.232
-    .word tmpp.235
-    .word cp.234
-.size ExtractServerName, .-ExtractServerName
-");
-#endif
 
 static const char strHttpGet[] = "GET ";
 static const char strHttpPost[] = "POST ";
