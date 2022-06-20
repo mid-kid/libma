@@ -2362,7 +2362,7 @@ static void MATASK_SMTP_Sender(void)
         }
 
         smtpRes = CheckSMTPResponse(gMA.prevbuf);
-        if (smtpRes == FALSE) {
+        if (!smtpRes) {
             gMA.error_unk_94 =
                 (gMA.prevbuf[0] - '0') * 100 +
                 (gMA.prevbuf[1] - '0') * 10 +
@@ -2409,7 +2409,7 @@ static void MATASK_SMTP_Sender(void)
         }
 
         smtpRes = CheckSMTPResponse(gMA.prevbuf);
-        if (smtpRes == FALSE) {
+        if (!smtpRes) {
             gMA.error_unk_94 =
                 (gMA.prevbuf[0] - '0') * 100 +
                 (gMA.prevbuf[1] - '0') * 10 +
@@ -2476,527 +2476,175 @@ void MA_SMTP_Send(const char *pSendData, u16 sendSize, int endFlag)
     ResetApiCallFlag();
 }
 
-#if 0
-#else
-asm("
-.lcomm smtpRes.165, 0x4
+static void MATASK_SMTP_Send(void)
+{
+    static int smtpRes asm("smtpRes.165");
 
-.align 2
-.thumb_func
-MATASK_SMTP_Send:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, r8
-    push	{r7}
-    ldr	r4, [pc, #48]
-    mov	r0, r4
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    cmp	r0, #238
-    bne	MATASK_SMTP_Send+0x4e
-    mov	r0, r4
-    add	r0, #80
-    ldrb	r0, [r0, #0]
-    cmp	r0, #21
-    bne	MATASK_SMTP_Send+0x3c
-    mov	r2, r4
-    add	r2, #102
-    mov	r1, #0
-    mov	r0, #36
-    strb	r0, [r2, #0]
-    mov	r0, r4
-    add	r0, #104
-    strh	r1, [r0, #0]
-    mov	r1, r4
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    mov	r0, #240
-    strb	r0, [r1, #0]
-    b	MATASK_SMTP_Send+0x4e
-.align 2
-    .word gMA
+    if (gMA.cmd_recv == (MACMD_ERROR | MAPROT_REPLY)) {
+        switch (gMA.cmd_last) {
+        case MACMD_DATA:
+            gMA.task_error = MAAPIE_TCP_CONNECT;
+            gMA.task_error_unk_2 = 0;
+            gMA.task_step = 0xf0;
+            break;
 
-    cmp	r0, #36
-    beq	MATASK_SMTP_Send+0x4e
-    bl	MA_DefaultNegaResProc
-    mov	r0, r4
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    mov	r1, #241
-    strb	r1, [r0, #0]
-    bl	MA_GetCondition
-    mov	r1, #64
-    and	r1, r0
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    mov	r8, r1
-    cmp	r1, #0
-    beq	MATASK_SMTP_Send+0xa0
-    ldr	r3, [pc, #56]
-    mov	r1, r3
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    mov	r0, #3
-    strb	r0, [r1, #0]
-    ldrh	r1, [r3, #2]
-    mov	r0, #255
-    and	r0, r1
-    ldrh	r1, [r3, #2]
-    mov	r2, #0
-    strh	r0, [r3, #2]
-    ldrh	r0, [r3, #2]
-    mov	r4, #128
-    lsl	r4, r4, #1
-    mov	r1, r4
-    orr	r0, r1
-    ldrh	r1, [r3, #2]
-    orr	r0, r2
-    strh	r0, [r3, #2]
-    mov	r0, r3
-    add	r0, #99
-    strb	r2, [r0, #0]
-    add	r0, #105
-    strb	r2, [r0, #0]
-    mov	r0, #48
-    mov	r1, #0
-    bl	MA_SetApiError
-    b	MATASK_SMTP_Send+0x248
-.align 2
-    .word gMA
+        case MACMD_TCPDISCONNECT:
+            break;
 
-    ldr	r6, [pc, #32]
-    mov	r7, r6
-    add	r7, #98
-    ldrb	r0, [r7, #0]
-    mov	r4, r6
-    cmp	r0, #50
-    bne	MATASK_SMTP_Send+0xb0
-    b	MATASK_SMTP_Send+0x252
-    cmp	r0, #50
-    bgt	MATASK_SMTP_Send+0xd4
-    cmp	r0, #1
-    beq	MATASK_SMTP_Send+0x11a
-    cmp	r0, #1
-    bgt	MATASK_SMTP_Send+0xc8
-    cmp	r0, #0
-    beq	MATASK_SMTP_Send+0xfa
-    b	MATASK_SMTP_Send+0x42a
-.align 2
-    .word gMA
+        default:
+            MA_DefaultNegaResProc();
+            gMA.task_step = 0xf1;
+            break;
+        }
+    }
 
-    cmp	r0, #2
-    beq	MATASK_SMTP_Send+0x1a6
-    cmp	r0, #3
-    bne	MATASK_SMTP_Send+0xd2
-    b	MATASK_SMTP_Send+0x248
-    b	MATASK_SMTP_Send+0x42a
-    cmp	r0, #101
-    bne	MATASK_SMTP_Send+0xda
-    b	MATASK_SMTP_Send+0x2e8
-    cmp	r0, #101
-    bgt	MATASK_SMTP_Send+0xec
-    cmp	r0, #51
-    bne	MATASK_SMTP_Send+0xe4
-    b	MATASK_SMTP_Send+0x26c
-    cmp	r0, #100
-    bne	MATASK_SMTP_Send+0xea
-    b	MATASK_SMTP_Send+0x28e
-    b	MATASK_SMTP_Send+0x42a
-    cmp	r0, #240
-    bne	MATASK_SMTP_Send+0xf2
-    b	MATASK_SMTP_Send+0x3c4
-    cmp	r0, #241
-    bne	MATASK_SMTP_Send+0xf8
-    b	MATASK_SMTP_Send+0x3e6
-    b	MATASK_SMTP_Send+0x42a
-    mov	r1, r6
-    add	r1, #96
-    ldrb	r0, [r1, #0]
-    cmp	r0, #1
-    bne	MATASK_SMTP_Send+0x112
-    ldrb	r0, [r1, #0]
-    mov	r0, r8
-    strb	r0, [r1, #0]
-    ldrb	r0, [r7, #0]
-    mov	r0, #100
-    strb	r0, [r7, #0]
-    b	MATASK_SMTP_Send+0x42a
-    ldrb	r0, [r7, #0]
-    add	r0, #1
-    ldrb	r1, [r7, #0]
-    strb	r0, [r7, #0]
-    ldr	r0, [r4, #116]
-    cmp	r0, #254
-    bls	MATASK_SMTP_Send+0x158
-    mov	r1, #240
-    lsl	r1, r1, #1
-    add	r0, r4, r1
-    mov	r1, #0
-    strh	r1, [r0, #0]
-    mov	r1, r4
-    add	r1, #212
-    str	r1, [r0, #4]
-    ldr	r1, [r4, #112]
-    mov	r2, r4
-    add	r2, #99
-    ldrb	r3, [r2, #0]
-    mov	r2, #254
-    bl	MABIOS_Data
-    ldr	r0, [r4, #112]
-    add	r0, #254
-    str	r0, [r4, #112]
-    ldr	r0, [r4, #116]
-    sub	r0, #254
-    str	r0, [r4, #116]
-    mov	r2, r4
-    add	r2, #132
-    mov	r1, r4
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    str	r0, [r2, #0]
-    b	MATASK_SMTP_Send+0x19e
-    bl	InitPrevBuf
-    mov	r2, #240
-    lsl	r2, r2, #1
-    add	r0, r4, r2
-    mov	r1, #0
-    strh	r1, [r0, #0]
-    mov	r1, r4
-    add	r1, #212
-    str	r1, [r0, #4]
-    ldr	r1, [r4, #112]
-    ldr	r2, [r4, #116]
-    lsl	r2, r2, #24
-    lsr	r2, r2, #24
-    mov	r3, r4
-    add	r3, #99
-    ldrb	r3, [r3, #0]
-    bl	MABIOS_Data
-    ldr	r0, [r4, #120]
-    cmp	r0, #1
-    bne	MATASK_SMTP_Send+0x194
-    mov	r2, r4
-    add	r2, #132
-    mov	r1, r4
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    add	r0, #1
-    str	r0, [r2, #0]
-    b	MATASK_SMTP_Send+0x19e
-    mov	r1, r4
-    add	r1, #132
-    mov	r0, #3
-    str	r0, [r1, #0]
-    sub	r1, #34
-    ldrb	r0, [r1, #0]
-    mov	r0, #50
-    strb	r0, [r1, #0]
-    b	MATASK_SMTP_Send+0x42a
-    mov	r4, #242
-    lsl	r4, r4, #1
-    add	r0, r6, r4
-    ldr	r0, [r0, #0]
-    add	r0, #1
-    mov	r1, #240
-    lsl	r1, r1, #1
-    add	r5, r6, r1
-    ldrh	r1, [r5, #0]
-    sub	r1, #1
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    bl	ConcatPrevBuf
-    ldr	r2, [pc, #108]
-    add	r4, r6, r2
-    ldr	r1, [pc, #108]
-    add	r0, r6, r1
-    ldrh	r1, [r0, #0]
-    mov	r0, r4
-    bl	MAU_CheckCRLF
-    cmp	r0, #0
-    bne	MATASK_SMTP_Send+0x1d8
-    b	MATASK_SMTP_Send+0x318
-    mov	r0, r4
-    bl	CheckSMTPResponse
-    ldr	r1, [pc, #88]
-    str	r0, [r1, #0]
-    cmp	r0, #0
-    beq	MATASK_SMTP_Send+0x1e8
-    b	MATASK_SMTP_Send+0x3ac
-    ldrb	r0, [r4, #0]
-    sub	r0, #48
-    mov	r1, #100
-    mov	r2, r0
-    mul	r2, r1
-    ldr	r4, [pc, #72]
-    add	r0, r6, r4
-    ldrb	r1, [r0, #0]
-    sub	r1, #48
-    lsl	r0, r1, #2
-    add	r0, r0, r1
-    lsl	r0, r0, #1
-    add	r2, r2, r0
-    ldr	r1, [pc, #60]
-    add	r0, r6, r1
-    ldr	r4, [pc, #60]
-    add	r2, r2, r4
-    ldrb	r0, [r0, #0]
-    add	r2, r2, r0
-    mov	r1, r6
-    add	r1, #94
-    ldrh	r0, [r1, #0]
-    strh	r2, [r1, #0]
-    ldrh	r0, [r1, #0]
-    cmp	r0, #250
-    bne	MATASK_SMTP_Send+0x21e
-    b	MATASK_SMTP_Send+0x3dc
-    mov	r2, r6
-    add	r2, #102
-    mov	r0, #48
-    strb	r0, [r2, #0]
-    ldrh	r1, [r1, #0]
-    mov	r0, r6
-    add	r0, #104
-    b	MATASK_SMTP_Send+0x3ba
-.align 2
-    .word 0x0000047d
-    .word 0x000006fa
-    .word smtpRes.165
-    .word 0x0000047e
-    .word 0x0000047f
-    .word 0x0000ffd0
+    if (MA_GetCondition() & MA_CONDITION_UNK_6) {
+        gMA.unk_92 = 3;
+        gMA.condition &= ~MA_CONDITION_MASK;
+        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        gMA.sockets[0] = 0;
+        gMA.sockets_used[0] = FALSE;
+        MA_SetApiError(MAAPIE_SMTP, 0);
+        MA_TaskSet(TASK_UNK_00, 0);
+        return;
+    }
 
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    b	MATASK_SMTP_Send+0x42a
-    mov	r2, r6
-    add	r2, #128
-    ldrb	r0, [r6, #5]
-    lsl	r0, r0, #2
-    mov	r1, r6
-    add	r1, #52
-    add	r0, r0, r1
-    ldr	r0, [r0, #0]
-    str	r0, [r2, #0]
-    ldrb	r0, [r7, #0]
-    add	r0, #1
-    ldrb	r1, [r7, #0]
-    strb	r0, [r7, #0]
-    mov	r0, r4
-    add	r0, #128
-    ldr	r1, [r0, #0]
-    sub	r1, #1
-    str	r1, [r0, #0]
-    mov	r0, #1
-    neg	r0, r0
-    cmp	r1, r0
-    beq	MATASK_SMTP_Send+0x280
-    b	MATASK_SMTP_Send+0x42a
-    mov	r0, r4
-    add	r0, #132
-    ldr	r1, [r0, #0]
-    sub	r0, #34
-    ldrb	r2, [r0, #0]
-    strb	r1, [r0, #0]
-    b	MATASK_SMTP_Send+0x42a
-    mov	r2, #220
-    lsl	r2, r2, #2
-    add	r5, r6, r2
-    ldr	r1, [pc, #76]
-    mov	r0, r5
-    bl	MAU_strcpy
-    bl	InitPrevBuf
-    mov	r0, #240
-    lsl	r0, r0, #1
-    add	r4, r6, r0
-    mov	r1, r8
-    strh	r1, [r4, #0]
-    mov	r0, r6
-    add	r0, #212
-    str	r0, [r4, #4]
-    mov	r0, r5
-    bl	MAU_strlen
-    mov	r2, r0
-    lsl	r2, r2, #24
-    lsr	r2, r2, #24
-    mov	r0, r6
-    add	r0, #99
-    ldrb	r3, [r0, #0]
-    mov	r0, r4
-    mov	r1, r5
-    bl	MABIOS_Data
-    ldrb	r0, [r7, #0]
-    add	r0, #1
-    ldrb	r1, [r7, #0]
-    strb	r0, [r7, #0]
-    mov	r1, r6
-    add	r1, #132
-    ldrb	r0, [r7, #0]
-    str	r0, [r1, #0]
-    ldrb	r0, [r7, #0]
-    mov	r0, #50
-    strb	r0, [r7, #0]
-    b	MATASK_SMTP_Send+0x42a
-.align 2
-    .word strEndMultiLine.25+0x38
+    switch (gMA.task_step) {
+    case 0:
+        if (gMA.unk_96 == 1) {
+            gMA.unk_96 = 0;
+            gMA.task_step = 100;
+            break;
+        }
+        gMA.task_step++;
 
-    mov	r2, #242
-    lsl	r2, r2, #1
-    add	r0, r6, r2
-    ldr	r0, [r0, #0]
-    add	r0, #1
-    mov	r4, #240
-    lsl	r4, r4, #1
-    add	r5, r6, r4
-    ldrh	r1, [r5, #0]
-    sub	r1, #1
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    bl	ConcatPrevBuf
-    ldr	r0, [pc, #44]
-    add	r4, r6, r0
-    ldr	r1, [pc, #44]
-    add	r0, r6, r1
-    ldrh	r1, [r0, #0]
-    mov	r0, r4
-    bl	MAU_CheckCRLF
-    cmp	r0, #0
-    bne	MATASK_SMTP_Send+0x33c
-    mov	r2, r8
-    strh	r2, [r5, #0]
-    mov	r0, r6
-    add	r0, #212
-    str	r0, [r5, #4]
-    sub	r0, #113
-    ldrb	r3, [r0, #0]
-    mov	r0, r5
-    mov	r1, #0
-    mov	r2, #0
-    bl	MABIOS_Data
-    b	MATASK_SMTP_Send+0x42a
-.align 2
-    .word 0x0000047d
-    .word 0x000006fa
+    case 1:
+        if (gMA.unk_116 >= 0xff) {
+            (&gMA.buffer_unk_480)->size = 0;
+            (&gMA.buffer_unk_480)->data = gMA.unk_212;
+            MABIOS_Data(&gMA.buffer_unk_480, gMA.unk_112, 254, gMA.sockets[0]);
+            gMA.unk_112 += 254;
+            gMA.unk_116 -= 254;
+            gMA.unk_132 = gMA.task_step;
+            gMA.task_step = 50;
+            break;
+        }
+        InitPrevBuf();
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_Data(&gMA.buffer_unk_480, gMA.unk_112, gMA.unk_116, gMA.sockets[0]);
+        if (gMA.unk_120 == 1) {
+            gMA.unk_132 = gMA.task_step + 1;
+            gMA.task_step = 50;
+            break;
+        }
 
-    mov	r0, r4
-    bl	CheckSMTPResponse
-    ldr	r1, [pc, #72]
-    str	r0, [r1, #0]
-    cmp	r0, #0
-    bne	MATASK_SMTP_Send+0x3ac
-    ldrb	r0, [r4, #0]
-    sub	r0, #48
-    mov	r1, #100
-    mov	r2, r0
-    mul	r2, r1
-    ldr	r4, [pc, #56]
-    add	r0, r6, r4
-    ldrb	r1, [r0, #0]
-    sub	r1, #48
-    lsl	r0, r1, #2
-    add	r0, r0, r1
-    lsl	r0, r0, #1
-    add	r2, r2, r0
-    ldr	r1, [pc, #44]
-    add	r0, r6, r1
-    ldr	r4, [pc, #44]
-    add	r2, r2, r4
-    ldrb	r0, [r0, #0]
-    add	r2, r2, r0
-    mov	r3, r6
-    add	r3, #94
-    ldrh	r0, [r3, #0]
-    strh	r2, [r3, #0]
-    ldrh	r1, [r3, #0]
-    mov	r0, #177
-    lsl	r0, r0, #1
-    cmp	r1, r0
-    bne	MATASK_SMTP_Send+0x39c
-    ldrb	r0, [r7, #0]
-    mov	r0, #1
-    strb	r0, [r7, #0]
-    b	MATASK_SMTP_Send+0x42a
-.align 2
-    .word smtpRes.165
-    .word 0x0000047e
-    .word 0x0000047f
-    .word 0x0000ffd0
+        gMA.unk_132 = 3;
+        gMA.task_step = 50;
+        break;
 
-    mov	r1, r6
-    add	r1, #102
-    mov	r0, #48
-    strb	r0, [r1, #0]
-    ldrh	r1, [r3, #0]
-    mov	r0, r6
-    add	r0, #104
-    b	MATASK_SMTP_Send+0x3ba
-    mov	r1, r6
-    add	r1, #102
-    mov	r0, #48
-    strb	r0, [r1, #0]
-    mov	r0, r6
-    add	r0, #104
-    mov	r1, r8
-    strh	r1, [r0, #0]
-    ldrb	r0, [r7, #0]
-    mov	r0, #240
-    strb	r0, [r7, #0]
-    b	MATASK_SMTP_Send+0x42a
-    mov	r2, #240
-    lsl	r2, r2, #1
-    add	r0, r6, r2
-    mov	r4, r8
-    strh	r4, [r0, #0]
-    mov	r1, r6
-    add	r1, #212
-    str	r1, [r0, #4]
-    sub	r1, #113
-    ldrb	r1, [r1, #0]
-    bl	MABIOS_TCPDisconnect
-    ldrb	r0, [r7, #0]
-    add	r0, #1
-    ldrb	r1, [r7, #0]
-    strb	r0, [r7, #0]
-    b	MATASK_SMTP_Send+0x42a
-    mov	r1, r6
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    mov	r0, #3
-    strb	r0, [r1, #0]
-    ldrh	r1, [r6, #2]
-    mov	r0, #255
-    and	r0, r1
-    ldrh	r1, [r6, #2]
-    mov	r4, #0
-    strh	r0, [r6, #2]
-    ldrh	r0, [r6, #2]
-    mov	r2, #128
-    lsl	r2, r2, #1
-    mov	r1, r2
-    orr	r0, r1
-    ldrh	r1, [r6, #2]
-    orr	r0, r4
-    strh	r0, [r6, #2]
-    mov	r0, r6
-    add	r0, #102
-    ldrb	r0, [r0, #0]
-    mov	r1, r6
-    add	r1, #104
-    ldrh	r1, [r1, #0]
-    bl	MA_SetApiError
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    mov	r0, r6
-    add	r0, #204
-    strb	r4, [r0, #0]
-    pop	{r3}
-    mov	r8, r3
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.size MATASK_SMTP_Send, .-MATASK_SMTP_Send
-");
-#endif
+    case 2:
+        ConcatPrevBuf(&gMA.buffer_unk_480.data[1], gMA.buffer_unk_480.size - 1);
+        if (!MAU_CheckCRLF(gMA.prevbuf, gMA.prevbuf_size)) {
+            (&gMA.buffer_unk_480)->size = 0;
+            (&gMA.buffer_unk_480)->data = gMA.unk_212;
+            MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, gMA.sockets[0]);
+            break;
+        }
+
+        smtpRes = CheckSMTPResponse(gMA.prevbuf);
+        if (!smtpRes) {
+            gMA.error_unk_94 =
+                (gMA.prevbuf[0] - '0') * 100 +
+                (gMA.prevbuf[1] - '0') * 10 +
+                (gMA.prevbuf[2] - '0');
+            if (gMA.error_unk_94 == 250) {
+                gMA.task_step++;
+                break;
+            }
+
+            gMA.task_error = MAAPIE_SMTP;
+            gMA.task_error_unk_2 = gMA.error_unk_94;
+            gMA.task_step = 0xf0;
+            break;
+        }
+
+        gMA.task_error = MAAPIE_SMTP;
+        gMA.task_error_unk_2 = 0;
+        gMA.task_step = 0xf0;
+        break;
+
+    case 3:
+        MA_TaskSet(TASK_UNK_00, 0);
+        break;
+
+    case 50:
+        gMA.unk_128 = gMA.counter_adapter[gMA.sio_mode];
+        gMA.task_step++;
+
+    case 51:
+        if (gMA.unk_128-- == 0) gMA.task_step = gMA.unk_132;
+        break;
+
+    case 100:
+        MAU_strcpy(gMA.unk_880, POP3_Data);
+        InitPrevBuf();
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_Data(&gMA.buffer_unk_480, gMA.unk_880, MAU_strlen(gMA.unk_880), gMA.sockets[0]);
+        gMA.task_step++;
+        gMA.unk_132 = gMA.task_step;
+        gMA.task_step = 50;
+        break;
+
+    case 101:
+        ConcatPrevBuf(&gMA.buffer_unk_480.data[1], gMA.buffer_unk_480.size - 1);
+        if (!MAU_CheckCRLF(gMA.prevbuf, gMA.prevbuf_size)) {
+            (&gMA.buffer_unk_480)->size = 0;
+            (&gMA.buffer_unk_480)->data = gMA.unk_212;
+            MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, gMA.sockets[0]);
+            break;
+        } 
+
+        smtpRes = CheckSMTPResponse(gMA.prevbuf);
+        if (!smtpRes) {
+            gMA.error_unk_94 =
+                (gMA.prevbuf[0] - '0') * 100 +
+                (gMA.prevbuf[1] - '0') * 10 +
+                (gMA.prevbuf[2] - '0');
+            if (gMA.error_unk_94 == 354) {
+                gMA.task_step = 1;
+                break;
+            }
+
+            gMA.task_error = MAAPIE_SMTP;
+            gMA.task_error_unk_2 = gMA.error_unk_94;
+            gMA.task_step = 0xf0;
+            break;
+        }
+
+        gMA.task_error = MAAPIE_SMTP;
+        gMA.task_error_unk_2 = 0;
+        gMA.task_step = 0xf0;
+        break;
+
+    case 0xf0:
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_TCPDisconnect(&gMA.buffer_unk_480, gMA.sockets[0]);
+        gMA.task_step++;
+        break;
+
+    case 0xf1:
+        gMA.unk_92 = 3;
+        gMA.condition &= ~MA_CONDITION_MASK;
+        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
+        MA_TaskSet(TASK_UNK_00, 0);
+        gMA.sockets_used[0] = FALSE;
+        break;
+    }
+}
 
 void MA_POP3_Quit(void)
 {
