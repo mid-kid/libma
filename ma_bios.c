@@ -1147,8 +1147,8 @@ static void MA_IntrTimer_SIOIdle(void)
             (&gMA.buffer_unk_480)->size = 0;
             (&gMA.buffer_unk_480)->data = gMA.unk_212;
             if (gMA.status & STATUS_UNK_13) {
-                MABIOS_Data2(&gMA.buffer_unk_480, gMA.unk_112, gMA.unk_116);
-                gMA.unk_112 = NULL;
+                MABIOS_Data2(&gMA.buffer_unk_480, (u8 *)gMA.unk_112, gMA.unk_116);
+                gMA.unk_112 = 0;
                 gMA.unk_116 = 0;
                 gMA.status |= STATUS_UNK_10;
             } else {

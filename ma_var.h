@@ -27,6 +27,7 @@
 #define STATUS_UNK_13 (1 << 13)
 #define STATUS_UNK_14 (1 << 14)
 #define STATUS_UNK_15 (1 << 15)
+#define STATUS_UNK_16 (1 << 16)
 
 #define TASK_UNK_00 0x00
 #define TASK_UNK_01 0x01
@@ -50,6 +51,8 @@
 #define TASK_UNK_12 0x12
 #define TASK_UNK_13 0x13
 #define TASK_UNK_15 0x15
+#define TASK_UNK_16 0x16
+#define TASK_UNK_17 0x17
 #define TASK_UNK_18 0x18
 #define TASK_UNK_19 0x19
 #define TASK_UNK_1A 0x1a
@@ -155,7 +158,7 @@ typedef struct {
     u16 task_error_unk_2;
     u8 ipaddr[4];
     u8 _110[2];
-    u8 *unk_112;
+    u32 unk_112;
     u32 unk_116;
     u32 unk_120;
     u32 unk_124;
@@ -163,10 +166,18 @@ typedef struct {
     u32 unk_132;
     u32 unk_136;
     u32 unk_140;
-    u8 _144[16];
+    u32 unk_144;
+    u32 unk_148;
+    u32 unk_152;
+    u32 unk_156;
     u32 unk_160;
     u32 unk_164;
-    u8 _168[36];
+    u8 *unk_168;
+    u8 _172[8];
+    const char *unk_180;
+    const char *unk_184;
+    u32 unk_188;
+    u8 _192[12];
     u8 sockets_used[NUM_SOCKETS];
     u8 local_address[4];
     u8 _210[2];
@@ -186,7 +197,7 @@ typedef struct {
     u8 unk_832[4];
     u8 smtp_server[20];
     u8 pop3_server[20];
-    u8 _876[4];
+    u32 unk_876;
     u8 unk_880[14];
     u8 _894[255];
     u8 prevbuf[12];

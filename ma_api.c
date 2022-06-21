@@ -46,7 +46,7 @@ static void MA_ConditionMain(u8 *pCondition, int task);
 //static void MATASK_POP3_Dele();
 //static void MATASK_POP3_Head();
 //static void ExtractServerName();
-static void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword, int unk_1);
+static void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword, int task);
 //static void ConcatUserAgent();
 //static void GetRequestType();
 //static void CreateHttpRequestHeader();
@@ -399,7 +399,7 @@ void MA_TCP_Cut(void)
         return;
     }
 
-    gMA.unk_112 = (u8 *)(u32)gMA.cmd_cur;
+    gMA.unk_112 = gMA.cmd_cur;
     gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
     if (!(gMA.condition & MA_CONDITION_UNK_5 || gMA.unk_92 == 3)) {
         gMA.condition |= MA_CONDITION_APIWAIT;
@@ -496,7 +496,7 @@ void MA_InitLibraryMain(u8 *pHardwareType, int task)
     MABIOS_Init();
 
     gMA.unk_101 = 0;
-    gMA.unk_112 = pHardwareType;
+    gMA.unk_112 = (u32)pHardwareType;
     MA_TaskSet(task, 0);
 
     gMA.condition |= MA_CONDITION_APIWAIT;
@@ -536,7 +536,7 @@ static void MATASK_InitLibrary(void)
         break;
 
     case 3:
-        *gMA.unk_112 = gMA.adapter_type + 0x78;  // MAGIC
+        *(u8 *)gMA.unk_112 = gMA.adapter_type + 0x78;  // MAGIC
 
         MA_ChangeSIOMode(MA_SIO_BYTE);
         gMA.unk_92 = 0;
@@ -614,7 +614,7 @@ void MA_TCP_Connect(u8 *unk_1, u8 *unk_2, u16 unk_3)
         return;
     }
 
-    gMA.unk_112 = unk_1;
+    gMA.unk_112 = (u32)unk_1;
     gMA.unk_116 = (u32)unk_2;
     gMA.unk_120 = unk_3;
     MA_TaskSet(TASK_UNK_20, 0);
@@ -646,8 +646,8 @@ static void MATASK_TCP_Connect(void)
         break;
 
     case 1:
-        *gMA.unk_112 = *gMA.buffer_unk_480.data;
-        MAU_Socket_Add(*gMA.buffer_unk_480.data);
+        *(u8 *)gMA.unk_112 = gMA.buffer_unk_480.data[0];
+        MAU_Socket_Add(gMA.buffer_unk_480.data[0]);
         MA_TaskSet(TASK_UNK_00, 0);
         break;
 
@@ -680,7 +680,7 @@ void MA_TCP_Disconnect(u8 unk_1)
         return;
     }
 
-    gMA.unk_112 = (u8 *)(u32)unk_1;
+    gMA.unk_112 = unk_1;
     MA_TaskSet(TASK_UNK_21, 0);
     ResetApiCallFlag();
 }
@@ -742,7 +742,7 @@ void MA_TCP_SendRecv(u8 unk_1, int unk_2, u8 unk_3, int unk_4)
         return;
     }
 
-    gMA.unk_112 = (u8 *)(u32)unk_1;
+    gMA.unk_112 = unk_1;
     gMA.unk_116 = unk_2;
     gMA.unk_120 = unk_3;
     gMA.unk_124 = unk_4;
@@ -806,7 +806,7 @@ void MA_GetHostAddress(u8 *unk_1, char *unk_2)
         return;
     }
 
-    gMA.unk_112 = unk_1;
+    gMA.unk_112 = (u32)unk_1;
     gMA.unk_116 = (u32)unk_2;
     MA_TaskSet(TASK_UNK_23, 0);
     ResetApiCallFlag();
@@ -837,7 +837,7 @@ static void MATASK_GetHostAddress(void)
         break;
 
     case 1:
-        MAU_memcpy(gMA.unk_112, gMA.buffer_unk_480.data, 4);
+        MAU_memcpy((u8 *)gMA.unk_112, gMA.buffer_unk_480.data, 4);
         MA_TaskSet(TASK_UNK_00, 0);
         break;
 
@@ -919,7 +919,7 @@ void MA_TelServer(const char *pTelNo, const char *pUserID, const char *pPassword
         return;
     }
 
-    gMA.unk_112 = (u8 *)pTelNo;
+    gMA.unk_112 = (u32)pTelNo;
     gMA.unk_116 = (u32)pUserID;
     gMA.unk_120 = (u32)pPassword;
     *(vu32 *)REG_TM3CNT = 0;
@@ -1035,7 +1035,7 @@ static void MATASK_TelServer(void)
         break;
 
     case 7:
-        MABIOS_Tel(MA_GetCallTypeFromHarwareType(gMA.adapter_type), gMA.unk_112);
+        MABIOS_Tel(MA_GetCallTypeFromHarwareType(gMA.adapter_type), (char *)gMA.unk_112);
         gMA.task_step++;
         break;
 
@@ -1110,7 +1110,7 @@ void MA_Tel(const char *pTelNo)
         return;
     }
 
-    gMA.unk_112 = (u8 *)pTelNo;
+    gMA.unk_112 = (u32)pTelNo;
     *(vu32 *)REG_TM3CNT = 0;
     MA_TaskSet(TASK_UNK_04, 0);
 
@@ -1169,7 +1169,7 @@ static void MATASK_Tel(void)
             break;
         }
 
-        MABIOS_Tel(MA_GetCallTypeFromHarwareType(gMA.adapter_type), gMA.unk_112);
+        MABIOS_Tel(MA_GetCallTypeFromHarwareType(gMA.adapter_type), (char *)gMA.unk_112);
         gMA.task_step++;
         break;
 
@@ -1178,7 +1178,7 @@ static void MATASK_Tel(void)
         gMA.unk_92 = 7;
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_P2P_SEND << MA_CONDITION_SHIFT;
-        gMA.unk_112 = NULL;
+        gMA.unk_112 = 0;
         gMA.buffer_unk_480.size = 0;
         InitPrevBuf();
         MA_TaskSet(TASK_UNK_00, 0);
@@ -1289,7 +1289,7 @@ static void MATASK_Receive(void)
         gMA.unk_92 = 8;
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_P2P_RECV << MA_CONDITION_SHIFT;
-        gMA.unk_112 = NULL;
+        gMA.unk_112 = 0;
         gMA.buffer_unk_480.size = 0;
         InitPrevBuf();
         MA_TaskSet(TASK_UNK_00, 0);
@@ -1348,7 +1348,7 @@ void MA_SData(const u8 *pSendData, u8 sendSize, u8 *pResult)
         return;
     }
 
-    gMA.unk_112 = (u8 *)pSendData;
+    gMA.unk_112 = (u32)pSendData;
     gMA.unk_116 = sendSize;
     gMA.status |= STATUS_UNK_13;
     ResetApiCallFlag();
@@ -1467,7 +1467,7 @@ void MA_ConditionMain(u8 *pCondition, int task)
         return;
     }
 
-    gMA.unk_112 = pCondition;
+    gMA.unk_112 = (u32)pCondition;
     if (!gMA.unk_92) {
         gMA.unk_116 = 1;
         *(vu32 *)REG_TM3CNT = 0;
@@ -1522,9 +1522,9 @@ static void MATASK_Condition(void)
         break;
 
     case 2:
-        *gMA.unk_112 = MA_ProcessCheckStatusResponse(gMA.buffer_unk_480.data[0]);
+        *(u8 *)gMA.unk_112 = MA_ProcessCheckStatusResponse(gMA.buffer_unk_480.data[0]);
         if (0xef < gMA.unk_84[2]) {  // MAGIC
-            *gMA.unk_112 |= 0x80;  // MAGIC
+            *(u8 *)gMA.unk_112 |= 0x80;  // MAGIC
         }
         if (gMA.unk_116 == 1) {
             gMA.task_step = 3;
@@ -1687,7 +1687,7 @@ static void MATASK_Offline(void)
             MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, gMA.sockets[0]);
             break;
         }
-        gMA.unk_112 = (u8 *)gMA.counter_timeout200msec[gMA.sio_mode];
+        gMA.unk_112 = gMA.counter_timeout200msec[gMA.sio_mode];
         gMA.task_step++;
         break;
 
@@ -1737,7 +1737,7 @@ void MA_SMTP_Connect(const char *pMailAddress)
     }
 
     MA_GetSMTPServerName(gMA.unk_880);
-    gMA.unk_112 = (u8 *)pMailAddress;
+    gMA.unk_112 = (u32)pMailAddress;
     MA_TaskSet(TASK_UNK_0B, 0);
     ResetApiCallFlag();
 }
@@ -1827,7 +1827,7 @@ static void MATASK_SMTP_Connect(void)
             if (gMA.error_unk_94 == 220) {
                 MAU_strcpy(gMA.unk_880, POP3_Helo);
                 cp1 = &gMA.unk_880[5];
-                cp2 = gMA.unk_112;
+                cp2 = (u8 *)gMA.unk_112;
                 while (*cp2 && *cp2 != '@') *cp1++ = *cp2++;
                 *cp1 = '\0';
                 MAU_strcat(gMA.unk_880, POP3_Newl);
@@ -1940,7 +1940,7 @@ void MA_SMTP_Sender(const char * const pRecipients[])
         }
     }
 
-    gMA.unk_112 = (u8 *)pRecipients;
+    gMA.unk_112 = (u32)pRecipients;
     MA_TaskSet(TASK_UNK_0C, 0);
     ResetApiCallFlag();
 }
@@ -2107,7 +2107,7 @@ void MA_SMTP_Send(const char *pSendData, u16 sendSize, int endFlag)
     }
 
     if (gMA.unk_96 == 1) gMA.unk_124 = 0;
-    gMA.unk_112 = (u8 *)pSendData;
+    gMA.unk_112 = (u32)pSendData;
     gMA.unk_116 = sendSize;
     gMA.unk_120 = endFlag;
     gMA.unk_124 += sendSize;
@@ -2161,7 +2161,7 @@ static void MATASK_SMTP_Send(void)
         if (gMA.unk_116 >= 0xff) {
             (&gMA.buffer_unk_480)->size = 0;
             (&gMA.buffer_unk_480)->data = gMA.unk_212;
-            MABIOS_Data(&gMA.buffer_unk_480, gMA.unk_112, 254, gMA.sockets[0]);
+            MABIOS_Data(&gMA.buffer_unk_480, (u8 *)gMA.unk_112, 254, gMA.sockets[0]);
             gMA.unk_112 += 254;
             gMA.unk_116 -= 254;
             gMA.unk_132 = gMA.task_step;
@@ -2171,7 +2171,7 @@ static void MATASK_SMTP_Send(void)
         InitPrevBuf();
         (&gMA.buffer_unk_480)->size = 0;
         (&gMA.buffer_unk_480)->data = gMA.unk_212;
-        MABIOS_Data(&gMA.buffer_unk_480, gMA.unk_112, gMA.unk_116, gMA.sockets[0]);
+        MABIOS_Data(&gMA.buffer_unk_480, (u8 *)gMA.unk_112, gMA.unk_116, gMA.sockets[0]);
         if (gMA.unk_120 == 1) {
             gMA.unk_132 = gMA.task_step + 1;
             gMA.task_step = 50;
@@ -2363,7 +2363,7 @@ static void MATASK_SMTP_POP3_Quit(void)
             break;
         }
 
-        gMA.unk_112 = (u8 *)gMA.counter_timeout200msec[gMA.sio_mode];
+        gMA.unk_112 = gMA.counter_timeout200msec[gMA.sio_mode];
         gMA.task_step++;
         break;
 
@@ -2444,10 +2444,10 @@ void MA_POP3_Connect(const char *pUserID, const char *pPassword)
         return;
     }
 
-    gMA.unk_112 = gMA.unk_880;
-    MA_GetPOP3ServerName(gMA.unk_112);
+    gMA.unk_112 = (u32)gMA.unk_880;
+    MA_GetPOP3ServerName((char *)gMA.unk_112);
 
-    gMA.unk_116 = (u32)(gMA.unk_112 + MAU_strlen(gMA.unk_112) + 1);
+    gMA.unk_116 = gMA.unk_112 + MAU_strlen((char *)gMA.unk_112) + 1;
     MAU_strcpy((char *)gMA.unk_116, POP3_User);
     MAU_strcat((char *)gMA.unk_116, pUserID);
 
@@ -2510,7 +2510,7 @@ static void MATASK_POP3_Connect(void)
     case 0:
         (&gMA.buffer_unk_480)->size = 0;
         (&gMA.buffer_unk_480)->data = gMA.unk_212;
-        MABIOS_DNSRequest(&gMA.buffer_unk_480, gMA.unk_112);
+        MABIOS_DNSRequest(&gMA.buffer_unk_480, (char *)gMA.unk_112);
         gMA.task_step++;
         break;
 
@@ -2642,7 +2642,7 @@ void MA_POP3_Stat(u16 *pNum, u32 *pSize)
         return;
     }
 
-    gMA.unk_112 = (u8 *)pNum;
+    gMA.unk_112 = (u32)pNum;
     gMA.unk_116 = (u32)pSize;
     MA_TaskSet(TASK_UNK_10, 0);
     ResetApiCallFlag();
@@ -2755,7 +2755,7 @@ void MA_POP3_List(u16 mailNo, u32 *pSize)
         return;
     }
 
-    gMA.unk_112 = (u8 *)pSize;
+    gMA.unk_112 = (u32)pSize;
     MAU_strcpy(gMA.unk_880, POP3_List);
     MAU_itoa(mailNo, &gMA.unk_880[MAU_strlen(gMA.unk_880)], 10);
     MAU_strcat(gMA.unk_880, POP3_Newl);
@@ -2864,7 +2864,7 @@ void MA_POP3_Retr(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
     }
 
     *pRecvSize = 0;
-    gMA.unk_112 = pRecvData;
+    gMA.unk_112 = (u32)pRecvData;
     gMA.unk_116 = recvBufSize;
     gMA.unk_120 = (u32)pRecvSize;
 
@@ -2873,7 +2873,7 @@ void MA_POP3_Retr(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
         gMA.status &= ~STATUS_UNK_15;
 
         if (recvBufSize == 0) {
-            gMA.unk_112 = (u8 *)(u32)recvBufSize;
+            gMA.unk_112 = recvBufSize;
             gMA.unk_120 = recvBufSize;
             MA_TaskSet(TASK_UNK_12, 1);
         } else if (gMA.prevbuf_size != 0 && gMA.prevbuf_size <= recvBufSize) {
@@ -2993,13 +2993,13 @@ static void MATASK_POP3_Retr(void)
                 }
 
                 if (gMA.unk_116 >= dataLen) {
-                    MAU_memcpy(gMA.unk_112, &gMA.buffer_unk_480.data[1], dataLen);
+                    MAU_memcpy((u8 *)gMA.unk_112, &gMA.buffer_unk_480.data[1], dataLen);
                     gMA.unk_112 += dataLen;
                     gMA.unk_116 -= dataLen;
                     gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
                     *(u16 *)gMA.unk_120 += dataLen;
                 } else {
-                    MAU_memcpy(gMA.unk_112, &gMA.buffer_unk_480.data[1], gMA.unk_116);
+                    MAU_memcpy((u8 *)gMA.unk_112, &gMA.buffer_unk_480.data[1], gMA.unk_116);
                     gMA.prevbuf_size = dataLen - gMA.unk_116;
                     MAU_memcpy(gMA.prevbuf, &gMA.buffer_unk_480.data[gMA.unk_116 + 1], gMA.prevbuf_size);
                     *(u16 *)gMA.unk_120 += gMA.unk_116;
@@ -3167,7 +3167,7 @@ void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
     }
 
     *pRecvSize = 0;
-    gMA.unk_112 = pRecvData;
+    gMA.unk_112 = (u32)pRecvData;
     gMA.unk_116 = recvBufSize;
     gMA.unk_120 = (u32)pRecvSize;
 
@@ -3176,7 +3176,7 @@ void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
         gMA.status &= ~STATUS_UNK_15;
 
         if (recvBufSize == 0) {
-            gMA.unk_112 = (u8 *)(u32)recvBufSize;
+            gMA.unk_112 = recvBufSize;
             gMA.unk_120 = recvBufSize;
             MA_TaskSet(TASK_UNK_12, 1);
         } else if (gMA.prevbuf_size != 0 && gMA.prevbuf_size <= recvBufSize) {
@@ -3294,13 +3294,13 @@ static void MATASK_POP3_Head(void)
                 }
 
                 if (gMA.unk_116 >= dataLen) {
-                    MAU_memcpy(gMA.unk_112, &gMA.buffer_unk_480.data[1], dataLen);
+                    MAU_memcpy((u8 *)gMA.unk_112, &gMA.buffer_unk_480.data[1], dataLen);
                     gMA.unk_112 += dataLen;
                     gMA.unk_116 -= dataLen;
                     gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
                     *(u16 *)gMA.unk_120 += dataLen;
                 } else {
-                    MAU_memcpy(gMA.unk_112, &gMA.buffer_unk_480.data[1], gMA.unk_116);
+                    MAU_memcpy((u8 *)gMA.unk_112, &gMA.buffer_unk_480.data[1], gMA.unk_116);
                     gMA.prevbuf_size = dataLen - gMA.unk_116;
                     MAU_memcpy(gMA.prevbuf, &gMA.buffer_unk_480.data[gMA.unk_116 + 1], gMA.prevbuf_size);
                     *(u16 *)gMA.unk_120 += gMA.unk_116;
@@ -3357,7 +3357,7 @@ static void MATASK_POP3_Head(void)
     }
 }
 
-static char *ExtractServerName(char *unk_1, char *unk_2, u8 *unk_3, u8 *unk_4)
+static const char *ExtractServerName(char *unk_1, const char *unk_2, u8 *unk_3, u8 *unk_4)
 {
     static const char strDownload[] = "gameboy.datacenter.ne.jp/cgb/download";
     static const char strUpload[] = "gameboy.datacenter.ne.jp/cgb/upload";
@@ -3365,8 +3365,8 @@ static char *ExtractServerName(char *unk_1, char *unk_2, u8 *unk_3, u8 *unk_4)
     static const char strRanking[] = "gameboy.datacenter.ne.jp/cgb/ranking";
     static const char strHttp[] = "http://";
 
-    static char *cp;
-    static char *tmpp;
+    static const char *cp;
+    static const char *tmpp;
     static int len;
 
     if (MAU_strnicmp(unk_2, strHttp, sizeof(strHttp) - 1) == 0) {
@@ -3442,16 +3442,16 @@ static const char strHttpDate[] = "Date: ";
 static const char strHttpLocation[] = "Location: ";
 static const char strHttpUserAgent[] = "User-Agent: AGB-";
 static const char strServerRoot[] = "/";
-asm(".word 0x00000000\n");
+static const char strEmpty[] asm(".LstrEmpty") = "";
 
 void MA_HTTP_Get(const char *pURL, char *pHeadBuf, u16 headBufSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword)
 {
-    MA_HTTP_GetPost(pURL, pHeadBuf, headBufSize, NULL, 0, pRecvData, recvBufSize, pRecvSize, pUserID, pPassword, 0x16);
+    MA_HTTP_GetPost(pURL, pHeadBuf, headBufSize, NULL, 0, pRecvData, recvBufSize, pRecvSize, pUserID, pPassword, TASK_UNK_16);
 }
 
 void MA_HTTP_Post(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword)
 {
-    MA_HTTP_GetPost(pURL, pHeadBuf, headBufSize, pSendData, sendSize, pRecvData, recvBufSize, pRecvSize, pUserID, pPassword, 0x17);
+    MA_HTTP_GetPost(pURL, pHeadBuf, headBufSize, pSendData, sendSize, pRecvData, recvBufSize, pRecvSize, pUserID, pPassword, TASK_UNK_17);
 }
 
 #if 0
@@ -5795,7 +5795,7 @@ void MA_EEPROMRead(u8 *unk_1)
         return;
     }
 
-    gMA.unk_112 = unk_1;
+    gMA.unk_112 = (u32)unk_1;
     *(vu32 *)REG_TM3CNT = 0;
     MA_TaskSet(TASK_UNK_1C, 0);
 
@@ -5845,7 +5845,7 @@ static void MATASK_EEPROM_Read(void)
         break;
 
     case 3:
-        MAU_memcpy(gMA.unk_112, &gMA.buffer_unk_480.data[1], 0x80);
+        MAU_memcpy((u8 *)gMA.unk_112, &gMA.buffer_unk_480.data[1], 0x80);
         (&gMA.buffer_unk_480)->size = 0;
         (&gMA.buffer_unk_480)->data = gMA.unk_212;
         MABIOS_EEPROM_Read(&gMA.buffer_unk_480, 0x80, 0x40);
@@ -5853,7 +5853,7 @@ static void MATASK_EEPROM_Read(void)
         break;
 
     case 4:
-        MAU_memcpy(&gMA.unk_112[0x80], &gMA.buffer_unk_480.data[1], 0x40);
+        MAU_memcpy(&((u8 *)gMA.unk_112)[0x80], &gMA.buffer_unk_480.data[1], 0x40);
         MABIOS_End();
         gMA.task_step++;
         break;
@@ -5921,7 +5921,7 @@ void MA_EEPROMWrite(u8 *unk_1)
         return;
     }
 
-    gMA.unk_112 = unk_1;
+    gMA.unk_112 = (u32)unk_1;
     *(vu32 *)REG_TM3CNT = 0;
     MA_TaskSet(TASK_UNK_1D, 0);
 
@@ -5966,14 +5966,14 @@ static void MATASK_EEPROM_Write(void)
     case 2:
         (&gMA.buffer_unk_480)->size = 0;
         (&gMA.buffer_unk_480)->data = gMA.unk_212;
-        MABIOS_EEPROM_Write(&gMA.buffer_unk_480, 0, gMA.unk_112, 0x80);
+        MABIOS_EEPROM_Write(&gMA.buffer_unk_480, 0, (u8 *)gMA.unk_112, 0x80);
         gMA.task_step++;
         break;
 
     case 3:
         (&gMA.buffer_unk_480)->size = 0;
         (&gMA.buffer_unk_480)->data = gMA.unk_212;
-        MABIOS_EEPROM_Write(&gMA.buffer_unk_480, 0x80, &gMA.unk_112[0x80], 0x40);
+        MABIOS_EEPROM_Write(&gMA.buffer_unk_480, 0x80, &((u8 *)gMA.unk_112)[0x80], 0x40);
         gMA.task_step++;
         break;
 
@@ -6053,7 +6053,7 @@ void MA_GetTel(MA_TELDATA *pTelData)
         return;
     }
 
-    gMA.unk_112 = (u8 *)TASK_UNK_18;
+    gMA.unk_112 = TASK_UNK_18;
     gMA.unk_116 = (u32)pTelData;
     *(vu32 *)REG_TM3CNT = 0;
     MA_TaskSet(TASK_UNK_1B, 0);
@@ -6081,7 +6081,7 @@ void MA_GetUserID(char *pUserIDBuf)
     }
 
     MAU_memset(pUserIDBuf, 33, 0);  // MAGIC
-    gMA.unk_112 = (u8 *)TASK_UNK_19;
+    gMA.unk_112 = TASK_UNK_19;
     gMA.unk_116 = (u32)pUserIDBuf;
     *(vu32 *)REG_TM3CNT = 0;
     MA_TaskSet(TASK_UNK_1B, 0);
@@ -6109,7 +6109,7 @@ void MA_GetMailID(char *pBufPtr)
         return;
     }
 
-    gMA.unk_112 = (u8 *)TASK_UNK_1A;
+    gMA.unk_112 = TASK_UNK_1A;
     gMA.unk_116 = (u32)pBufPtr;
     *(vu32 *)REG_TM3CNT = 0;
     MA_TaskSet(TASK_UNK_1B, 0);
