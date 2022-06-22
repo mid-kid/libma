@@ -46,7 +46,7 @@ static void MA_ConditionMain(u8 *pCondition, int task);
 //static void MATASK_POP3_Dele();
 //static void MATASK_POP3_Head();
 //static void ExtractServerName();
-static void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword, int task);
+static void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword, u8 task);
 //static void ConcatUserAgent();
 //static void GetRequestType();
 //static void CreateHttpRequestHeader();
@@ -421,7 +421,7 @@ static void MATASK_TCP_Cut(void)
         gMA.task_step++;
 
     case 1:
-        if ((u32)gMA.unk_112 == 0x23 &&  // MAGIC
+        if (gMA.unk_112 == 0x23 &&  // MAGIC
                 gMA.cmd_recv != (MACMD_ERROR | MAPROT_REPLY)) {
             gMA.sockets[0] = gMA.buffer_unk_480.data[0];
             gMA.task_step++;
@@ -700,12 +700,12 @@ static void MATASK_TCP_Disconnect(void)
 
     switch (gMA.task_step) {
     case 0:
-        MABIOS_TCPDisconnect(&gMA.buffer_unk_480, (u32)gMA.unk_112);
+        MABIOS_TCPDisconnect(&gMA.buffer_unk_480, gMA.unk_112);
         gMA.task_step++;
         break;
 
     case 1:
-        MAU_Socket_Delete((u32)gMA.unk_112);
+        MAU_Socket_Delete(gMA.unk_112);
         gMA.unk_92 = 3;
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
@@ -757,7 +757,7 @@ static void MATASK_TCP_SendRecv(void)
         case MACMD_DATA:
             MA_DefaultNegaResProc();
             gMA.task_step = 0xf0;
-            MAU_Socket_Delete((u32)gMA.unk_112);
+            MAU_Socket_Delete(gMA.unk_112);
             break;
 
         default:
@@ -770,12 +770,12 @@ static void MATASK_TCP_SendRecv(void)
         gMA.task_error = MAAPIE_OFFLINE;
         gMA.task_error_unk_2 = 0;
         gMA.task_step = 0xf0;
-        MAU_Socket_Delete((u32)gMA.unk_112);
+        MAU_Socket_Delete(gMA.unk_112);
     }
 
     switch (gMA.task_step) {  // MAGIC
     case 0:
-        MABIOS_Data(&gMA.buffer_unk_480, (u8 *)gMA.unk_116, gMA.unk_120, (u32)gMA.unk_112);
+        MABIOS_Data(&gMA.buffer_unk_480, (u8 *)gMA.unk_116, gMA.unk_120, gMA.unk_112);
         gMA.task_step++;
         break;
 
@@ -3357,7 +3357,7 @@ static void MATASK_POP3_Head(void)
     }
 }
 
-static const char *ExtractServerName(char *unk_1, const char *unk_2, u8 *unk_3, u8 *unk_4)
+static const char *ExtractServerName(char *pServerName, const char *pURL, u8 *unk_3, u8 *unk_4)
 {
     static const char strDownload[] = "gameboy.datacenter.ne.jp/cgb/download";
     static const char strUpload[] = "gameboy.datacenter.ne.jp/cgb/upload";
@@ -3369,52 +3369,52 @@ static const char *ExtractServerName(char *unk_1, const char *unk_2, u8 *unk_3, 
     static const char *tmpp;
     static int len;
 
-    if (MAU_strnicmp(unk_2, strHttp, sizeof(strHttp) - 1) == 0) {
-        unk_2 += sizeof(strHttp) - 1;
+    if (MAU_strnicmp(pURL, strHttp, sizeof(strHttp) - 1) == 0) {
+        pURL += sizeof(strHttp) - 1;
     }
 
-    cp = MAU_strchr(unk_2, '/');
+    cp = MAU_strchr(pURL, '/');
     if (!cp) {
-        if (MAU_strchr(unk_2, '\0') - unk_2 > 0xff) {
-            *unk_1 = '\0';
+        if (MAU_strchr(pURL, '\0') - pURL > 0xff) {
+            *pServerName = '\0';
             return NULL;
         }
-        MAU_strcpy(unk_1, unk_2);
+        MAU_strcpy(pServerName, pURL);
         *unk_3 = 0;
     } else {
-        len = cp - unk_2;
+        len = cp - pURL;
         if (len > 0xff) {
-            *unk_1 = '\0';
+            *pServerName = '\0';
             return NULL;
         }
 
-        MAU_memcpy(unk_1, unk_2, len);
-        unk_1[len] = '\0';
+        MAU_memcpy(pServerName, pURL, len);
+        pServerName[len] = '\0';
 
-        if (MAU_strnicmp(unk_2, strDownload, sizeof(strDownload) - 1) == 0) {
+        if (MAU_strnicmp(pURL, strDownload, sizeof(strDownload) - 1) == 0) {
             *unk_4 = 1;
-            tmpp = MAU_strrchr(unk_2, '/');
+            tmpp = MAU_strrchr(pURL, '/');
             tmpp++;
             if (tmpp[0] >= '0' && tmpp[0] <= '9') {
                 *unk_3 = 1;
             } else {
                 *unk_3 = 0;
             }
-        } else if (MAU_strnicmp(unk_2, strUpload, sizeof(strUpload) - 1) == 0) {
+        } else if (MAU_strnicmp(pURL, strUpload, sizeof(strUpload) - 1) == 0) {
             *unk_4 = 2;
-            tmpp = MAU_strrchr(unk_2, '/');
+            tmpp = MAU_strrchr(pURL, '/');
             tmpp++;
             if (tmpp[0] >= '0' && tmpp[0] <= '9') {
                 *unk_3 = 2;
             } else {
                 *unk_3 = 0;
             }
-        } else if (MAU_strnicmp(unk_2, strUtility, sizeof(strUtility) - 1) == 0) {
+        } else if (MAU_strnicmp(pURL, strUtility, sizeof(strUtility) - 1) == 0) {
             *unk_4 = 3;
             *unk_3 = 3;
-        } else if (MAU_strnicmp(unk_2, strRanking, sizeof(strRanking) - 1) == 0) {
+        } else if (MAU_strnicmp(pURL, strRanking, sizeof(strRanking) - 1) == 0) {
             *unk_4 = 4;
-            tmpp = MAU_strrchr(unk_2, '/');
+            tmpp = MAU_strrchr(pURL, '/');
             tmpp++;
             if (tmpp[0] >= '0' && tmpp[0] <= '9') {
                 *unk_3 = 4;
@@ -3454,424 +3454,164 @@ void MA_HTTP_Post(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8 *p
     MA_HTTP_GetPost(pURL, pHeadBuf, headBufSize, pSendData, sendSize, pRecvData, recvBufSize, pRecvSize, pUserID, pPassword, TASK_UNK_17);
 }
 
-#if 0
-#else
-asm("
-.align 2
-.thumb_func
-MA_HTTP_GetPost:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, sl
-    mov	r6, r9
-    mov	r5, r8
-    push	{r5, r6, r7}
-    sub	sp, #20
-    str	r0, [sp, #4]
-    str	r1, [sp, #8]
-    str	r3, [sp, #12]
-    ldr	r1, [sp, #52]
-    ldr	r7, [sp, #56]
-    ldr	r3, [sp, #60]
-    ldr	r0, [sp, #64]
-    mov	r9, r0
-    ldr	r0, [sp, #76]
-    lsl	r2, r2, #16
-    lsr	r2, r2, #16
-    mov	sl, r2
-    lsl	r1, r1, #16
-    lsr	r5, r1, #16
-    lsl	r3, r3, #16
-    lsr	r6, r3, #16
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    mov	r8, r0
-    mov	r1, r8
-    str	r1, [sp, #16]
-    bl	SetApiCallFlag
-    mov	r0, r8
-    bl	MA_ApiPreExe
-    cmp	r0, #0
-    bne	MA_HTTP_GetPost+0x4a
-    bl	ResetApiCallFlag
-    b	MA_HTTP_GetPost+0x358
-    ldr	r4, [pc, #84]
-    mov	r2, r8
-    str	r2, [r4, #112]
-    str	r7, [r4, #120]
-    str	r6, [r4, #124]
-    mov	r0, r9
-    ldr	r1, [pc, #76]
-    str	r0, [r1, #0]
-    mov	r0, r4
-    add	r0, #132
-    ldr	r2, [sp, #12]
-    str	r2, [r0, #0]
-    add	r0, #4
-    str	r5, [r0, #0]
-    add	r0, #44
-    ldr	r1, [sp, #68]
-    str	r1, [r0, #0]
-    add	r0, #4
-    ldr	r2, [sp, #72]
-    str	r2, [r0, #0]
-    sub	r0, #28
-    mov	r1, sl
-    str	r1, [r0, #0]
-    add	r0, #12
-    ldr	r2, [sp, #8]
-    str	r2, [r0, #0]
-    ldrh	r1, [r4, #2]
-    mov	r0, #4
-    and	r0, r1
-    lsl	r0, r0, #16
-    lsr	r0, r0, #16
-    mov	r5, r4
-    cmp	r0, #0
-    beq	MA_HTTP_GetPost+0x90
-    b	MA_HTTP_GetPost+0x266
-    cmp	r6, #0
-    bne	MA_HTTP_GetPost+0xa8
-    str	r6, [r4, #120]
-    mov	r0, r9
-    cmp	r0, #0
-    beq	MA_HTTP_GetPost+0xb2
-    strh	r6, [r0, #0]
-    b	MA_HTTP_GetPost+0xb2
-.align 2
-    .word gMA
-    .word gMA+0x80
+void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword, u8 task)
+{
+    int len;
+    const char *pServerPath;
+    u8 server_unk_1;
+    u8 server_unk_2;
 
-    cmp	r7, #0
-    bne	MA_HTTP_GetPost+0xae
-    b	MA_HTTP_GetPost+0x2a4
-    mov	r1, r9
-    strh	r0, [r1, #0]
-    mov	r0, r5
-    add	r0, #156
-    ldr	r0, [r0, #0]
-    cmp	r0, #0
-    beq	MA_HTTP_GetPost+0xca
-    mov	r0, r5
-    add	r0, #168
-    ldr	r1, [r0, #0]
-    cmp	r1, #0
-    beq	MA_HTTP_GetPost+0xca
-    mov	r0, #0
-    strb	r0, [r1, #0]
-    ldr	r0, [sp, #4]
-    bl	MAU_strlen
-    mov	r1, r0
-    mov	r0, #128
-    lsl	r0, r0, #3
-    cmp	r1, r0
-    ble	MA_HTTP_GetPost+0xdc
-    b	MA_HTTP_GetPost+0x2a4
-    cmp	r1, #0
-    bne	MA_HTTP_GetPost+0xe2
-    b	MA_HTTP_GetPost+0x2a4
-    mov	r4, sp
-    add	r4, #1
-    mov	r0, #0
-    strb	r0, [r4, #0]
-    ldr	r5, [pc, #56]
-    mov	r0, r5
-    ldr	r1, [sp, #4]
-    mov	r2, sp
-    mov	r3, r4
-    bl	ExtractServerName
-    mov	r7, r0
-    ldrb	r0, [r5, #0]
-    cmp	r0, #0
-    bne	MA_HTTP_GetPost+0x102
-    b	MA_HTTP_GetPost+0x2a4
-    ldr	r2, [pc, #36]
-    add	r1, r5, r2
-    mov	r0, sp
-    ldrb	r0, [r0, #0]
-    str	r0, [r1, #0]
-    ldrb	r0, [r4, #0]
-    cmp	r0, #0
-    bne	MA_HTTP_GetPost+0x134
-    ldr	r1, [pc, #24]
-    add	r0, r5, r1
-    ldr	r1, [pc, #24]
-    str	r1, [r0, #0]
-    add	r2, #24
-    add	r0, r5, r2
-    str	r1, [r0, #0]
-    b	MA_HTTP_GetPost+0x150
-.align 2
-    .word gMA+0x370
-    .word 0xfffffd30
-    .word 0xfffffd44
-    .word strServerRoot+0x4
+    SetApiCallFlag();
+    if (!MA_ApiPreExe(task)) {
+        ResetApiCallFlag();
+        return;
+    }
 
-    ldr	r0, [sp, #68]
-    bl	MAU_strlen
-    mov	r1, r0
-    cmp	r1, #16
-    ble	MA_HTTP_GetPost+0x142
-    b	MA_HTTP_GetPost+0x2a4
-    ldr	r0, [sp, #72]
-    bl	MAU_strlen
-    mov	r1, r0
-    cmp	r1, #16
-    ble	MA_HTTP_GetPost+0x150
-    b	MA_HTTP_GetPost+0x2a4
-    ldrb	r4, [r4, #0]
-    ldr	r5, [pc, #80]
-    cmp	r4, #1
-    bne	MA_HTTP_GetPost+0x160
-    ldr	r0, [r5, #112]
-    cmp	r0, #23
-    bne	MA_HTTP_GetPost+0x160
-    b	MA_HTTP_GetPost+0x2a4
-    cmp	r4, #2
-    bne	MA_HTTP_GetPost+0x16c
-    ldr	r0, [r5, #112]
-    cmp	r0, #22
-    bne	MA_HTTP_GetPost+0x16c
-    b	MA_HTTP_GetPost+0x2a4
-    cmp	r4, #3
-    bne	MA_HTTP_GetPost+0x178
-    ldr	r0, [r5, #112]
-    cmp	r0, #23
-    bne	MA_HTTP_GetPost+0x178
-    b	MA_HTTP_GetPost+0x2a4
-    cmp	r4, #4
-    bne	MA_HTTP_GetPost+0x184
-    ldr	r0, [r5, #112]
-    cmp	r0, #22
-    bne	MA_HTTP_GetPost+0x184
-    b	MA_HTTP_GetPost+0x2a4
-    mov	r1, #219
-    lsl	r1, r1, #2
-    add	r0, r5, r1
-    ldr	r0, [r0, #0]
-    mov	r6, #0
-    cmp	r0, #0
-    bne	MA_HTTP_GetPost+0x194
-    mov	r6, #1
-    cmp	r6, #1
-    bne	MA_HTTP_GetPost+0x1b8
-    cmp	r7, #0
-    beq	MA_HTTP_GetPost+0x1a8
-    mov	r0, r5
-    add	r0, #140
-    str	r7, [r0, #0]
-    b	MA_HTTP_GetPost+0x1c0
-.align 2
-    .word gMA
+    gMA.unk_112 = task;
+    gMA.unk_120 = (u32)pRecvData;
+    gMA.unk_124 = (u32)recvBufSize;
+    gMA.unk_128 = (u32)pRecvSize;
+    gMA.unk_132 = (u32)pSendData;
+    gMA.unk_136 = sendSize;
+    gMA.unk_180 = pUserID;
+    gMA.unk_184 = pPassword;
+    gMA.unk_156 = headBufSize;
+    gMA.unk_168 = pHeadBuf;
 
-    mov	r1, r5
-    add	r1, #140
-    ldr	r0, [pc, #4]
-    str	r0, [r1, #0]
-    b	MA_HTTP_GetPost+0x1c0
-.align 2
-    .word strServerRoot
+    if (!(gMA.condition & MA_CONDITION_BUFFER_FULL)) {
+        if (recvBufSize == 0) {
+            gMA.unk_120 = recvBufSize;
+            if (pRecvSize != NULL) *pRecvSize = 0;
+        } else {
+            if (pRecvData == NULL) {
+                MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+                ResetApiCallFlag();
+                return;
+            }
+            *pRecvSize = 0;
+        }
 
-    mov	r0, r5
-    add	r0, #140
-    ldr	r2, [sp, #4]
-    str	r2, [r0, #0]
-    mov	r4, r5
-    add	r4, #140
-    ldr	r0, [r4, #0]
-    bl	MAU_strlen
-    mov	r1, r5
-    add	r1, #144
-    str	r0, [r1, #0]
-    mov	r2, r5
-    add	r2, #148
-    ldr	r1, [r4, #0]
-    str	r1, [r2, #0]
-    mov	r1, r5
-    add	r1, #152
-    str	r0, [r1, #0]
-    mov	r0, #7
-    str	r0, [r5, #116]
-    bl	InitPrevBuf
-    ldrh	r1, [r5, #2]
-    ldr	r0, [pc, #92]
-    and	r0, r1
-    ldrh	r1, [r5, #2]
-    mov	r3, #0
-    mov	r2, #0
-    strh	r0, [r5, #2]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #84]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r1, [pc, #80]
-    add	r0, r5, r1
-    strh	r2, [r0, #0]
-    sub	r1, #2
-    add	r0, r5, r1
-    strh	r2, [r0, #0]
-    ldr	r0, [r5, #64]
-    ldr	r1, [pc, #72]
-    and	r0, r1
-    str	r0, [r5, #64]
-    ldr	r1, [pc, #68]
-    add	r0, r5, r1
-    strb	r3, [r0, #0]
-    mov	r0, r5
-    add	r0, #164
-    str	r2, [r0, #0]
-    add	r0, #24
-    str	r2, [r0, #0]
-    mov	r1, r5
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    mov	r0, #6
-    strb	r0, [r1, #0]
-    cmp	r6, #0
-    bne	MA_HTTP_GetPost+0x25c
-    mov	r0, r5
-    add	r0, #106
-    mov	r2, #219
-    lsl	r2, r2, #2
-    add	r1, r5, r2
-    mov	r2, #4
-    bl	MAU_memcpy
-    ldr	r0, [sp, #16]
-    mov	r1, #2
-    bl	MA_TaskSet
-    b	MA_HTTP_GetPost+0x354
-.align 2
-    .word 0x0000fffb
-    .word 0xffff7fff
-    .word 0x00000704
-    .word 0xfffeffff
-    .word 0x00000706
+        if (gMA.unk_156 != 0 && gMA.unk_168 != NULL) *gMA.unk_168 = '\0';
 
-    ldr	r0, [sp, #16]
-    mov	r1, #0
-    bl	MA_TaskSet
-    b	MA_HTTP_GetPost+0x354
-    ldrh	r1, [r4, #2]
-    ldr	r0, [pc, #44]
-    and	r0, r1
-    ldrh	r1, [r4, #2]
-    mov	r1, #0
-    mov	sl, r1
-    strh	r0, [r4, #2]
-    ldr	r0, [r4, #64]
-    ldr	r1, [pc, #36]
-    and	r0, r1
-    str	r0, [r4, #64]
-    cmp	r6, #0
-    bne	MA_HTTP_GetPost+0x2a0
-    str	r6, [r4, #120]
-    mov	r2, r9
-    cmp	r2, #0
-    beq	MA_HTTP_GetPost+0x28a
-    strh	r6, [r2, #0]
-    ldr	r0, [r4, #64]
-    mov	r1, #128
-    lsl	r1, r1, #8
-    orr	r0, r1
-    str	r0, [r4, #64]
-    mov	r0, r8
-    b	MA_HTTP_GetPost+0x2fc
-.align 2
-    .word 0x0000fffb
-    .word 0xffff7fff
+        len = MAU_strlen(pURL);
+        if (len > 1024 || len == 0) {
+            MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+            ResetApiCallFlag();
+            return;
+        }
 
-    cmp	r7, #0
-    bne	MA_HTTP_GetPost+0x2b2
-    mov	r0, #32
-    mov	r1, #0
-    bl	MA_SetApiError
-    bl	ResetApiCallFlag
-    b	MA_HTTP_GetPost+0x358
-    mov	r1, sl
-    mov	r0, r9
-    strh	r1, [r0, #0]
-    ldr	r2, [pc, #72]
-    add	r5, r4, r2
-    ldrh	r0, [r5, #0]
-    cmp	r0, #0
-    beq	MA_HTTP_GetPost+0x310
-    cmp	r0, r6
-    bhi	MA_HTTP_GetPost+0x310
-    ldr	r0, [pc, #64]
-    add	r1, r4, r0
-    ldrh	r2, [r5, #0]
-    mov	r0, r7
-    bl	MAU_memcpy
-    ldrh	r1, [r5, #0]
-    add	r7, r7, r1
-    sub	r0, r6, r1
-    lsl	r0, r0, #16
-    lsr	r6, r0, #16
-    mov	r2, r9
-    ldrh	r0, [r2, #0]
-    add	r0, r0, r1
-    strh	r0, [r2, #0]
-    mov	r0, sl
-    strh	r0, [r5, #0]
-    str	r7, [r4, #120]
-    str	r6, [r4, #124]
-    ldr	r1, [pc, #28]
-    str	r2, [r1, #0]
-    ldr	r0, [r4, #64]
-    mov	r1, #128
-    lsl	r1, r1, #8
-    orr	r0, r1
-    str	r0, [r4, #64]
-    ldr	r0, [sp, #16]
-    mov	r1, #110
-    bl	MA_TaskSet
-    b	MA_HTTP_GetPost+0x354
-.align 2
-    .word 0x000006fa
-    .word 0x0000047d
-    .word gMA+0x80
+        server_unk_2 = 0;
+        pServerPath = ExtractServerName(gMA.unk_880, pURL, &server_unk_1, &server_unk_2);
+        if (gMA.unk_880[0] == '\0') {
+            MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+            ResetApiCallFlag();
+            return;
+        }
 
-    ldr	r4, [pc, #52]
-    mov	r0, r7
-    mov	r1, r4
-    mov	r2, r6
-    bl	MAU_memcpy
-    ldr	r2, [pc, #44]
-    add	r5, r4, r2
-    ldr	r0, [pc, #44]
-    add	r2, r4, r0
-    ldrh	r0, [r2, #0]
-    sub	r0, r0, r6
-    strh	r0, [r2, #0]
-    add	r1, r6, r4
-    ldrh	r2, [r2, #0]
-    mov	r0, r4
-    bl	MAU_memcpy
-    mov	r1, r9
-    strh	r6, [r1, #0]
-    ldrh	r1, [r5, #2]
-    mov	r0, #4
-    ldrh	r2, [r5, #2]
-    orr	r0, r1
-    strh	r0, [r5, #2]
-    bl	ResetApiCallFlag
-    b	MA_HTTP_GetPost+0x358
-.align 2
-    .word gMA+0x47d
-    .word 0xfffffb83
-    .word 0x0000027d
+        gMA.unk_160 = server_unk_1;
+        if (server_unk_2 == 0) {
+            gMA.unk_180 = strEmpty;
+            gMA.unk_184 = strEmpty;
+        } else {
+            if ((len = MAU_strlen(pUserID)) > 16 ||
+                    (len = MAU_strlen(pPassword)) > 16) {
+                MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+                ResetApiCallFlag();
+                return;
+            }
+        }
 
-    bl	ResetApiCallFlag
-    add	sp, #20
-    pop	{r3, r4, r5}
-    mov	r8, r3
-    mov	r9, r4
-    mov	sl, r5
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.size MA_HTTP_GetPost, .-MA_HTTP_GetPost
-");
-#endif
+        if ((server_unk_2 == 1 && gMA.unk_112 == TASK_UNK_17) ||
+                (server_unk_2 == 2 && gMA.unk_112 == TASK_UNK_16) ||
+                (server_unk_2 == 3 && gMA.unk_112 == TASK_UNK_17) ||
+                (server_unk_2 == 4 && gMA.unk_112 == TASK_UNK_16)) {
+            MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+            ResetApiCallFlag();
+            return;
+        }
+
+        if (!gMA.unk_876) {
+            recvBufSize = 1;
+        } else {
+            recvBufSize = 0;
+        }
+
+        if (recvBufSize == 1) {
+            if (pServerPath) {
+                gMA.unk_140 = (u32)pServerPath;
+            } else {
+                gMA.unk_140 = (u32)strServerRoot;
+            }
+        } else {
+            gMA.unk_140 = (u32)pURL;
+        }
+
+        gMA.unk_144 = MAU_strlen((char *)gMA.unk_140);
+        gMA.unk_148 = gMA.unk_140;
+        gMA.unk_152 = gMA.unk_144;
+        gMA.unk_116 = 7;
+
+        InitPrevBuf();
+        gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
+        gMA.status &= ~STATUS_UNK_15;
+        gMA.unk_1796 = 0;
+        gMA.unk_1794 = 0;
+        gMA.status &= ~STATUS_UNK_16;
+        gMA.unk_1798[0] = '\0';
+        gMA.unk_164 = 0;
+        gMA.unk_188 = 0;
+        gMA.unk_92 = 6;
+
+        if (!recvBufSize) {
+            MAU_memcpy(gMA.ipaddr, &gMA.unk_876, 4);
+            MA_TaskSet(task, 2);
+        } else {
+            MA_TaskSet(task, 0);
+        }
+    } else {
+        gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
+        gMA.status &= ~STATUS_UNK_15;
+
+        if (recvBufSize == 0) {
+            gMA.unk_120 = recvBufSize;
+            if (pRecvSize != NULL) *pRecvSize = 0;
+            gMA.status |= STATUS_UNK_15;
+            MA_TaskSet(task, 110);
+        } else {
+            if (pRecvData == NULL) {
+                MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+                ResetApiCallFlag();
+                return;
+            }
+
+            *pRecvSize = 0;
+            if (gMA.prevbuf_size != 0 && gMA.prevbuf_size <= recvBufSize) {
+                MAU_memcpy(pRecvData, gMA.prevbuf, gMA.prevbuf_size);
+                pRecvData += gMA.prevbuf_size;
+                recvBufSize -= gMA.prevbuf_size;
+                *pRecvSize += gMA.prevbuf_size;
+                gMA.prevbuf_size = 0;
+
+                gMA.unk_120 = (u32)pRecvData;
+                gMA.unk_124 = recvBufSize;
+                gMA.unk_128 = (u32)pRecvSize;
+
+                gMA.status |= STATUS_UNK_15;
+                MA_TaskSet(task, 110);
+            } else {
+                MAU_memcpy(pRecvData, gMA.prevbuf, recvBufSize);
+                gMA.prevbuf_size -= recvBufSize;
+                MAU_memcpy(gMA.prevbuf, &gMA.prevbuf[recvBufSize], gMA.prevbuf_size);
+                *pRecvSize = recvBufSize;
+                gMA.condition |= MA_CONDITION_BUFFER_FULL;
+                ResetApiCallFlag();
+                return;
+            }
+        }
+    }
+
+    ResetApiCallFlag();
+}
 
 #define ConcatUserAgent_WriteAscii(dest, code) \
 { \
@@ -3922,7 +3662,7 @@ static int GetRequestType(void)
     static int ret asm("ret.256");
 
     ret = 0;
-    switch ((u32)gMA.unk_112) {  // MAGIC
+    switch (gMA.unk_112) {  // MAGIC
     case 0x16:
         switch (gMA.unk_160) {  // MAGIC
         case 1:
@@ -3988,7 +3728,7 @@ static void CreateHttpRequestHeader(void)
     bAddAuthID = FALSE;
 
     // ALL MAGIC
-    switch ((u32)gMA.unk_112) {
+    switch (gMA.unk_112) {
     case 0x16:
         switch (gMA.unk_160) {
         case 0:
@@ -4099,7 +3839,7 @@ static int HttpGetNextStep(int unk_1)
     // ALL MAGIC
     switch (unk_1) {
     case 0:
-        switch ((u32)gMA.unk_112) {
+        switch (gMA.unk_112) {
         case 0x16:
             switch (gMA.unk_160) {
             case 0:
@@ -4159,7 +3899,7 @@ static int HttpGetNextStep(int unk_1)
         break;
 
     case 1:
-        switch ((u32)gMA.unk_112) {
+        switch (gMA.unk_112) {
         case 0x16:
             switch (gMA.unk_160) {
             case 0:
@@ -4227,7 +3967,7 @@ static int HttpGetNextStep(int unk_1)
         break;
 
     case 2:
-        switch ((u32)gMA.unk_112) {
+        switch (gMA.unk_112) {
         case 0x16:
             switch (gMA.unk_160) {
             case 0:
@@ -5728,7 +5468,7 @@ static void MATASK_GetEEPROMData(void)
         break;
 
     case 5:
-        CopyEEPROMData((int)gMA.unk_112, (char *)gMA.unk_116);
+        CopyEEPROMData(gMA.unk_112, (char *)gMA.unk_116);
         gMA.task_step++;
         break;
 
