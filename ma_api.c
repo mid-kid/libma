@@ -3454,6 +3454,7 @@ void MA_HTTP_Post(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8 *p
     MA_HTTP_GetPost(pURL, pHeadBuf, headBufSize, pSendData, sendSize, pRecvData, recvBufSize, pRecvSize, pUserID, pPassword, TASK_UNK_17);
 }
 
+#define param PARAM(PARAM_HTTP_GETPOST)
 void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword, u8 task)
 {
     int len;
@@ -3467,20 +3468,20 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8
         return;
     }
 
-    gMA.unk_112 = task;
-    gMA.unk_120 = (u32)pRecvData;
-    gMA.unk_124 = (u32)recvBufSize;
-    gMA.unk_128 = (u32)pRecvSize;
-    gMA.unk_132 = (u32)pSendData;
-    gMA.unk_136 = sendSize;
-    gMA.unk_180 = pUserID;
-    gMA.unk_184 = pPassword;
-    gMA.unk_156 = headBufSize;
-    gMA.unk_168 = pHeadBuf;
+    param.task = task;
+    param.pRecvData = pRecvData;
+    param.recvBufSize = recvBufSize;
+    param.pRecvSize = pRecvSize;
+    param.pSendData = pSendData;
+    param.sendSize = sendSize;
+    param.pUserID = pUserID;
+    param.pPassword = pPassword;
+    param.headBufSize = headBufSize;
+    param.pHeadBuf = pHeadBuf;
 
     if (!(gMA.condition & MA_CONDITION_BUFFER_FULL)) {
         if (recvBufSize == 0) {
-            gMA.unk_120 = recvBufSize;
+            param.pRecvData = NULL;
             if (pRecvSize != NULL) *pRecvSize = 0;
         } else {
             if (pRecvData == NULL) {
@@ -3491,7 +3492,9 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8
             *pRecvSize = 0;
         }
 
-        if (gMA.unk_156 != 0 && gMA.unk_168 != NULL) *gMA.unk_168 = '\0';
+        if (param.headBufSize != 0 && param.pHeadBuf != NULL) {
+            param.pHeadBuf[0] = '\0';
+        }
 
         len = MAU_strlen(pURL);
         if (len > 1024 || len == 0) {
@@ -3508,10 +3511,10 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8
             return;
         }
 
-        gMA.unk_160 = server_unk_1;
+        param.server_unk_1 = server_unk_1;
         if (server_unk_2 == 0) {
-            gMA.unk_180 = strEmpty;
-            gMA.unk_184 = strEmpty;
+            param.pUserID = strEmpty;
+            param.pPassword = strEmpty;
         } else {
             if ((len = MAU_strlen(pUserID)) > 16 ||
                     (len = MAU_strlen(pPassword)) > 16) {
@@ -3521,10 +3524,10 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8
             }
         }
 
-        if ((server_unk_2 == 1 && gMA.unk_112 == TASK_UNK_17) ||
-                (server_unk_2 == 2 && gMA.unk_112 == TASK_UNK_16) ||
-                (server_unk_2 == 3 && gMA.unk_112 == TASK_UNK_17) ||
-                (server_unk_2 == 4 && gMA.unk_112 == TASK_UNK_16)) {
+        if ((server_unk_2 == 1 && param.task == TASK_UNK_17) ||
+                (server_unk_2 == 2 && param.task == TASK_UNK_16) ||
+                (server_unk_2 == 3 && param.task == TASK_UNK_17) ||
+                (server_unk_2 == 4 && param.task == TASK_UNK_16)) {
             MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
             ResetApiCallFlag();
             return;
@@ -3538,18 +3541,18 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8
 
         if (recvBufSize == 1) {
             if (pServerPath) {
-                gMA.unk_140 = (u32)pServerPath;
+                param.pServerPath = pServerPath;
             } else {
-                gMA.unk_140 = (u32)strServerRoot;
+                param.pServerPath = strServerRoot;
             }
         } else {
-            gMA.unk_140 = (u32)pURL;
+            param.pServerPath = pURL;
         }
 
-        gMA.unk_144 = MAU_strlen((char *)gMA.unk_140);
-        gMA.unk_148 = gMA.unk_140;
-        gMA.unk_152 = gMA.unk_144;
-        gMA.unk_116 = 7;
+        param.pServerPathLen = MAU_strlen(param.pServerPath);
+        param.unk_10 = param.pServerPath;
+        param.unk_11 = param.pServerPathLen;
+        param.unk_2 = 7;
 
         InitPrevBuf();
         gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
@@ -3558,7 +3561,7 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8
         gMA.unk_1794 = 0;
         gMA.status &= ~STATUS_UNK_16;
         gMA.unk_1798[0] = '\0';
-        gMA.unk_164 = 0;
+        param.unk_14 = 0;
         gMA.unk_188 = 0;
         gMA.unk_92 = 6;
 
@@ -3573,7 +3576,7 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8
         gMA.status &= ~STATUS_UNK_15;
 
         if (recvBufSize == 0) {
-            gMA.unk_120 = recvBufSize;
+            param.pRecvData = 0;
             if (pRecvSize != NULL) *pRecvSize = 0;
             gMA.status |= STATUS_UNK_15;
             MA_TaskSet(task, 110);
@@ -3592,9 +3595,9 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8
                 *pRecvSize += gMA.prevbuf_size;
                 gMA.prevbuf_size = 0;
 
-                gMA.unk_120 = (u32)pRecvData;
-                gMA.unk_124 = recvBufSize;
-                gMA.unk_128 = (u32)pRecvSize;
+                param.pRecvData = pRecvData;
+                param.recvBufSize = recvBufSize;
+                param.pRecvSize = pRecvSize;
 
                 gMA.status |= STATUS_UNK_15;
                 MA_TaskSet(task, 110);
@@ -3612,6 +3615,7 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8
 
     ResetApiCallFlag();
 }
+#undef param
 
 #define ConcatUserAgent_WriteAscii(dest, code) \
 { \

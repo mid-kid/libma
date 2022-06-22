@@ -115,6 +115,28 @@ typedef struct {
 } MA_BUF;
 
 typedef struct {
+    u32 task;
+    u32 unk_2;
+    u8 *pRecvData;
+    u32 recvBufSize;
+    u16 *pRecvSize;
+    const u8 *pSendData;
+    u32 sendSize;
+    const char *pServerPath;
+    u32 pServerPathLen;
+    const char *unk_10;
+    u32 unk_11;
+    u32 headBufSize;
+    u32 server_unk_1;
+    u32 unk_14;
+    char *pHeadBuf;
+    u32 _16;
+    u32 _17;
+    const char *pUserID;
+    const char *pPassword;
+} PARAM_HTTP_GETPOST;
+
+typedef struct {
     vu8 error;
     u8 _1[1];
     vu16 condition;
@@ -172,10 +194,10 @@ typedef struct {
     u32 unk_156;
     u32 unk_160;
     u32 unk_164;
-    u8 *unk_168;
+    u32 unk_168;
     u8 _172[8];
-    const char *unk_180;
-    const char *unk_184;
+    u32 unk_180;
+    u32 unk_184;
     u32 unk_188;
     u8 _192[12];
     u8 sockets_used[NUM_SOCKETS];
@@ -216,5 +238,9 @@ typedef struct {
 } MA_VAR;
 
 extern MA_VAR gMA;
+
+#include <stddef.h>
+#define PARAM_BASE (offsetof(MA_VAR, unk_112))
+#define PARAM(type) ((*((struct { char _[PARAM_BASE]; type p; } *)&gMA)).p)
 
 #endif // _MA_VAR_H
