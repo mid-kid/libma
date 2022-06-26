@@ -115,25 +115,29 @@ typedef struct {
 } MA_BUF;
 
 typedef struct {
-    u32 task;
-    u32 unk_2;
-    u8 *pRecvData;
-    u32 recvBufSize;
-    u16 *pRecvSize;
-    const u8 *pSendData;
-    u32 sendSize;
-    const char *pServerPath;
-    u32 pServerPathLen;
-    const char *unk_10;
-    u32 unk_11;
-    u32 headBufSize;
-    u32 server_unk_1;
-    u32 unk_14;
-    char *pHeadBuf;
-    u32 _16;
-    u32 _17;
-    const char *pUserID;
-    const char *pPassword;
+    u32 task;  // 112
+    u32 unk_2;  // 116
+    u8 *pRecvData;  // 120
+    u32 recvBufSize;  // 124
+    u16 *pRecvSize;  // 128
+    const u8 *pSendData;  // 132
+    u32 sendSize;  // 136
+    const char *pServerPath;  // 140
+    u32 pServerPathLen;  // 144
+    const char *unk_10;  // 148
+    u32 unk_11;  // 152
+    u32 headBufSize;  // 156
+    u32 server_unk_1;  // 160
+    u32 unk_14;  // 164
+    char *pHeadBuf;  // 168
+    u32 unk_16;  // 172
+    u32 unk_17;  // 176
+    const char *pUserID;  // 180
+    const char *pPassword;  // 184
+    u32 unk_20;  // 188
+    u32 unk_21;  // 192
+    u32 counter;  // 196
+    u32 next_step;  // 200
 } PARAM_HTTP_GETPOST;
 
 typedef struct {
@@ -195,11 +199,14 @@ typedef struct {
     u32 unk_160;
     u32 unk_164;
     u32 unk_168;
-    u8 _172[8];
+    u32 unk_172;
+    u32 unk_176;
     u32 unk_180;
     u32 unk_184;
     u32 unk_188;
-    u8 _192[12];
+    u32 unk_192;
+    u32 unk_196;
+    u32 unk_200;
     u8 sockets_used[NUM_SOCKETS];
     u8 local_address[4];
     u8 _210[2];

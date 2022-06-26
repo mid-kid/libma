@@ -5,6 +5,7 @@
 #include "ma_bios.h"
 #include "ma_var.h"
 #include "ma_sub.h"
+#include "ma_ango.h"
 
 #define CASSETTE_INITIAL_CODE (ROM_BANK0 + 0xac)
 #define CASSETTE_VERSION_NO (ROM_BANK0 + 0xbc)
@@ -414,9 +415,7 @@ void MA_TCP_Cut(void)
 
 static void MATASK_TCP_Cut(void)
 {
-    int param = gMA.task_step;
-
-    switch (param) {
+    switch (gMA.task_step) {
     case 0:
         gMA.task_step++;
 
@@ -438,7 +437,7 @@ static void MATASK_TCP_Cut(void)
         break;
 
     case 3:
-        gMA.unk_92 = param;
+        gMA.unk_92 = 3;
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         gMA.sockets[0] = 0;
@@ -3654,12 +3653,7 @@ static void ConcatUserAgent(char *user_agent)
 }
 
 static const char strNewl[] asm(".LstrHttpNewl") = "\"\r\n";
-asm("
-.section .rodata
-.align 2
-    .asciz \"HTTP\"
-.section .text
-");
+static const char strHttp[] asm(".LstrHttp") = "HTTP";
 
 static int GetRequestType(void)
 {
@@ -4032,1346 +4026,374 @@ static int HttpGetNextStep(int unk_1)
     return step;
 }
 
-#if 0
-#else
-void MATASK_HTTP_GetPost(void);
-asm("
-.lcomm curCp.272, 0x4
-.lcomm nextCp.273, 0x4
-.lcomm lineCp.274, 0x4
-.lcomm tmpLen.275, 0x4
-.lcomm dataLen.276, 0x4
-.lcomm headerLineLen.277, 0x4
+#define param PARAM(PARAM_HTTP_GETPOST)
+static void MATASK_HTTP_GetPost(void)
+{
+    static const char *curCp asm("curCp.272");
+    static const char *nextCp asm("nextCp.273");
+    static char *lineCp asm("lineCp.274");
+    static int tmpLen asm("tmpLen.275");
+    static int dataLen asm("dataLen.276");
+    static int headerLineLen asm("headerLineLen.277");
 
-.align 2
-.thumb_func
-MATASK_HTTP_GetPost:
-    push	{r4, r5, r6, r7, lr}
-    mov	r7, sl
-    mov	r6, r9
-    mov	r5, r8
-    push	{r5, r6, r7}
-    ldr	r2, [pc, #56]
-    ldr	r1, [pc, #56]
-    ldr	r0, [pc, #60]
-    mov	r3, #0
-    str	r3, [r0, #0]
-    str	r3, [r1, #0]
-    str	r3, [r2, #0]
-    ldr	r2, [pc, #52]
-    ldr	r1, [pc, #56]
-    ldr	r0, [pc, #56]
-    str	r3, [r0, #0]
-    str	r3, [r1, #0]
-    str	r3, [r2, #0]
-    ldr	r1, [pc, #52]
-    mov	r0, r1
-    add	r0, #69
-    ldrb	r0, [r0, #0]
-    cmp	r0, #238
-    bne	MATASK_HTTP_GetPost+0xb2
-    mov	r0, r1
-    add	r0, #80
-    ldrb	r0, [r0, #0]
-    cmp	r0, #35
-    beq	MATASK_HTTP_GetPost+0x82
-    cmp	r0, #35
-    bgt	MATASK_HTTP_GetPost+0x60
-    cmp	r0, #21
-    beq	MATASK_HTTP_GetPost+0x6a
-    b	MATASK_HTTP_GetPost+0xa4
-.align 2
-    .word curCp.272
-    .word nextCp.273
-    .word lineCp.274
-    .word tmpLen.275
-    .word dataLen.276
-    .word headerLineLen.277
-    .word gMA
+    curCp = nextCp = lineCp = NULL;
+    tmpLen = dataLen = headerLineLen = 0;
 
-    cmp	r0, #36
-    beq	MATASK_HTTP_GetPost+0xb2
-    cmp	r0, #40
-    beq	MATASK_HTTP_GetPost+0x82
-    b	MATASK_HTTP_GetPost+0xa4
-    mov	r2, r1
-    add	r2, #102
-    mov	r0, #36
-    strb	r0, [r2, #0]
-    mov	r0, r1
-    add	r0, #104
-    strh	r3, [r0, #0]
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    mov	r0, #240
-    strb	r0, [r1, #0]
-    b	MATASK_HTTP_GetPost+0xb2
-    ldr	r2, [pc, #28]
-    mov	r3, r2
-    add	r3, #102
-    mov	r1, #0
-    mov	r0, #36
-    strb	r0, [r3, #0]
-    mov	r0, r2
-    add	r0, #104
-    strh	r1, [r0, #0]
-    mov	r1, r2
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    mov	r0, #241
-    strb	r0, [r1, #0]
-    b	MATASK_HTTP_GetPost+0xb2
-.align 2
-    .word gMA
+    if (gMA.cmd_recv == (MACMD_ERROR | MAPROT_REPLY)) {
+        switch (gMA.cmd_last) {
+        case MACMD_DATA:
+            gMA.task_error = MAAPIE_TCP_CONNECT;
+            gMA.task_error_unk_2 = 0;
+            gMA.task_step = 0xf0;
+            break;
 
-    bl	MA_DefaultNegaResProc
-    ldr	r0, [pc, #56]
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    mov	r1, #241
-    strb	r1, [r0, #0]
-    ldr	r7, [pc, #48]
-    mov	r5, r7
-    add	r5, #98
-    ldrb	r0, [r5, #0]
-    mov	r2, r0
-    mov	r3, r7
-    cmp	r2, #7
-    bne	MATASK_HTTP_GetPost+0xc4
-    b	MATASK_HTTP_GetPost+0x30c
-    cmp	r2, #7
-    bgt	MATASK_HTTP_GetPost+0xf6
-    cmp	r2, #3
-    bne	MATASK_HTTP_GetPost+0xce
-    b	MATASK_HTTP_GetPost+0x1d4
-    cmp	r2, #3
-    bgt	MATASK_HTTP_GetPost+0xe8
-    cmp	r2, #1
-    beq	MATASK_HTTP_GetPost+0x166
-    cmp	r2, #1
-    bgt	MATASK_HTTP_GetPost+0x180
-    cmp	r2, #0
-    beq	MATASK_HTTP_GetPost+0x14a
-    bl	MATASK_HTTP_GetPost+0xb22
-.align 2
-    .word gMA
+        case MACMD_TCPCONNECT:
+        case MACMD_DNSREQUEST:
+            gMA.task_error = MAAPIE_TCP_CONNECT;
+            gMA.task_error_unk_2 = 0;
+            gMA.task_step = 0xf1;
+            break;
 
-    cmp	r2, #5
-    bne	MATASK_HTTP_GetPost+0xee
-    b	MATASK_HTTP_GetPost+0x250
-    cmp	r2, #5
-    ble	MATASK_HTTP_GetPost+0xf4
-    b	MATASK_HTTP_GetPost+0x26e
-    b	MATASK_HTTP_GetPost+0x1f2
-    cmp	r2, #100
-    bne	MATASK_HTTP_GetPost+0xfc
-    b	MATASK_HTTP_GetPost+0x894
-    cmp	r2, #100
-    bgt	MATASK_HTTP_GetPost+0x11e
-    cmp	r2, #50
-    bne	MATASK_HTTP_GetPost+0x106
-    b	MATASK_HTTP_GetPost+0x858
-    cmp	r2, #50
-    bgt	MATASK_HTTP_GetPost+0x114
-    cmp	r2, #8
-    bne	MATASK_HTTP_GetPost+0x110
-    b	MATASK_HTTP_GetPost+0x37c
-    bl	MATASK_HTTP_GetPost+0xb22
-    cmp	r2, #51
-    bne	MATASK_HTTP_GetPost+0x11a
-    b	MATASK_HTTP_GetPost+0x872
-    bl	MATASK_HTTP_GetPost+0xb22
-    cmp	r2, #240
-    bne	MATASK_HTTP_GetPost+0x126
-    bl	MATASK_HTTP_GetPost+0xa60
-    cmp	r2, #240
-    bgt	MATASK_HTTP_GetPost+0x136
-    cmp	r2, #110
-    bne	MATASK_HTTP_GetPost+0x132
-    bl	MATASK_HTTP_GetPost+0x920
-    bl	MATASK_HTTP_GetPost+0xb22
-    cmp	r2, #241
-    bne	MATASK_HTTP_GetPost+0x13e
-    bl	MATASK_HTTP_GetPost+0xa82
-    cmp	r2, #255
-    bne	MATASK_HTTP_GetPost+0x146
-    bl	MATASK_HTTP_GetPost+0xace
-    bl	MATASK_HTTP_GetPost+0xb22
-    mov	r1, #240
-    lsl	r1, r1, #1
-    add	r0, r7, r1
-    strh	r2, [r0, #0]
-    mov	r1, r7
-    add	r1, #212
-    str	r1, [r0, #4]
-    mov	r2, #220
-    lsl	r2, r2, #2
-    add	r1, r7, r2
-    bl	MABIOS_DNSRequest
-    bl	MATASK_HTTP_GetPost+0xa78
-    mov	r0, r7
-    add	r0, #106
-    mov	r3, #242
-    lsl	r3, r3, #1
-    add	r1, r7, r3
-    ldr	r1, [r1, #0]
-    mov	r2, #4
-    bl	MAU_memcpy
-    ldrb	r0, [r5, #0]
-    add	r0, #1
-    ldrb	r1, [r5, #0]
-    strb	r0, [r5, #0]
-    ldr	r2, [pc, #36]
-    mov	r0, #0
-    strh	r0, [r2, #0]
-    ldr	r4, [pc, #36]
-    add	r0, r2, r4
-    str	r0, [r2, #4]
-    mov	r1, #198
-    lsl	r1, r1, #1
-    add	r0, r2, r1
-    ldr	r0, [r0, #0]
-    cmp	r0, #0
-    bne	MATASK_HTTP_GetPost+0x1b4
-    ldr	r3, [pc, #20]
-    add	r1, r2, r3
-    mov	r0, r2
-    mov	r2, #80
-    bl	MABIOS_TCPConnect
-    b	MATASK_HTTP_GetPost+0x1c0
-.align 2
-    .word gMA+0x1e0
-    .word 0xfffffef4
-    .word 0xfffffe8a
+        case MACMD_TCPDISCONNECT:
+            break;
 
-    ldr	r4, [pc, #20]
-    add	r1, r2, r4
-    mov	r0, r2
-    mov	r2, #80
-    bl	MABIOS_TCPConnect
-    ldr	r0, [pc, #12]
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    add	r1, #1
-    b	MATASK_HTTP_GetPost+0x88e
-.align 2
-    .word 0xfffffe8a
-    .word gMA
+        default:
+            MA_DefaultNegaResProc();
+            gMA.task_step = 0xf1;
+            break;
+        }
+    }
 
-    mov	r1, #242
-    lsl	r1, r1, #1
-    add	r0, r7, r1
-    ldr	r0, [r0, #0]
-    ldrb	r0, [r0, #0]
-    mov	r1, r7
-    add	r1, #99
-    strb	r0, [r1, #0]
-    add	r1, #105
-    mov	r0, #1
-    strb	r0, [r1, #0]
-    ldrb	r0, [r5, #0]
-    add	r0, #1
-    ldrb	r1, [r5, #0]
-    strb	r0, [r5, #0]
-    ldr	r4, [pc, #36]
-    mov	r0, #0
-    strh	r0, [r4, #0]
-    ldr	r2, [pc, #32]
-    add	r0, r4, r2
-    str	r0, [r4, #4]
-    bl	GetRequestType
-    cmp	r0, #0
-    bne	MATASK_HTTP_GetPost+0x228
-    ldr	r1, [pc, #24]
-    ldr	r3, [pc, #24]
-    add	r0, r4, r3
-    ldrb	r3, [r0, #0]
-    mov	r0, r4
-    mov	r2, #4
-    bl	MABIOS_Data
-    b	MATASK_HTTP_GetPost+0x238
-.align 2
-    .word gMA+0x1e0
-    .word 0xfffffef4
-    .word strHttpGet
-    .word 0xfffffe83
+    switch (gMA.task_step) {
+    case 0:
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_DNSRequest(&gMA.buffer_unk_480, gMA.unk_880);
+        gMA.task_step++;
+        break;
 
-    ldr	r1, [pc, #24]
-    ldr	r2, [pc, #28]
-    add	r0, r4, r2
-    ldrb	r3, [r0, #0]
-    mov	r0, r4
-    mov	r2, #5
-    bl	MABIOS_Data
-    ldr	r1, [pc, #16]
-    mov	r2, r1
-    add	r2, #200
-    add	r1, #98
-    b	MATASK_HTTP_GetPost+0x2ea
-.align 2
-    .word strHttpPost
-    .word 0xfffffe83
-    .word gMA
+    case 1:
+        MAU_memcpy(gMA.ipaddr, gMA.buffer_unk_480.data, 4);
+        gMA.task_step++;
 
-    mov	r1, r7
-    add	r1, #140
-    mov	r0, r7
-    add	r0, #148
-    ldr	r0, [r0, #0]
-    str	r0, [r1, #0]
-    add	r1, #4
-    mov	r0, r7
-    add	r0, #152
-    ldr	r0, [r0, #0]
-    str	r0, [r1, #0]
-    ldrb	r0, [r5, #0]
-    add	r0, #1
-    ldrb	r1, [r5, #0]
-    strb	r0, [r5, #0]
-    ldr	r4, [pc, #64]
-    mov	r0, #0
-    strh	r0, [r4, #0]
-    ldr	r3, [pc, #60]
-    add	r0, r4, r3
-    str	r0, [r4, #4]
-    ldr	r0, [pc, #60]
-    add	r6, r4, r0
-    ldr	r2, [r6, #0]
-    cmp	r2, #254
-    bls	MATASK_HTTP_GetPost+0x2cc
-    ldr	r1, [pc, #52]
-    add	r5, r4, r1
-    ldr	r1, [r5, #0]
-    ldr	r2, [pc, #52]
-    add	r0, r4, r2
-    ldrb	r3, [r0, #0]
-    mov	r0, r4
-    mov	r2, #254
-    bl	MABIOS_Data
-    ldr	r0, [r5, #0]
-    add	r0, #254
-    str	r0, [r5, #0]
-    ldr	r0, [r6, #0]
-    sub	r0, #254
-    str	r0, [r6, #0]
-    ldr	r3, [pc, #28]
-    add	r2, r4, r3
-    ldr	r0, [pc, #28]
-    add	r1, r4, r0
-    ldrb	r0, [r1, #0]
-    b	MATASK_HTTP_GetPost+0x2ee
-.align 2
-    .word gMA+0x1e0
-    .word 0xfffffef4
-    .word 0xfffffeb0
-    .word 0xfffffeac
-    .word 0xfffffe83
-    .word 0xfffffee8
-    .word 0xfffffe82
+    case 2:
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        if (gMA.unk_876 == 0) {
+            MABIOS_TCPConnect(&gMA.buffer_unk_480, gMA.ipaddr, 80);
+        } else {
+            MABIOS_TCPConnect(&gMA.buffer_unk_480, gMA.ipaddr, 80);
+        }
+        gMA.task_step++;
+        break;
 
-    ldr	r1, [pc, #44]
-    add	r0, r4, r1
-    ldr	r1, [r0, #0]
-    lsl	r2, r2, #24
-    lsr	r2, r2, #24
-    ldr	r3, [pc, #40]
-    add	r0, r4, r3
-    ldrb	r3, [r0, #0]
-    mov	r0, r4
-    bl	MABIOS_Data
-    ldr	r0, [pc, #32]
-    add	r2, r4, r0
-    ldr	r3, [pc, #32]
-    add	r1, r4, r3
-    ldrb	r0, [r1, #0]
-    add	r0, #1
-    str	r0, [r2, #0]
-    ldrb	r0, [r1, #0]
-    mov	r0, #50
-    strb	r0, [r1, #0]
-    bl	MATASK_HTTP_GetPost+0xb22
-.align 2
-    .word 0xfffffeac
-    .word 0xfffffe83
-    .word 0xfffffee8
-    .word 0xfffffe82
+    case 3:
+        gMA.sockets[0] = gMA.buffer_unk_480.data[0];
+        gMA.sockets_used[0] = TRUE;
+        gMA.task_step++;
 
-    mov	r4, #220
-    lsl	r4, r4, #2
-    add	r6, r7, r4
-    ldr	r1, [pc, #92]
-    mov	r0, r6
-    bl	MAU_strcpy
-    bl	CreateHttpRequestHeader
-    bl	InitPrevBuf
-    mov	r0, r7
-    add	r0, #172
-    mov	r4, #0
-    str	r4, [r0, #0]
-    add	r0, #4
-    str	r4, [r0, #0]
-    add	r0, #16
-    str	r4, [r0, #0]
-    ldr	r1, [pc, #64]
-    ldr	r0, [pc, #64]
-    str	r4, [r0, #0]
-    str	r4, [r1, #0]
-    mov	r0, #0
-    bl	HttpGetNextStep
-    ldrb	r1, [r5, #0]
-    strb	r0, [r5, #0]
-    mov	r0, #240
-    lsl	r0, r0, #1
-    add	r5, r7, r0
-    strh	r4, [r5, #0]
-    mov	r0, r7
-    add	r0, #212
-    str	r0, [r5, #4]
-    mov	r0, r6
-    bl	MAU_strlen
-    mov	r2, r0
-    lsl	r2, r2, #24
-    lsr	r2, r2, #24
-    mov	r0, r7
-    add	r0, #99
-    ldrb	r3, [r0, #0]
-    mov	r0, r5
-    mov	r1, r6
-    bl	MABIOS_Data
-    b	MATASK_HTTP_GetPost+0xb22
-.align 2
-    .word strHttpReqSuffix
-    .word curCp.272
-    .word nextCp.273
+    case 4:
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        if (GetRequestType() == 0) {
+            MABIOS_Data(&gMA.buffer_unk_480, strHttpGet, 4, gMA.sockets[0]);
+        } else {
+            MABIOS_Data(&gMA.buffer_unk_480, strHttpPost, 5, gMA.sockets[0]);
+        }
+        param.next_step = gMA.task_step + 1;
+        gMA.task_step = 50;
+        break;
 
-    mov	r0, r7
-    add	r0, #172
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    bne	MATASK_HTTP_GetPost+0x3b4
-    mov	r0, r7
-    add	r0, #192
-    ldr	r1, [r0, #0]
-    cmp	r1, #0
-    beq	MATASK_HTTP_GetPost+0x3ca
-    mov	r0, r7
-    add	r0, #176
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    beq	MATASK_HTTP_GetPost+0x3d8
-    mov	r0, #1
-    bl	HttpGetNextStep
-    mov	r2, r7
-    add	r2, #98
-    ldrb	r1, [r2, #0]
-    strb	r0, [r2, #0]
-    mov	r1, r7
-    add	r1, #164
-    ldr	r0, [r1, #0]
-    add	r0, #1
-    str	r0, [r1, #0]
-    b	MATASK_HTTP_GetPost+0xb22
-    bl	MA_GetCondition
-    mov	r1, #64
-    and	r1, r0
-    cmp	r1, #0
-    beq	MATASK_HTTP_GetPost+0x412
-    mov	r0, r7
-    add	r0, #192
-    ldr	r1, [r0, #0]
-    cmp	r1, #0
-    bne	MATASK_HTTP_GetPost+0x3e0
-    mov	r2, r7
-    add	r2, #102
-    mov	r0, #50
-    strb	r0, [r2, #0]
-    mov	r0, r7
-    add	r0, #104
-    strh	r1, [r0, #0]
-    ldrb	r0, [r5, #0]
-    mov	r0, #240
-    strb	r0, [r5, #0]
-    b	MATASK_HTTP_GetPost+0xb22
-    mov	r0, r7
-    add	r0, #176
-    ldr	r0, [r0, #0]
-    cmp	r0, #1
-    bne	MATASK_HTTP_GetPost+0x3f6
-    mov	r0, r7
-    add	r0, #98
-    ldrb	r1, [r0, #0]
-    mov	r1, #240
-    strb	r1, [r0, #0]
-    b	MATASK_HTTP_GetPost+0xb22
-    mov	r2, r7
-    add	r2, #102
-    mov	r1, #0
-    mov	r0, #50
-    strb	r0, [r2, #0]
-    mov	r0, r7
-    add	r0, #104
-    strh	r1, [r0, #0]
-    mov	r1, r7
-    add	r1, #98
-    ldrb	r0, [r1, #0]
-    mov	r0, #240
-    strb	r0, [r1, #0]
-    b	MATASK_HTTP_GetPost+0xb22
-    mov	r1, #240
-    lsl	r1, r1, #1
-    add	r2, r7, r1
-    ldrh	r0, [r2, #0]
-    cmp	r0, #1
-    bne	MATASK_HTTP_GetPost+0x420
-    b	MATASK_HTTP_GetPost+0x7e4
-    ldr	r6, [pc, #52]
-    sub	r0, #1
-    str	r0, [r6, #0]
-    ldr	r1, [pc, #52]
-    mov	r3, #242
-    lsl	r3, r3, #1
-    add	r0, r7, r3
-    ldr	r0, [r0, #0]
-    add	r0, #1
-    str	r0, [r1, #0]
-    ldr	r3, [pc, #40]
-    ldr	r4, [pc, #44]
-    add	r5, r7, r4
-    str	r5, [r3, #0]
-    ldr	r0, [pc, #40]
-    add	r4, r7, r0
-    ldrh	r0, [r4, #0]
-    mov	r8, r1
-    cmp	r0, #0
-    beq	MATASK_HTTP_GetPost+0x44c
-    add	r0, r0, r5
-    str	r0, [r3, #0]
-    mov	r9, r3
-    mov	sl, r6
-    mov	r6, r7
-    add	r7, #102
-    b	MATASK_HTTP_GetPost+0x7c8
-.align 2
-    .word tmpLen.275
-    .word curCp.272
-    .word lineCp.274
-    .word 0x0000047d
-    .word 0x000006fa
+    case 5:
+        param.pServerPath = param.unk_10;
+        param.pServerPathLen = param.unk_11;
+        gMA.task_step++;
 
-    mov	r2, r8
-    ldr	r0, [r2, #0]
-    sub	r0, r1, r0
-    mov	r3, sl
-    ldr	r1, [r3, #0]
-    sub	r1, r1, r0
-    str	r1, [r3, #0]
-    ldr	r4, [pc, #172]
-    ldr	r0, [pc, #172]
-    add	r1, r4, r0
-    ldrh	r0, [r1, #0]
-    cmp	r0, #0
-    beq	MATASK_HTTP_GetPost+0x492
-    ldr	r2, [pc, #168]
-    add	r0, r4, r2
-    mov	r3, r9
-    str	r0, [r3, #0]
-    mov	r0, #0
-    strh	r0, [r1, #0]
-    mov	r1, r9
-    ldr	r0, [r1, #0]
-    ldr	r1, [pc, #156]
-    mov	r2, #4
-    bl	MAU_strncmp
-    cmp	r0, #0
-    bne	MATASK_HTTP_GetPost+0x590
-    mov	r2, r9
-    ldr	r3, [r2, #0]
-    ldrb	r0, [r3, #9]
-    sub	r0, #48
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #9
-    bhi	MATASK_HTTP_GetPost+0x578
-    ldrb	r0, [r3, #10]
-    sub	r0, #48
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #9
-    bhi	MATASK_HTTP_GetPost+0x578
-    ldrb	r0, [r3, #11]
-    sub	r0, #48
-    lsl	r0, r0, #24
-    lsr	r0, r0, #24
-    cmp	r0, #9
-    bhi	MATASK_HTTP_GetPost+0x578
-    ldrb	r0, [r3, #9]
-    sub	r0, #48
-    mov	r1, #100
-    mov	r2, r0
-    mul	r2, r1
-    ldrb	r1, [r3, #10]
-    sub	r1, #48
-    lsl	r0, r1, #2
-    add	r0, r0, r1
-    lsl	r0, r0, #1
-    add	r2, r2, r0
-    ldr	r0, [pc, #84]
-    add	r2, r2, r0
-    ldrb	r3, [r3, #11]
-    add	r2, r2, r3
-    ldr	r1, [pc, #80]
-    add	r0, r4, r1
-    strh	r2, [r0, #0]
-    mov	r0, r4
-    add	r0, #192
-    mov	r3, #1
-    str	r3, [r0, #0]
-    sub	r0, #32
-    ldr	r0, [r0, #0]
-    sub	r0, #1
-    cmp	r0, #3
-    bhi	MATASK_HTTP_GetPost+0x54c
-    mov	r0, r4
-    add	r0, #164
-    ldr	r3, [r0, #0]
-    cmp	r3, #0
-    bne	MATASK_HTTP_GetPost+0x54c
-    lsl	r0, r2, #16
-    lsr	r1, r0, #16
-    ldr	r0, [pc, #48]
-    cmp	r1, r0
-    bne	MATASK_HTTP_GetPost+0x516
-    b	MATASK_HTTP_GetPost+0x730
-    mov	r0, #50
-    strb	r0, [r7, #0]
-    cmp	r1, #200
-    bne	MATASK_HTTP_GetPost+0x544
-    mov	r0, r4
-    add	r0, #104
-    strh	r3, [r0, #0]
-    b	MATASK_HTTP_GetPost+0x584
-.align 2
-    .word gMA
-    .word 0x000006fa
-    .word 0x0000047d
-    .word hexChar.252+0x18
-    .word 0x0000ffd0
-    .word 0x00000702
-    .word 0x00000191
+    case 6:
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        if (param.pServerPathLen > 254) {
+            MABIOS_Data(&gMA.buffer_unk_480, param.pServerPath, 254, gMA.sockets[0]);
+            param.pServerPath += 254;
+            param.pServerPathLen -= 254;
+            param.next_step = gMA.task_step;
+            gMA.task_step = 50;
+            break;
+        }
+        MABIOS_Data(&gMA.buffer_unk_480, param.pServerPath, param.pServerPathLen, gMA.sockets[0]);
+        param.next_step = gMA.task_step + 1;
+        gMA.task_step = 50;
+        break;
 
-    mov	r0, r4
-    add	r0, #104
-    strh	r2, [r0, #0]
-    b	MATASK_HTTP_GetPost+0x584
-    ldr	r2, [pc, #28]
-    ldr	r1, [pc, #32]
-    add	r0, r2, r1
-    ldrh	r1, [r0, #0]
-    cmp	r1, #200
-    bne	MATASK_HTTP_GetPost+0x55a
-    b	MATASK_HTTP_GetPost+0x730
-    mov	r0, #50
-    strb	r0, [r7, #0]
-    mov	r0, r2
-    add	r0, #104
-    strh	r1, [r0, #0]
-    mov	r2, #1
-    ldr	r3, [pc, #12]
-    str	r2, [r3, #0]
-    b	MATASK_HTTP_GetPost+0x730
-.align 2
-    .word gMA
-    .word 0x00000702
-    .word gMA+0xb0
+    case 7:
+        MAU_strcpy(gMA.unk_880, strHttpReqSuffix);
+        CreateHttpRequestHeader();
+        InitPrevBuf();
+        param.unk_16 = 0;
+        param.unk_17 = 0;
+        param.unk_21 = 0;
+        curCp = nextCp = NULL;
+        gMA.task_step = HttpGetNextStep(0);
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_Data(&gMA.buffer_unk_480, gMA.unk_880, MAU_strlen(gMA.unk_880), gMA.sockets[0]);
+        break;
 
-    mov	r0, #0
-    mov	r1, #50
-    strb	r1, [r7, #0]
-    mov	r1, r6
-    add	r1, #104
-    strh	r0, [r1, #0]
-    mov	r4, #1
-    ldr	r0, [pc, #4]
-    str	r4, [r0, #0]
-    b	MATASK_HTTP_GetPost+0x730
-.align 2
-    .word gMA+0xb0
+    case 8:
+        if (param.unk_16 == 1) {
+            if (param.unk_21 == 0) {
+                gMA.task_error = MAAPIE_HTTP;
+                gMA.task_error_unk_2 = param.unk_21;
+                gMA.task_step = 0xf0;
+                break;                
+            }
+            if (param.unk_17 == 1) {
+                gMA.task_step = 0xf0;
+                break;
+            }
+            gMA.task_step = HttpGetNextStep(1);
+            param.unk_14++;
+            break;
+        }
 
-    mov	r0, r4
-    add	r0, #164
-    ldr	r0, [r0, #0]
-    cmp	r0, #0
-    bne	MATASK_HTTP_GetPost+0x668
-    mov	r1, r9
-    ldr	r0, [r1, #0]
-    ldr	r1, [pc, #84]
-    mov	r2, #6
-    bl	MAU_strncmp
-    cmp	r0, #0
-    bne	MATASK_HTTP_GetPost+0x5b8
-    mov	r0, r4
-    add	r0, #188
-    ldr	r0, [r0, #0]
-    mov	r2, #1
-    and	r0, r2
-    cmp	r0, #0
-    beq	MATASK_HTTP_GetPost+0x5d6
-    mov	r3, r9
-    ldr	r0, [r3, #0]
-    ldr	r1, [pc, #56]
-    mov	r2, #10
-    bl	MAU_strncmp
-    cmp	r0, #0
-    bne	MATASK_HTTP_GetPost+0x668
-    mov	r0, r4
-    add	r0, #188
-    ldr	r0, [r0, #0]
-    mov	r1, #2
-    and	r0, r1
-    cmp	r0, #0
-    bne	MATASK_HTTP_GetPost+0x668
-    ldr	r4, [pc, #36]
-    ldr	r0, [r4, #0]
-    ldr	r1, [pc, #24]
-    mov	r2, #6
-    bl	MAU_strncmp
-    cmp	r0, #0
-    bne	MATASK_HTTP_GetPost+0x600
-    mov	r1, r6
-    add	r1, #188
-    ldr	r0, [r1, #0]
-    mov	r4, #1
-    orr	r0, r4
-    str	r0, [r1, #0]
-    b	MATASK_HTTP_GetPost+0x61a
-.align 2
-    .word strHttpDate
-    .word strHttpLocation
-    .word lineCp.274
+        if (MA_GetCondition() & MA_CONDITION_UNK_6) {
+            if (param.unk_21 == 0) {
+                gMA.task_error = MAAPIE_HTTP;
+                gMA.task_error_unk_2 = param.unk_21;
+                gMA.task_step = 0xf0;
+                break;
+            }
+            if (param.unk_17 == 1) {
+                gMA.task_step = 0xf0;
+                break;
+            }
+            gMA.task_error = MAAPIE_HTTP;
+            gMA.task_error_unk_2 = 0;
+            gMA.task_step = 0xf0;
+            break;
+        }
 
-    ldr	r0, [r4, #0]
-    ldr	r1, [pc, #88]
-    mov	r2, #10
-    bl	MAU_strncmp
-    cmp	r0, #0
-    bne	MATASK_HTTP_GetPost+0x61a
-    mov	r0, r6
-    add	r0, #188
-    ldr	r1, [r0, #0]
-    mov	r2, #2
-    orr	r1, r2
-    str	r1, [r0, #0]
-    ldr	r1, [pc, #68]
-    mov	r5, r1
-    add	r5, #156
-    ldr	r2, [r5, #0]
-    cmp	r2, #0
-    bne	MATASK_HTTP_GetPost+0x628
-    b	MATASK_HTTP_GetPost+0x730
-    mov	r4, r1
-    add	r4, #168
-    ldr	r0, [r4, #0]
-    cmp	r0, #0
-    bne	MATASK_HTTP_GetPost+0x634
-    b	MATASK_HTTP_GetPost+0x730
-    mov	r3, r9
-    ldr	r1, [r3, #0]
-    bl	MAU_strcpy_size
-    ldr	r1, [pc, #36]
-    str	r0, [r1, #0]
-    ldr	r1, [r5, #0]
-    sub	r2, r1, r0
-    str	r2, [r5, #0]
-    ldr	r1, [r4, #0]
-    add	r1, r1, r0
-    str	r1, [r4, #0]
-    sub	r0, r1, #1
-    ldrb	r0, [r0, #0]
-    cmp	r0, #0
-    bne	MATASK_HTTP_GetPost+0x730
-    cmp	r2, #0
-    beq	MATASK_HTTP_GetPost+0x730
-    strb	r0, [r1, #0]
-    b	MATASK_HTTP_GetPost+0x730
-.align 2
-    .word strHttpLocation
-    .word gMA
-    .word headerLineLen.277
+        if (gMA.buffer_unk_480.size != 1) {
+            tmpLen = gMA.buffer_unk_480.size - 1;
+            curCp = &gMA.buffer_unk_480.data[1];
+            lineCp = gMA.prevbuf;
+            if (gMA.prevbuf_size != 0) lineCp += gMA.prevbuf_size;
 
-    ldr	r4, [pc, #40]
-    ldr	r0, [r4, #0]
-    ldr	r1, [pc, #40]
-    mov	r2, #29
-    bl	MAU_strncmp
-    cmp	r0, #0
-    bne	MATASK_HTTP_GetPost+0x6a0
-    ldr	r0, [r4, #0]
-    add	r0, #29
-    mov	r1, r6
-    add	r1, #180
-    ldr	r1, [r1, #0]
-    mov	r2, r6
-    add	r2, #184
-    ldr	r2, [r2, #0]
-    ldr	r4, [pc, #16]
-    add	r3, r6, r4
-    bl	MA_MakeAuthorizationCode
-    b	MATASK_HTTP_GetPost+0x730
-.align 2
-    .word lineCp.274
-    .word strHttpAuthenticate
-    .word 0x00000706
+            for (;;) {
+                nextCp = MAU_strncpy_CRLF_LF(lineCp, curCp, tmpLen);
+                if (nextCp == NULL) break;
 
-    ldr	r0, [r4, #0]
-    ldr	r1, [pc, #72]
-    mov	r2, #11
-    bl	MAU_strncmp
-    cmp	r0, #0
-    bne	MATASK_HTTP_GetPost+0x718
-    ldr	r5, [pc, #64]
-    ldr	r3, [r4, #0]
-    ldrb	r0, [r3, #11]
-    sub	r0, #48
-    mov	r1, #100
-    mov	r2, r0
-    mul	r2, r1
-    ldrb	r1, [r3, #12]
-    sub	r1, #48
-    lsl	r0, r1, #2
-    add	r0, r0, r1
-    lsl	r0, r0, #1
-    add	r2, r2, r0
-    ldr	r0, [pc, #40]
-    add	r2, r2, r0
-    ldrb	r3, [r3, #13]
-    add	r1, r2, r3
-    ldr	r2, [pc, #36]
-    add	r0, r5, r2
-    strh	r1, [r0, #0]
-    lsl	r0, r1, #16
-    lsr	r0, r0, #16
-    cmp	r0, #101
-    bne	MATASK_HTTP_GetPost+0x6fc
-    ldr	r0, [r5, #64]
-    mov	r1, #128
-    lsl	r1, r1, #9
-    orr	r0, r1
-    str	r0, [r5, #64]
-    b	MATASK_HTTP_GetPost+0x730
-.align 2
-    .word strHttpGbStatus
-    .word gMA
-    .word 0x0000ffd0
-    .word 0x00000704
+                tmpLen -= (nextCp - curCp);
+                if (gMA.prevbuf_size != 0) {
+                    lineCp = gMA.prevbuf;
+                    gMA.prevbuf_size = 0;
+                }
 
-    cmp	r0, #0
-    beq	MATASK_HTTP_GetPost+0x730
-    mov	r0, #51
-    strb	r0, [r7, #0]
-    mov	r0, r5
-    add	r0, #104
-    strh	r1, [r0, #0]
-    mov	r3, #1
-    ldr	r4, [pc, #4]
-    str	r3, [r4, #0]
-    b	MATASK_HTTP_GetPost+0x730
-.align 2
-    .word gMA+0xb0
+                if (MAU_strncmp(lineCp, strHttp, sizeof(strHttp) - 1) == 0) {
+                    if ((lineCp[9] >= '0' && lineCp[9] <= '9') &&
+                            (lineCp[10] >= '0' && lineCp[10] <= '9') &&
+                            (lineCp[11] >= '0' && lineCp[11] <= '9')) {
+                        gMA.unk_1794 =
+                            (lineCp[9] - '0') * 100 +
+                            (lineCp[10] - '0') * 10 +
+                            (lineCp[11] - '0');
+                        param.unk_21 = 1;
+                        if (param.server_unk_1 - 1 < 4 &&
+                                param.unk_14 == 0) {
+                            if (gMA.unk_1794 != 401) {
+                                gMA.task_error = MAAPIE_HTTP;
+                                if (gMA.unk_1794 == 200) {
+                                    gMA.task_error_unk_2 = 0;
+                                } else {
+                                    gMA.task_error_unk_2 = gMA.unk_1794;
+                                }
+                                param.unk_17 = 1;
+                            }
+                        } else if (gMA.unk_1794 != 200) {
+                            gMA.task_error = MAAPIE_HTTP;
+                            gMA.task_error_unk_2 = gMA.unk_1794;
+                            param.unk_17 = 1;
+                        }
+                    } else {
+                        gMA.task_error = MAAPIE_HTTP;
+                        gMA.task_error_unk_2 = 0;
+                        param.unk_17 = 1;
+                    }
+                } else if (param.unk_14 == 0 && (
+                            (MAU_strncmp(lineCp, strHttpDate, sizeof(strHttpDate) - 1) == 0 &&
+                             !(param.unk_20 & 1)) ||
+                            (MAU_strncmp(lineCp, strHttpLocation, sizeof(strHttpLocation) - 1) == 0 &&
+                             !(param.unk_20 & 2))
+                            )) {
+                    if (MAU_strncmp(lineCp, strHttpDate, sizeof(strHttpDate) - 1) == 0) {
+                        param.unk_20 |= 1;
+                    } else if (MAU_strncmp(lineCp, strHttpLocation, sizeof(strHttpLocation) - 1) == 0) {
+                        param.unk_20 |= 2;
+                    }
 
-    ldr	r0, [r4, #0]
-    ldr	r1, [pc, #60]
-    mov	r2, #12
-    bl	MAU_strncmp
-    cmp	r0, #0
-    bne	MATASK_HTTP_GetPost+0x730
-    ldr	r1, [r4, #0]
-    add	r1, #12
-    ldr	r0, [pc, #48]
-    bl	MAU_strcpy
-    ldr	r0, [pc, #44]
-    ldr	r2, [r0, #0]
-    ldrb	r3, [r2, #0]
-    mov	r1, r0
-    cmp	r3, #13
-    bne	MATASK_HTTP_GetPost+0x742
-    ldrb	r0, [r2, #1]
-    cmp	r0, #10
-    beq	MATASK_HTTP_GetPost+0x746
-    cmp	r3, #10
-    bne	MATASK_HTTP_GetPost+0x7bc
-    ldr	r0, [r1, #0]
-    ldrb	r0, [r0, #0]
-    cmp	r0, #13
-    bne	MATASK_HTTP_GetPost+0x764
-    mov	r2, sl
-    ldr	r0, [r2, #0]
-    sub	r0, #2
-    str	r0, [r2, #0]
-    b	MATASK_HTTP_GetPost+0x76c
-.align 2
-    .word strHttpGbAuthID
-    .word gMA+0x706
-    .word nextCp.273
+                    if (param.headBufSize != 0 && param.pHeadBuf) {
+                        headerLineLen = MAU_strcpy_size(param.pHeadBuf, lineCp, param.headBufSize);
+                        param.headBufSize -= headerLineLen;
+                        param.pHeadBuf += headerLineLen;
+                        if (param.pHeadBuf[-1] == '\0' && param.headBufSize != 0) {
+                            param.pHeadBuf[0] = '\0';
+                        }
+                    }
+                } else if (MAU_strncmp(lineCp, strHttpAuthenticate, sizeof(strHttpAuthenticate) - 1) == 0) {
+                    MA_MakeAuthorizationCode(&lineCp[29], param.pUserID, param.pPassword, gMA.unk_1798);
+                } else if (MAU_strncmp(lineCp, strHttpGbStatus, sizeof(strHttpGbStatus) - 1) == 0) {
+                    gMA.unk_1796 =
+                        (lineCp[11] - '0') * 100 +
+                        (lineCp[12] - '0') * 10 +
+                        (lineCp[13] - '0');
+                    if (gMA.unk_1796 == 101) {
+                        gMA.status |= STATUS_UNK_16;
+                    } else if (gMA.unk_1796 != 0) {
+                        gMA.task_error = MAAPIE_GB_CENTER;
+                        gMA.task_error_unk_2 = gMA.unk_1796;
+                        param.unk_17 = 1;
+                    }
+                } else if (MAU_strncmp(lineCp, strHttpGbAuthID, sizeof(strHttpGbAuthID) - 1) == 0) {
+                    MAU_strcpy(gMA.unk_1798, &lineCp[sizeof(strHttpGbAuthID) - 1]);
+                }
 
-    mov	r3, sl
-    ldr	r0, [r3, #0]
-    sub	r0, #1
-    str	r0, [r3, #0]
-    ldr	r3, [pc, #40]
-    mov	r0, r3
-    add	r0, #172
-    mov	r4, #1
-    str	r4, [r0, #0]
-    mov	r0, sl
-    ldr	r2, [r0, #0]
-    cmp	r2, #0
-    beq	MATASK_HTTP_GetPost+0x7e4
-    ldr	r1, [r1, #0]
-    ldrb	r0, [r1, #0]
-    cmp	r0, #13
-    bne	MATASK_HTTP_GetPost+0x79c
-    mov	r4, #242
-    lsl	r4, r4, #1
-    add	r0, r3, r4
-    ldr	r0, [r0, #0]
-    add	r0, #1
-    add	r1, #2
-    bl	MAU_memcpy
-    b	MATASK_HTTP_GetPost+0x7ac
-.align 2
-    .word gMA
+                if ((nextCp[0] == 13 && nextCp[1] == 10) || nextCp[0] == 10) {
+                    if (nextCp[0] == 13) {
+                        tmpLen -= 2;
+                    } else {
+                        tmpLen -= 1;
+                    }
+                    param.unk_16 = 1;
+                    if (tmpLen != 0) {
+                        if (nextCp[0] == 13) {
+                            MAU_memcpy(&gMA.buffer_unk_480.data[1], &nextCp[2], tmpLen);
+                        } else {
+                            MAU_memcpy(&gMA.buffer_unk_480.data[1], &nextCp[1], tmpLen);
+                        }
+                        gMA.buffer_unk_480.size = tmpLen + 1;
+                    }
+                    break;
+                }
 
-    mov	r4, #242
-    lsl	r4, r4, #1
-    add	r0, r3, r4
-    ldr	r0, [r0, #0]
-    add	r0, #1
-    add	r1, #1
-    bl	MAU_memcpy
-    mov	r1, sl
-    ldr	r0, [r1, #0]
-    add	r0, #1
-    ldr	r2, [pc, #4]
-    strh	r0, [r2, #0]
-    b	MATASK_HTTP_GetPost+0x7e4
-.align 2
-    .word gMA+0x1e0
+                curCp = nextCp;
+                lineCp = gMA.prevbuf;
+            }
+        }
 
-    ldr	r1, [pc, #112]
-    str	r2, [r1, #0]
-    ldr	r0, [pc, #112]
-    mov	r3, r9
-    str	r0, [r3, #0]
-    mov	r8, r1
-    mov	r4, r9
-    ldr	r0, [r4, #0]
-    mov	r2, r8
-    ldr	r1, [r2, #0]
-    mov	r3, sl
-    ldr	r2, [r3, #0]
-    bl	MAU_strncpy_CRLF_LF
-    mov	r1, r0
-    ldr	r0, [pc, #92]
-    str	r1, [r0, #0]
-    cmp	r1, #0
-    beq	MATASK_HTTP_GetPost+0x7e4
-    b	MATASK_HTTP_GetPost+0x46c
-    ldr	r4, [pc, #84]
-    mov	r6, r4
-    add	r6, #172
-    ldr	r0, [r6, #0]
-    cmp	r0, #0
-    bne	MATASK_HTTP_GetPost+0x812
-    ldr	r5, [pc, #76]
-    ldr	r2, [r5, #0]
-    cmp	r2, #0
-    beq	MATASK_HTTP_GetPost+0x80c
-    ldr	r1, [pc, #72]
-    add	r0, r4, r1
-    ldr	r1, [pc, #48]
-    ldr	r1, [r1, #0]
-    bl	MAU_memcpy
-    ldr	r1, [r5, #0]
-    ldr	r2, [pc, #64]
-    add	r0, r4, r2
-    strh	r1, [r0, #0]
-    ldr	r0, [r6, #0]
-    cmp	r0, #0
-    beq	MATASK_HTTP_GetPost+0x81c
-    ldr	r0, [pc, #44]
-    ldr	r0, [r0, #0]
-    cmp	r0, #0
-    beq	MATASK_HTTP_GetPost+0x81c
-    b	MATASK_HTTP_GetPost+0xb22
-    ldr	r0, [pc, #44]
-    mov	r1, #0
-    strh	r1, [r0, #0]
-    ldr	r3, [pc, #44]
-    add	r1, r0, r3
-    str	r1, [r0, #4]
-    ldr	r4, [pc, #40]
-    add	r1, r0, r4
-    b	MATASK_HTTP_GetPost+0xa46
-.align 2
-    .word curCp.272
-    .word gMA+0x47d
-    .word nextCp.273
-    .word gMA
-    .word tmpLen.275
-    .word 0x0000047d
-    .word 0x000006fa
-    .word gMA+0x1e0
-    .word 0xfffffef4
-    .word 0xfffffe83
+        if (param.unk_16 == 0) {
+            if (tmpLen != 0) {
+                MAU_memcpy(gMA.prevbuf, curCp, tmpLen);
+                gMA.prevbuf_size = tmpLen;
+            }
+        }
+        if (param.unk_16 != 0) {
+            if (tmpLen != 0) break;
+        }
 
-    mov	r2, r7
-    add	r2, #196
-    ldrb	r0, [r7, #5]
-    lsl	r0, r0, #2
-    mov	r1, r7
-    add	r1, #52
-    add	r0, r0, r1
-    ldr	r0, [r0, #0]
-    str	r0, [r2, #0]
-    ldrb	r0, [r5, #0]
-    add	r0, #1
-    ldrb	r1, [r5, #0]
-    strb	r0, [r5, #0]
-    mov	r0, r3
-    add	r0, #196
-    ldr	r1, [r0, #0]
-    sub	r1, #1
-    str	r1, [r0, #0]
-    mov	r0, #1
-    neg	r0, r0
-    cmp	r1, r0
-    beq	MATASK_HTTP_GetPost+0x886
-    b	MATASK_HTTP_GetPost+0xb22
-    mov	r0, r3
-    add	r0, #200
-    ldr	r1, [r0, #0]
-    sub	r0, #102
-    ldrb	r2, [r0, #0]
-    strb	r1, [r0, #0]
-    b	MATASK_HTTP_GetPost+0xb22
-    mov	r0, #240
-    lsl	r0, r0, #1
-    add	r6, r7, r0
-    mov	r4, #0
-    strh	r4, [r6, #0]
-    mov	r0, r7
-    add	r0, #212
-    str	r0, [r6, #4]
-    mov	r1, #136
-    add	r1, r1, r7
-    mov	r8, r1
-    ldr	r2, [r1, #0]
-    cmp	r2, #254
-    bls	MATASK_HTTP_GetPost+0x8d8
-    mov	r4, r7
-    add	r4, #132
-    ldr	r1, [r4, #0]
-    sub	r0, #113
-    ldrb	r3, [r0, #0]
-    mov	r0, r6
-    mov	r2, #254
-    bl	MABIOS_Data
-    ldr	r0, [r4, #0]
-    add	r0, #254
-    str	r0, [r4, #0]
-    mov	r2, r8
-    ldr	r0, [r2, #0]
-    sub	r0, #254
-    str	r0, [r2, #0]
-    mov	r1, r7
-    add	r1, #200
-    ldrb	r0, [r5, #0]
-    b	MATASK_HTTP_GetPost+0x90c
-    mov	r0, r7
-    add	r0, #132
-    ldr	r1, [r0, #0]
-    lsl	r2, r2, #24
-    lsr	r2, r2, #24
-    sub	r0, #33
-    ldrb	r3, [r0, #0]
-    mov	r0, r6
-    bl	MABIOS_Data
-    mov	r0, r7
-    add	r0, #172
-    str	r4, [r0, #0]
-    add	r0, #4
-    str	r4, [r0, #0]
-    add	r0, #16
-    str	r4, [r0, #0]
-    ldr	r1, [pc, #28]
-    ldr	r0, [pc, #28]
-    str	r4, [r0, #0]
-    str	r4, [r1, #0]
-    bl	InitPrevBuf
-    mov	r1, r7
-    add	r1, #200
-    mov	r0, #8
-    str	r0, [r1, #0]
-    ldrb	r0, [r5, #0]
-    mov	r0, #50
-    strb	r0, [r5, #0]
-    b	MATASK_HTTP_GetPost+0xb22
-.align 2
-    .word curCp.272
-    .word nextCp.273
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, gMA.sockets[0]);
+        break;
 
-    ldr	r6, [r7, #64]
-    mov	r0, #128
-    lsl	r0, r0, #8
-    and	r6, r0
-    cmp	r6, #0
-    bne	MATASK_HTTP_GetPost+0x9f8
-    ldr	r5, [r7, #120]
-    cmp	r5, #0
-    beq	MATASK_HTTP_GetPost+0xa00
-    mov	r3, #240
-    lsl	r3, r3, #1
-    add	r1, r7, r3
-    ldrh	r0, [r1, #0]
-    cmp	r0, #1
-    bls	MATASK_HTTP_GetPost+0xa00
-    ldr	r4, [pc, #68]
-    mov	r8, r4
-    sub	r2, r0, #1
-    str	r2, [r4, #0]
-    ldr	r3, [r7, #124]
-    cmp	r3, r2
-    bcc	MATASK_HTTP_GetPost+0x98c
-    mov	r1, #242
-    lsl	r1, r1, #1
-    add	r0, r7, r1
-    ldr	r1, [r0, #0]
-    add	r1, #1
-    mov	r0, r5
-    bl	MAU_memcpy
-    ldr	r0, [r7, #120]
-    ldr	r2, [r4, #0]
-    add	r0, r0, r2
-    str	r0, [r7, #120]
-    ldr	r0, [r7, #124]
-    sub	r0, r0, r2
-    str	r0, [r7, #124]
-    ldrh	r1, [r7, #2]
-    ldr	r0, [pc, #24]
-    and	r0, r1
-    ldrh	r1, [r7, #2]
-    strh	r0, [r7, #2]
-    mov	r0, r7
-    add	r0, #128
-    ldr	r1, [r0, #0]
-    ldrh	r0, [r1, #0]
-    add	r0, r0, r2
-    strh	r0, [r1, #0]
-    b	MATASK_HTTP_GetPost+0xa00
-.align 2
-    .word dataLen.276
-    .word 0x0000fffb
+    case 50:
+        param.counter = gMA.counter_adapter[gMA.sio_mode];
+        gMA.task_step++;
 
-    mov	r2, #242
-    lsl	r2, r2, #1
-    add	r4, r7, r2
-    ldr	r1, [r4, #0]
-    add	r1, #1
-    mov	r0, r5
-    mov	r2, r3
-    bl	MAU_memcpy
-    mov	r3, r8
-    ldr	r0, [r3, #0]
-    ldr	r2, [r7, #124]
-    sub	r0, r0, r2
-    ldr	r1, [pc, #72]
-    add	r3, r7, r1
-    mov	r5, #0
-    strh	r0, [r3, #0]
-    ldr	r1, [pc, #68]
-    add	r0, r7, r1
-    add	r2, #1
-    ldr	r1, [r4, #0]
-    add	r1, r1, r2
-    ldrh	r2, [r3, #0]
-    bl	MAU_memcpy
-    mov	r0, r7
-    add	r0, #128
-    ldr	r2, [r0, #0]
-    ldr	r1, [r7, #124]
-    ldrh	r0, [r2, #0]
-    add	r0, r0, r1
-    strh	r0, [r2, #0]
-    str	r6, [r7, #124]
-    ldrh	r0, [r7, #2]
-    mov	r1, #4
-    orr	r0, r1
-    ldrh	r1, [r7, #2]
-    orr	r0, r5
-    strh	r0, [r7, #2]
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    ldrh	r0, [r7, #2]
-    mov	r1, #1
-    orr	r0, r1
-    ldrh	r1, [r7, #2]
-    orr	r0, r5
-    strh	r0, [r7, #2]
-    b	MATASK_HTTP_GetPost+0xb22
-.align 2
-    .word 0x000006fa
-    .word 0x0000047d
+    case 51:
+        if (param.counter-- == 0) {
+            gMA.task_step = param.next_step;
+        }
+        break;
 
-    ldr	r0, [r7, #64]
-    ldr	r1, [pc, #48]
-    and	r0, r1
-    str	r0, [r7, #64]
-    bl	MA_GetCondition
-    mov	r1, #64
-    and	r1, r0
-    lsl	r1, r1, #16
-    lsr	r1, r1, #16
-    cmp	r1, #0
-    beq	MATASK_HTTP_GetPost+0xa38
-    ldr	r4, [pc, #28]
-    ldrh	r1, [r4, #2]
-    ldr	r0, [pc, #28]
-    and	r0, r1
-    ldrh	r1, [r4, #2]
-    strh	r0, [r4, #2]
-    mov	r0, #2
-    bl	HttpGetNextStep
-    add	r4, #98
-    ldrb	r1, [r4, #0]
-    strb	r0, [r4, #0]
-    b	MATASK_HTTP_GetPost+0xb22
-.align 2
-    .word 0xffff7fff
-    .word gMA
-    .word 0x0000fffb
+    case 100:
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        if (param.sendSize > 254) {
+            MABIOS_Data(&gMA.buffer_unk_480, param.pSendData, 254, gMA.sockets[0]);
+            param.pSendData += 254;
+            param.sendSize -= 254;
+            param.next_step = gMA.task_step;
+            gMA.task_step = 50;
+            break;
+        }
+        MABIOS_Data(&gMA.buffer_unk_480, param.pSendData, param.sendSize, gMA.sockets[0]);
+        param.unk_16 = 0;
+        param.unk_17 = 0;
+        param.unk_21 = 0;
+        curCp = nextCp = NULL;
+        InitPrevBuf();
+        param.next_step = 8;
+        gMA.task_step = 50;
+        break;
 
-    ldr	r0, [pc, #24]
-    strh	r1, [r0, #0]
-    ldr	r2, [pc, #24]
-    add	r1, r0, r2
-    str	r1, [r0, #4]
-    ldr	r3, [pc, #24]
-    add	r1, r0, r3
-    ldrb	r3, [r1, #0]
-    mov	r1, #0
-    mov	r2, #0
-    bl	MABIOS_Data
-    b	MATASK_HTTP_GetPost+0xb22
-.align 2
-    .word gMA+0x1e0
-    .word 0xfffffef4
-    .word 0xfffffe83
+    case 110:
+        if (!(gMA.status & STATUS_UNK_15)) {
+            if (param.pRecvData && gMA.buffer_unk_480.size > 1) {
+                dataLen = gMA.buffer_unk_480.size - 1;
+                if (param.recvBufSize >= dataLen) {
+                    MAU_memcpy(param.pRecvData, &gMA.buffer_unk_480.data[1], dataLen);
+                    param.pRecvData += dataLen;
+                    param.recvBufSize -= dataLen;
+                    gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
+                    *param.pRecvSize += dataLen;
+                } else {
+                    MAU_memcpy(param.pRecvData, &gMA.buffer_unk_480.data[1], param.recvBufSize);
+                    gMA.prevbuf_size = dataLen - param.recvBufSize;
+                    MAU_memcpy(gMA.prevbuf, &gMA.buffer_unk_480.data[1 + param.recvBufSize], gMA.prevbuf_size);
+                    *param.pRecvSize += param.recvBufSize;
+                    gMA.unk_124 = 0;
+                    gMA.condition |= MA_CONDITION_BUFFER_FULL;
+                    MA_TaskSet(TASK_UNK_00, 0);
+                    gMA.condition |= MA_CONDITION_APIWAIT;
+                    break;
+                }
+            }
+        } else {
+            gMA.status &= ~STATUS_UNK_15;
+        }
 
-    mov	r4, #240
-    lsl	r4, r4, #1
-    add	r0, r7, r4
-    mov	r1, #0
-    strh	r1, [r0, #0]
-    mov	r1, r7
-    add	r1, #212
-    str	r1, [r0, #4]
-    sub	r1, #113
-    ldrb	r1, [r1, #0]
-    bl	MABIOS_TCPDisconnect
-    ldrb	r0, [r5, #0]
-    add	r0, #1
-    ldrb	r1, [r5, #0]
-    strb	r0, [r5, #0]
-    b	MATASK_HTTP_GetPost+0xb22
-    mov	r1, r7
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    mov	r5, #0
-    mov	r0, #3
-    strb	r0, [r1, #0]
-    ldrh	r1, [r7, #2]
-    mov	r0, #255
-    and	r0, r1
-    ldrh	r1, [r7, #2]
-    mov	r4, #0
-    strh	r0, [r7, #2]
-    ldrh	r0, [r7, #2]
-    mov	r2, #128
-    lsl	r2, r2, #1
-    mov	r1, r2
-    orr	r0, r1
-    ldrh	r1, [r7, #2]
-    orr	r0, r4
-    strh	r0, [r7, #2]
-    mov	r0, r7
-    add	r0, #102
-    ldrb	r0, [r0, #0]
-    mov	r1, r7
-    add	r1, #104
-    ldrh	r1, [r1, #0]
-    bl	MA_SetApiError
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    mov	r0, r7
-    add	r0, #204
-    strb	r4, [r0, #0]
-    sub	r0, #16
-    str	r5, [r0, #0]
-    b	MATASK_HTTP_GetPost+0xb22
-    mov	r1, r7
-    add	r1, #92
-    ldrb	r0, [r1, #0]
-    mov	r5, #0
-    mov	r0, #3
-    strb	r0, [r1, #0]
-    ldrh	r0, [r7, #2]
-    and	r2, r0
-    ldrh	r0, [r7, #2]
-    mov	r4, #0
-    strh	r2, [r7, #2]
-    ldrh	r0, [r7, #2]
-    mov	r3, #128
-    lsl	r3, r3, #1
-    mov	r1, r3
-    orr	r0, r1
-    ldrh	r1, [r7, #2]
-    orr	r0, r4
-    strh	r0, [r7, #2]
-    mov	r0, #0
-    mov	r1, #0
-    bl	MA_TaskSet
-    mov	r0, r7
-    add	r0, #204
-    strb	r4, [r0, #0]
-    sub	r0, #16
-    str	r5, [r0, #0]
-    ldr	r0, [r7, #64]
-    mov	r1, #128
-    lsl	r1, r1, #9
-    and	r0, r1
-    cmp	r0, #0
-    beq	MATASK_HTTP_GetPost+0xb22
-    mov	r0, #51
-    mov	r1, #101
-    bl	MA_SetApiError
-    ldr	r0, [r7, #64]
-    ldr	r1, [pc, #16]
-    and	r0, r1
-    str	r0, [r7, #64]
-    pop	{r3, r4, r5}
-    mov	r8, r3
-    mov	r9, r4
-    mov	sl, r5
-    pop	{r4, r5, r6, r7}
-    pop	{r0}
-    bx	r0
-.align 2
-    .word 0xfffeffff
-.size MATASK_HTTP_GetPost, .-MATASK_HTTP_GetPost
-");
-#endif
+        if (MA_GetCondition() & MA_CONDITION_UNK_6) {
+            gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
+            gMA.task_step = HttpGetNextStep(2);
+            break;
+        }
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, gMA.sockets[0]);
+        break;
+
+    case 0xf0:
+        (&gMA.buffer_unk_480)->size = 0;
+        (&gMA.buffer_unk_480)->data = gMA.unk_212;
+        MABIOS_TCPDisconnect(&gMA.buffer_unk_480, gMA.sockets[0]);
+        gMA.task_step++;
+        break;
+
+    case 0xf1:
+        gMA.unk_92 = 3;
+        gMA.condition &= ~MA_CONDITION_MASK;
+        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
+        MA_TaskSet(TASK_UNK_00, 0);
+        gMA.sockets_used[0] = FALSE;
+        param.unk_20 = 0;
+        break;
+
+    case 0xff:
+        gMA.unk_92 = 3;
+        gMA.condition &= ~MA_CONDITION_MASK;
+        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_TaskSet(TASK_UNK_00, 0);
+        gMA.sockets_used[0] = FALSE;
+        param.unk_20 = 0;
+        if (gMA.status & STATUS_UNK_16) {
+            MA_SetApiError(MAAPIE_GB_CENTER, 101);
+            gMA.status &= ~STATUS_UNK_16;
+        }
+        break;
+    }
+}
+#undef param
 
 static void CopyEEPROMString(char *dest, char *src, int size)
 {

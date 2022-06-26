@@ -4,19 +4,19 @@
 #include "ma_sub.h"
 #include "md5.h"
 
-static void gb_MakeSecretCode(char *key1, char *key2, char *key3, u8 *out);
-static void gb_OutSecretCode(int length, char *string, u8 *out);
-static void gb_CreateMD5Hash(u8 *out, char *key1, char *key3);
+static void gb_MakeSecretCode(const char *key1, const char *key2, const char *key3, u8 *out);
+static void gb_OutSecretCode(int length, const char *string, u8 *out);
+static void gb_CreateMD5Hash(u8 *out, const char *key1, const char *key3);
 static void gb_BitHalfMove(u8 *out, u8 *in);
 static void gb_BitChangeAndRotation(u8 *out, u8 *in);
 static void CalcValueMD5(u8 *data, u32 size, u8 *out);
 static void Base64_encode(int length, u8 *data, char *out);
-static void Base64_decode(int length, char *string, u8 *out);
+static void Base64_decode(int length, const char *string, u8 *out);
 
 static int i, j, k;
 static int len;
 
-void MA_MakeAuthorizationCode(char *key1, char *key2, char *key3, char *out)
+void MA_MakeAuthorizationCode(const char *key1, const char *key2, const char *key3, char *out)
 {
     static u8 seq_bin[0x24];
     static char seq_text[0x31];
@@ -36,7 +36,7 @@ void MA_MakeAuthorizationCode(char *key1, char *key2, char *key3, char *out)
     MAU_strcpy(out + 0x2c, seq_text);
 }
 
-static void gb_MakeSecretCode(char *key1, char *key2, char *key3, u8 *out)
+static void gb_MakeSecretCode(const char *key1, const char *key2, const char *key3, u8 *out)
 {
     static u8 hash[0x11];
     static u32 j;
@@ -51,7 +51,7 @@ static void gb_MakeSecretCode(char *key1, char *key2, char *key3, u8 *out)
     MAU_memset(out + j, 0xff, 0x24 - j);
 }
 
-static void gb_OutSecretCode(int length, char *string, u8 *out)
+static void gb_OutSecretCode(int length, const char *string, u8 *out)
 {
     static u8 dest[0x25];
     static u8 result[0x25];
@@ -62,7 +62,7 @@ static void gb_OutSecretCode(int length, char *string, u8 *out)
     gb_BitChangeAndRotation(out, result);
 }
 
-static void gb_CreateMD5Hash(u8 *out, char *key1, char *key3)
+static void gb_CreateMD5Hash(u8 *out, const char *key1, const char *key3)
 {
     static u8 buf[100];
 
@@ -171,7 +171,7 @@ static void Base64_encode(int length, u8 *data, char *out)
     *out = 0;
 }
 
-static void Base64_decode(int length, char *string, u8 *out)
+static void Base64_decode(int length, const char *string, u8 *out)
 {
     static const u8 base64RevTable[] = {
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x3E,

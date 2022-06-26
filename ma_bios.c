@@ -56,7 +56,7 @@ static void MA_InitIoBuffer(MA_IOBUF *buffer, vu8 *mem, u16 size, u16 state);
 static void MA_StartSioTransmit(void);
 static void MA_SetTransmitData(MA_IOBUF *buffer);
 static int MA_IsSupportedHardware(u8 hardware);
-static void MABIOS_Data2(MA_BUF *data_recv, u8 *data_send, u8 size);
+static void MABIOS_Data2(MA_BUF *data_recv, const u8 *data_send, u8 size);
 static int MA_CreatePacket(u8 *packet, u8 cmd, u16 size);
 static int MA_Create8BitPacket(u8 *packet, u8 cmd, u16 size);
 static int MA_Create32BitPacket(u8 *packet, u8 cmd, u16 size);
@@ -616,7 +616,7 @@ void MABIOS_WaitCall(void)
     gMA.status |= STATUS_UNK_1;
 }
 
-void MABIOS_Data(MA_BUF *data_recv, u8 *data_send, u8 size, u8 socket)
+void MABIOS_Data(MA_BUF *data_recv, const u8 *data_send, u8 size, u8 socket)
 {
     tmppPacket = gMA.buffer_packet_send;
     if (!MA_PreSend()) return;
@@ -644,7 +644,7 @@ void MABIOS_Data(MA_BUF *data_recv, u8 *data_send, u8 size, u8 socket)
     gMA.status |= STATUS_UNK_1;
 }
 
-static void MABIOS_Data2(MA_BUF *data_recv, u8 *data_send, u8 size)
+static void MABIOS_Data2(MA_BUF *data_recv, const u8 *data_send, u8 size)
 {
     tmppPacket = gMA.buffer_packet_send;
     if (!MA_PreSend()) return;
@@ -764,7 +764,7 @@ void MABIOS_EEPROM_Read(MA_BUF *data_recv, u8 offset, u8 size)
     gMA.status |= STATUS_UNK_1;
 }
 
-void MABIOS_EEPROM_Write(MA_BUF *data_recv, u8 offset, u8 *data_send, u8 size)
+void MABIOS_EEPROM_Write(MA_BUF *data_recv, u8 offset, const u8 *data_send, u8 size)
 {
     tmppPacket = gMA.buffer_packet_send;
     if (!MA_PreSend()) return;
