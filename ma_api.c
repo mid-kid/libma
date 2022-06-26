@@ -245,22 +245,6 @@ static int IsEndMultiLine(void)
     }
 }
 
-static const char POP3_Quit[] asm(".LPOP3_Quit") = "QUIT\r\n";
-static const char POP3_Helo[] asm(".LPOP3_Helo") = "HELO ";
-static const char POP3_Newl[] asm(".LPOP3_Newl") = "\r\n";
-static const char POP3_From[] asm(".LPOP3_From") = "MAIL FROM:<";
-static const char POP3_From_Newl[] asm(".LPOP3_From_Newl") = ">\r\n";
-static const char POP3_Rcpt[] asm(".LPOP3_Rcpt") = "RCPT TO:<";
-static const char POP3_Data[] asm(".LPOP3_Data") = "DATA\r\n";
-static const char POP3_User[] asm(".LPOP3_User") = "USER ";
-static const char POP3_Pass[] asm(".LPOP3_Pass") = "PASS ";
-static const char POP3_Stat[] asm(".LPOP3_Stat") = "STAT\r\n";
-static const char POP3_List[] asm(".LPOP3_List") = "LIST ";
-static const char POP3_Retr[] asm(".LPOP3_Retr") = "RETR ";
-static const char POP3_Dele[] asm(".LPOP3_Dele") = "DELE ";
-static const char POP3_Top[] asm(".LPOP3_Top") = "TOP ";
-static const char POP3_Zero[] asm(".LPOP3_Zero") = " 0\r\n";
-
 static void InitPrevBuf(void)
 {
     gMA.prevbuf[0] = 0;
@@ -1671,7 +1655,7 @@ static void MATASK_Offline(void)
 
     case 100:
         InitPrevBuf();
-        MAU_strcpy(gMA.unk_880, POP3_Quit);
+        MAU_strcpy(gMA.unk_880, "QUIT\r\n");
         (&gMA.buffer_unk_480)->size = 0;
         (&gMA.buffer_unk_480)->data = gMA.unk_212;
         MABIOS_Data(&gMA.buffer_unk_480, gMA.unk_880, MAU_strlen(gMA.unk_880), gMA.sockets[0]);
@@ -1824,12 +1808,12 @@ static void MATASK_SMTP_Connect(void)
                 (gMA.prevbuf[1] - '0') * 10 +
                 (gMA.prevbuf[2] - '0');
             if (gMA.error_unk_94 == 220) {
-                MAU_strcpy(gMA.unk_880, POP3_Helo);
+                MAU_strcpy(gMA.unk_880, "HELO ");
                 cp1 = &gMA.unk_880[5];
                 cp2 = (u8 *)gMA.unk_112;
                 while (*cp2 && *cp2 != '@') *cp1++ = *cp2++;
                 *cp1 = '\0';
-                MAU_strcat(gMA.unk_880, POP3_Newl);
+                MAU_strcat(gMA.unk_880, "\r\n");
 
                 InitPrevBuf();
                 (&gMA.buffer_unk_480)->size = 0;
@@ -1979,9 +1963,9 @@ static void MATASK_SMTP_Sender(void)
 
     switch (gMA.task_step) {
     case 0:
-        MAU_strcpy(gMA.unk_880, POP3_From);
+        MAU_strcpy(gMA.unk_880, "MAIL FROM:<");
         MAU_strcat(gMA.unk_880, *(char **)gMA.unk_112);
-        MAU_strcat(gMA.unk_880, POP3_From_Newl);
+        MAU_strcat(gMA.unk_880, ">\r\n");
         gMA.unk_112 += 4;
         InitPrevBuf();
         (&gMA.buffer_unk_480)->size = 0;
@@ -2023,9 +2007,9 @@ static void MATASK_SMTP_Sender(void)
 
     case 2:
         if (*(u32 *)gMA.unk_112 != 0) {
-            MAU_strcpy(gMA.unk_880, POP3_Rcpt);
+            MAU_strcpy(gMA.unk_880, "RCPT TO:<");
             MAU_strcat(gMA.unk_880, *(char **)gMA.unk_112);
-            MAU_strcat(gMA.unk_880, POP3_From_Newl);
+            MAU_strcat(gMA.unk_880, ">\r\n");
             gMA.unk_112 += 4;
             InitPrevBuf();
             (&gMA.buffer_unk_480)->size = 0;
@@ -2225,7 +2209,7 @@ static void MATASK_SMTP_Send(void)
         break;
 
     case 100:
-        MAU_strcpy(gMA.unk_880, POP3_Data);
+        MAU_strcpy(gMA.unk_880, "DATA\r\n");
         InitPrevBuf();
         (&gMA.buffer_unk_480)->size = 0;
         (&gMA.buffer_unk_480)->data = gMA.unk_212;
@@ -2346,7 +2330,7 @@ static void MATASK_SMTP_POP3_Quit(void)
     switch (gMA.task_step) {
     case 0:
         InitPrevBuf();
-        MAU_strcpy(gMA.unk_880, POP3_Quit);
+        MAU_strcpy(gMA.unk_880, "QUIT\r\n");
         (&gMA.buffer_unk_480)->size = 0;
         (&gMA.buffer_unk_480)->data = gMA.unk_212;
         MABIOS_Data(&gMA.buffer_unk_480, gMA.unk_880, MAU_strlen(gMA.unk_880), gMA.sockets[0]);
@@ -2447,7 +2431,7 @@ void MA_POP3_Connect(const char *pUserID, const char *pPassword)
     MA_GetPOP3ServerName((char *)gMA.unk_112);
 
     gMA.unk_116 = gMA.unk_112 + MAU_strlen((char *)gMA.unk_112) + 1;
-    MAU_strcpy((char *)gMA.unk_116, POP3_User);
+    MAU_strcpy((char *)gMA.unk_116, "USER ");
     MAU_strcat((char *)gMA.unk_116, pUserID);
 
     end = (char *)gMA.unk_116;
@@ -2457,9 +2441,9 @@ void MA_POP3_Connect(const char *pUserID, const char *pPassword)
     *end++ = '\0';
 
     gMA.unk_120 = (u32)end;
-    MAU_strcpy((char *)gMA.unk_120, POP3_Pass);
+    MAU_strcpy((char *)gMA.unk_120, "PASS ");
     MAU_strcat((char *)gMA.unk_120, pPassword);
-    MAU_strcat((char *)gMA.unk_120, POP3_Newl);
+    MAU_strcat((char *)gMA.unk_120, "\r\n");
 
     MA_TaskSet(TASK_UNK_0F, 0);
     ResetApiCallFlag();
@@ -2683,7 +2667,7 @@ static void MATASK_POP3_Stat(void)
 
     switch (gMA.task_step) {
     case 0:
-        MAU_strcpy(gMA.unk_880, POP3_Stat);
+        MAU_strcpy(gMA.unk_880, "STAT\r\n");
         InitPrevBuf();
         (&gMA.buffer_unk_480)->size = 0;
         (&gMA.buffer_unk_480)->data = gMA.unk_212;
@@ -2755,9 +2739,9 @@ void MA_POP3_List(u16 mailNo, u32 *pSize)
     }
 
     gMA.unk_112 = (u32)pSize;
-    MAU_strcpy(gMA.unk_880, POP3_List);
+    MAU_strcpy(gMA.unk_880, "LIST ");
     MAU_itoa(mailNo, &gMA.unk_880[MAU_strlen(gMA.unk_880)], 10);
-    MAU_strcat(gMA.unk_880, POP3_Newl);
+    MAU_strcat(gMA.unk_880, "\r\n");
     MA_TaskSet(TASK_UNK_11, 0);
 
     ResetApiCallFlag();
@@ -2904,9 +2888,9 @@ void MA_POP3_Retr(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
         gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
         gMA.status &= ~STATUS_UNK_15;
 
-        MAU_strcpy(gMA.unk_880, POP3_Retr);
+        MAU_strcpy(gMA.unk_880, "RETR ");
         MAU_itoa(mailNo, &gMA.unk_880[MAU_strlen(gMA.unk_880)], 10);
-        MAU_strcat(gMA.unk_880, POP3_Newl);
+        MAU_strcat(gMA.unk_880, "\r\n");
 
         MA_TaskSet(TASK_UNK_12, 0);
     }
@@ -3062,9 +3046,9 @@ void MA_POP3_Dele(u16 mailNo)
         return;
     }
 
-    MAU_strcpy(gMA.unk_880, POP3_Dele);
+    MAU_strcpy(gMA.unk_880, "DELE ");
     MAU_itoa(mailNo, &gMA.unk_880[MAU_strlen(gMA.unk_880)], 10);
-    MAU_strcat(gMA.unk_880, POP3_Newl);
+    MAU_strcat(gMA.unk_880, "\r\n");
 
     MA_TaskSet(TASK_UNK_13, 0);
     ResetApiCallFlag();
@@ -3206,9 +3190,9 @@ void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
         InitPrevBuf();
         gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
 
-        MAU_strcpy(gMA.unk_880, POP3_Top);
+        MAU_strcpy(gMA.unk_880, "TOP ");
         MAU_itoa(mailNo, &gMA.unk_880[MAU_strlen(gMA.unk_880)], 10);
-        MAU_strcat(gMA.unk_880, POP3_Zero);
+        MAU_strcat(gMA.unk_880, " 0\r\n");
 
         MA_TaskSet(TASK_UNK_12, 0);
     }
@@ -3441,7 +3425,6 @@ static const char strHttpDate[] = "Date: ";
 static const char strHttpLocation[] = "Location: ";
 static const char strHttpUserAgent[] = "User-Agent: AGB-";
 static const char strServerRoot[] = "/";
-static const char strEmpty[] asm(".LstrEmpty") = "";
 
 void MA_HTTP_Get(const char *pURL, char *pHeadBuf, u16 headBufSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword)
 {
@@ -3512,8 +3495,8 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8
 
         param.server_unk_1 = server_unk_1;
         if (server_unk_2 == 0) {
-            param.pUserID = strEmpty;
-            param.pPassword = strEmpty;
+            param.pUserID = "";
+            param.pPassword = "";
         } else {
             if ((len = MAU_strlen(pUserID)) > 16 ||
                     (len = MAU_strlen(pPassword)) > 16) {
@@ -3627,10 +3610,10 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8
 
 static void ConcatUserAgent(char *user_agent)
 {
-    static int tmpLen asm("tmpLen.249");
-    static u8 *tmpp asm("tmpp.250");
-    static u8 tmpNum asm("tmpNum.251");
-    static const char hexChar[] asm("hexChar.252") = "0123456789ABCDEF";
+    static int tmpLen;
+    static u8 *tmpp;
+    static u8 tmpNum;
+    static const char hexChar[] = "0123456789ABCDEF";
 
     tmpLen = MAU_strlen(user_agent);
     tmpp = &user_agent[tmpLen];
@@ -3652,12 +3635,9 @@ static void ConcatUserAgent(char *user_agent)
     *tmpp = '\0';
 }
 
-static const char strNewl[] asm(".LstrHttpNewl") = "\"\r\n";
-static const char strHttp[] asm(".LstrHttp") = "HTTP";
-
 static int GetRequestType(void)
 {
-    static int ret asm("ret.256");
+    static int ret;
 
     ret = 0;
     switch (gMA.unk_112) {  // MAGIC
@@ -3714,11 +3694,11 @@ static int GetRequestType(void)
 
 static void CreateHttpRequestHeader(void)
 {
-    static int tmpLen asm("tmpLen.260");
-    static char bAddContentLength asm("bAddContentLength.261");
-    static char bAddContentLengthZero asm("bAddContentLengthZero.262");
-    static char bAddAuthorization asm("bAddAuthorization.263");
-    static char bAddAuthID asm("bAddAuthID.264");
+    static int tmpLen;
+    static char bAddContentLength;
+    static char bAddContentLengthZero;
+    static char bAddAuthorization;
+    static char bAddAuthID;
 
     bAddContentLength = FALSE;
     bAddContentLengthZero = FALSE;
@@ -3806,7 +3786,7 @@ static void CreateHttpRequestHeader(void)
         MAU_strcat(gMA.unk_880, strHttpContentLength);
         tmpLen = MAU_strlen(gMA.unk_880);
         MAU_itoa(gMA.unk_136, &gMA.unk_880[tmpLen - 3], 10);
-        MAU_strcat(gMA.unk_880, POP3_Newl);
+        MAU_strcat(gMA.unk_880, "\r\n");
     }
 
     if (bAddContentLengthZero == TRUE) {
@@ -3817,13 +3797,13 @@ static void CreateHttpRequestHeader(void)
     if (bAddAuthorization == TRUE) {
         MAU_strcat(gMA.unk_880, strHttpAuthorization);
         MAU_strcat(gMA.unk_880, gMA.unk_1798);
-        MAU_strcat(gMA.unk_880, strNewl);
+        MAU_strcat(gMA.unk_880, "\"\r\n");
     }
 
     if (bAddAuthID == TRUE) {
         MAU_strcat(gMA.unk_880, strHttpGbAuthID);
         MAU_strcat(gMA.unk_880, gMA.unk_1798);
-        MAU_strcat(gMA.unk_880, POP3_Newl);
+        MAU_strcat(gMA.unk_880, "\r\n");
     }
 
     MAU_strcat(gMA.unk_880, strHttpUserAgent);
@@ -3832,7 +3812,7 @@ static void CreateHttpRequestHeader(void)
 
 static int HttpGetNextStep(int unk_1)
 {
-    static int step asm("step.268");
+    static int step;
 
     // ALL MAGIC
     switch (unk_1) {
@@ -4029,12 +4009,12 @@ static int HttpGetNextStep(int unk_1)
 #define param PARAM(PARAM_HTTP_GETPOST)
 static void MATASK_HTTP_GetPost(void)
 {
-    static const char *curCp asm("curCp.272");
-    static const char *nextCp asm("nextCp.273");
-    static char *lineCp asm("lineCp.274");
-    static int tmpLen asm("tmpLen.275");
-    static int dataLen asm("dataLen.276");
-    static int headerLineLen asm("headerLineLen.277");
+    static const char *curCp;
+    static const char *nextCp;
+    static char *lineCp;
+    static int tmpLen;
+    static int dataLen;
+    static int headerLineLen;
 
     curCp = nextCp = lineCp = NULL;
     tmpLen = dataLen = headerLineLen = 0;
@@ -4189,7 +4169,7 @@ static void MATASK_HTTP_GetPost(void)
                     gMA.prevbuf_size = 0;
                 }
 
-                if (MAU_strncmp(lineCp, strHttp, sizeof(strHttp) - 1) == 0) {
+                if (MAU_strncmp(lineCp, "HTTP", 4) == 0) {
                     if ((lineCp[9] >= '0' && lineCp[9] <= '9') &&
                             (lineCp[10] >= '0' && lineCp[10] <= '9') &&
                             (lineCp[11] >= '0' && lineCp[11] <= '9')) {
@@ -4397,7 +4377,7 @@ static void MATASK_HTTP_GetPost(void)
 
 static void CopyEEPROMString(char *dest, char *src, int size)
 {
-    static int i asm("i.281");
+    static int i;
     for (i = 0; i < size; i++) if ((*dest++ = src[i]) == '\0') break;
     if (i == size) *dest = '\0';
 }
