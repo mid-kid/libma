@@ -5,7 +5,7 @@
 
 //void SetApiCallFlag();
 //void ResetApiCallFlag();
-void MA_TaskSet(u8 unk_1, u8 unk_2);
+void MA_TaskSet(u8 task, u8 step);
 //void MA_End();
 //void MA_Stop();
 //void MA_TCP_Cut();

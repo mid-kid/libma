@@ -29,44 +29,6 @@
 #define STATUS_UNK_15 (1 << 15)
 #define STATUS_UNK_16 (1 << 16)
 
-#define TASK_UNK_00 0x00
-#define TASK_UNK_01 0x01
-#define TASK_UNK_02 0x02
-#define TASK_UNK_03 0x03
-#define TASK_UNK_03 0x03
-#define TASK_UNK_04 0x04
-#define TASK_UNK_05 0x05
-#define TASK_UNK_06 0x06
-#define TASK_UNK_07 0x07
-#define TASK_UNK_08 0x08
-#define TASK_UNK_09 0x09
-#define TASK_UNK_0A 0x0a
-#define TASK_UNK_0B 0x0b
-#define TASK_UNK_0C 0x0c
-#define TASK_UNK_0D 0x0d
-#define TASK_UNK_0E 0x0e
-#define TASK_UNK_0F 0x0f
-#define TASK_UNK_10 0x10
-#define TASK_UNK_11 0x11
-#define TASK_UNK_12 0x12
-#define TASK_UNK_13 0x13
-#define TASK_UNK_15 0x15
-#define TASK_UNK_16 0x16
-#define TASK_UNK_17 0x17
-#define TASK_UNK_18 0x18
-#define TASK_UNK_19 0x19
-#define TASK_UNK_1A 0x1a
-#define TASK_UNK_1B 0x1b
-#define TASK_UNK_1C 0x1c
-#define TASK_UNK_1D 0x1d
-#define TASK_UNK_1E 0x1e
-#define TASK_UNK_1F 0x1f
-#define TASK_UNK_20 0x20
-#define TASK_UNK_21 0x21
-#define TASK_UNK_22 0x22
-#define TASK_UNK_23 0x23
-#define TASK_UNK_24 0x24
-
 #define MAPROT_REPLY 0x80
 
 #define MACMD_START 0x10
@@ -94,6 +56,46 @@
 #define EEPROM_TELNO_SIZE 8
 #define NUM_SOCKETS 2
 
+enum tasks {
+    TASK_NONE,
+    TASK_INITLIBRARY,
+    TASK_INITLIBRARY2,
+    TASK_TELSERVER,
+    TASK_TEL,
+    TASK_RECEIVE,
+    TASK_SDATA,
+    TASK_GDATA,
+    TASK_CONDITION,
+    TASK_CONDITION2,
+    TASK_OFFLINE,
+    TASK_SMTP_CONNECT,
+    TASK_SMTP_SENDER,
+    TASK_SMTP_SEND,
+    TASK_SMTP_QUIT,
+    TASK_POP3_CONNECT,
+    TASK_POP3_STAT,
+    TASK_POP3_LIST,
+    TASK_POP3_RETR,
+    TASK_POP3_DELE,
+    TASK_POP3_HEAD,
+    TASK_POP3_QUIT,
+    TASK_HTTP_GET,
+    TASK_HTTP_POST,
+    TASK_GETTEL,
+    TASK_GETUSERID,
+    TASK_GETMAILID,
+    TASK_GETEEPROMDATA,
+    TASK_EEPROM_READ,
+    TASK_EEPROM_WRITE,
+    TASK_STOP,
+    TASK_TCP_CUT,
+    TASK_TCP_CONNECT,
+    TASK_TCP_DISCONNECT,
+    TASK_TCP_SENDRECV,
+    TASK_GETHOSTADDRESS,
+    TASK_GETLOCALADDRESS
+};
+
 enum ma_sio_modes {
     MA_SIO_BYTE,
     MA_SIO_WORD,
@@ -115,29 +117,29 @@ typedef struct {
 } MA_BUF;
 
 typedef struct {
-    u32 task;  // 112
-    u32 unk_2;  // 116
-    u8 *pRecvData;  // 120
-    u32 recvBufSize;  // 124
-    u16 *pRecvSize;  // 128
-    const u8 *pSendData;  // 132
-    u32 sendSize;  // 136
-    const char *pServerPath;  // 140
-    u32 pServerPathLen;  // 144
-    const char *unk_10;  // 148
-    u32 unk_11;  // 152
-    u32 headBufSize;  // 156
-    u32 server_unk_1;  // 160
-    u32 unk_14;  // 164
-    char *pHeadBuf;  // 168
-    u32 unk_16;  // 172
-    u32 unk_17;  // 176
-    const char *pUserID;  // 180
-    const char *pPassword;  // 184
-    u32 unk_20;  // 188
-    u32 unk_21;  // 192
-    u32 counter;  // 196
-    u32 next_step;  // 200
+    u32 task;
+    u32 unk_2;
+    u8 *pRecvData;
+    u32 recvBufSize;
+    u16 *pRecvSize;
+    const u8 *pSendData;
+    u32 sendSize;
+    const char *pServerPath;
+    u32 pServerPathLen;
+    const char *unk_10;
+    u32 unk_11;
+    u32 headBufSize;
+    u32 server_unk_1;
+    u32 unk_14;
+    char *pHeadBuf;
+    u32 unk_16;
+    u32 unk_17;
+    const char *pUserID;
+    const char *pPassword;
+    u32 unk_20;
+    u32 unk_21;
+    u32 counter;
+    u32 next_step;
 } PARAM_HTTP_GETPOST;
 
 typedef struct {

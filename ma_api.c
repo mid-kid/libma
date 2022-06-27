@@ -11,7 +11,7 @@
 #define CASSETTE_VERSION_NO (ROM_BANK0 + 0xbc)
 
 static void MA_SetApiError(u8 error, u16 unk_2);
-static int ApiValisStatusCheck(u8 unk_1);
+static int ApiValisStatusCheck(u8 task);
 static int MA_ApiPreExe(u8 unk_1);
 static void MakeEndLineBuffer(u8 *end, int size);
 static int IsEndMultiLine(void);
@@ -54,7 +54,7 @@ static void CreateHttpRequestHeader(void);
 static int HttpGetNextStep(int unk_1);
 static void MATASK_HTTP_GetPost(void);
 static void CopyEEPROMString(char *dest, char *src, int size);
-static void CopyEEPROMData(int unk_1, char *dest);
+static void CopyEEPROMData(int task, char *dest);
 static void MATASK_GetEEPROMData(void);
 static void MATASK_EEPROM_Read(void);
 static void MATASK_EEPROM_Write(void);
@@ -72,11 +72,11 @@ void ResetApiCallFlag(void)
     *(vu16 *)REG_IE |= SIO_INTR_FLAG | TIMER3_INTR_FLAG;
 }
 
-void MA_TaskSet(u8 unk_1, u8 unk_2)
+void MA_TaskSet(u8 task, u8 step)
 {
     gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-    gMA.task = unk_1;
-    gMA.task_step = unk_2;
+    gMA.task = task;
+    gMA.task_step = step;
     if (gMA.task == 0) gMA.condition &= ~MA_CONDITION_APIWAIT;
 }
 
@@ -87,40 +87,40 @@ static void MA_SetApiError(u8 error, u16 unk_2)
     MA_SetError(error);
 }
 
-static int ApiValisStatusCheck(u8 unk_1)
+static int ApiValisStatusCheck(u8 task)
 {
     static int ret;
 
     ret = TRUE;
-    switch (unk_1) {
-    case 0x3:
+    switch (task) {
+    case TASK_TELSERVER:
         if (gMA.unk_92 == 0) break;
         ret = FALSE;
         break;
 
-    case 0x4:
+    case TASK_TEL:
         if (gMA.unk_92 == 0) break;
         ret = FALSE;
         break;
 
-    case 0x5:
+    case TASK_RECEIVE:
         if (gMA.unk_92 == 0) break;
         ret = FALSE;
         break;
 
-    case 0x6:
+    case TASK_SDATA:
         if (gMA.unk_92 == 7) break;
         if (gMA.unk_92 == 8) break;
         ret = FALSE;
         break;
 
-    case 0x7:
+    case TASK_GDATA:
         if (gMA.unk_92 == 7) break;
         if (gMA.unk_92 == 8) break;
         ret = FALSE;
         break;
 
-    case 0xa:
+    case TASK_OFFLINE:
         if (gMA.unk_92 == 3) break;
         if (gMA.unk_92 == 7) break;
         if (gMA.unk_92 == 8) break;
@@ -129,50 +129,50 @@ static int ApiValisStatusCheck(u8 unk_1)
         ret = FALSE;
         break;
 
-    case 0xc:
-    case 0xd:
-    case 0xe:
+    case TASK_SMTP_SENDER:
+    case TASK_SMTP_SEND:
+    case TASK_SMTP_QUIT:
         if (gMA.unk_92 == 4) break;
         ret = FALSE;
         break;
 
-    case 0x10:
-    case 0x11:
-    case 0x12:
-    case 0x13:
-    case 0x14:
-    case 0x15:
+    case TASK_POP3_STAT:
+    case TASK_POP3_LIST:
+    case TASK_POP3_RETR:
+    case TASK_POP3_DELE:
+    case TASK_POP3_HEAD:
+    case TASK_POP3_QUIT:
         if (gMA.unk_92 == 5) break;
         ret = FALSE;
         break;
 
-    case 0x16:
-    case 0x17:
+    case TASK_HTTP_GET:
+    case TASK_HTTP_POST:
         if (gMA.unk_92 == 3) break;
         if (gMA.unk_92 == 6) break;
         ret = FALSE;
         break;
 
-    case 0x18:
-    case 0x19:
-    case 0x1a:
+    case TASK_GETTEL:
+    case TASK_GETUSERID:
+    case TASK_GETMAILID:
         if (gMA.unk_92 == 0) break;
         ret = FALSE;
         break;
 
-    case 0x1c:
-    case 0x1d:
+    case TASK_EEPROM_READ:
+    case TASK_EEPROM_WRITE:
         if (gMA.unk_92 == 0) break;
         ret = FALSE;
         break;
 
-    case 0xb:
-    case 0xf:
-    case 0x20:
-    case 0x21:
-    case 0x22:
-    case 0x23:
-    case 0x24:
+    case TASK_SMTP_CONNECT:
+    case TASK_POP3_CONNECT:
+    case TASK_TCP_CONNECT:
+    case TASK_TCP_DISCONNECT:
+    case TASK_TCP_SENDRECV:
+    case TASK_GETHOSTADDRESS:
+    case TASK_GETLOCALADDRESS:
         if (gMA.unk_92 == 3) break;
         ret = FALSE;
         break;
@@ -181,7 +181,7 @@ static int ApiValisStatusCheck(u8 unk_1)
     return ret;
 }
 
-static int MA_ApiPreExe(u8 unk_1)
+static int MA_ApiPreExe(u8 task)
 {
     gMA.error = 0;
     gMA.error_unk_94 = 0;
@@ -198,16 +198,16 @@ static int MA_ApiPreExe(u8 unk_1)
         MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
         return FALSE;
     }
-    if (gMA.task != 0) {
+    if (gMA.task != TASK_NONE) {
         MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
         return FALSE;
     }
-    if (!ApiValisStatusCheck(unk_1)) {
+    if (!ApiValisStatusCheck(task)) {
         MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
         return FALSE;
     }
 
-    if (unk_1 != 0x16 && unk_1 != 0x17) {
+    if (task != TASK_HTTP_GET && task != TASK_HTTP_POST) {
         gMA.condition &= ~MA_CONDITION_UNK_6;
     }
     gMA.condition &= ~MA_CONDITION_ERROR;
@@ -288,7 +288,7 @@ void MA_Stop(void)
         return;
     }
 
-    if (gMA.task == TASK_UNK_1E ||
+    if (gMA.task == TASK_STOP ||
             (!gMA.unk_92 && !(gMA.condition & MA_CONDITION_APIWAIT))) {
         ResetApiCallFlag();
         return;
@@ -298,14 +298,14 @@ void MA_Stop(void)
 
     if (gMA.condition & MA_CONDITION_UNK_5 && gMA.cmd_cur == MACMD_TEL) {
         gMA.condition |= MA_CONDITION_APIWAIT;
-        MA_TaskSet(TASK_UNK_1E, 0);
+        MA_TaskSet(TASK_STOP, 0);
         MA_CancelRequest();
         ResetApiCallFlag();
         return;
     }
 
     gMA.condition |= MA_CONDITION_APIWAIT;
-    MA_TaskSet(TASK_UNK_1E, 1);
+    MA_TaskSet(TASK_STOP, 1);
     ResetApiCallFlag();
 }
 
@@ -342,7 +342,7 @@ static void MATASK_Stop(void)
         gMA.condition = gMA.condition;
 
         gMA.cmd_recv = 0;
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
     }
 }
@@ -373,12 +373,12 @@ void MA_TCP_Cut(void)
         return;
     }
 
-    if (gMA.task == TASK_UNK_1F) {
+    if (gMA.task == TASK_TCP_CUT) {
         ResetApiCallFlag();
         return;
     }
 
-    if (gMA.task == TASK_UNK_1E) {
+    if (gMA.task == TASK_STOP) {
         MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
         ResetApiCallFlag();
         return;
@@ -388,11 +388,11 @@ void MA_TCP_Cut(void)
     gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
     if (!(gMA.condition & MA_CONDITION_UNK_5 || gMA.unk_92 == 3)) {
         gMA.condition |= MA_CONDITION_APIWAIT;
-        MA_TaskSet(TASK_UNK_1F, 2);
+        MA_TaskSet(TASK_TCP_CUT, 2);
         ResetApiCallFlag();
     } else {
         gMA.condition |= MA_CONDITION_APIWAIT;
-        MA_TaskSet(TASK_UNK_1F, 0);
+        MA_TaskSet(TASK_TCP_CUT, 0);
         ResetApiCallFlag();
     }
 }
@@ -427,20 +427,20 @@ static void MATASK_TCP_Cut(void)
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         gMA.cmd_recv = 0;
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
     }
 }
 
 void MA_InitLibrary(u8 *pHardwareType)
 {
-    MA_InitLibraryMain(pHardwareType, TASK_UNK_01);
+    MA_InitLibraryMain(pHardwareType, TASK_INITLIBRARY);
 }
 
 
 void MA_InitLibrary2(u8 *pHardwareType)
 {
-    MA_InitLibraryMain(pHardwareType, TASK_UNK_02);
+    MA_InitLibraryMain(pHardwareType, TASK_INITLIBRARY2);
 }
 
 void MA_InitLibraryMain(u8 *pHardwareType, int task)
@@ -541,7 +541,7 @@ static void MATASK_InitLibrary(void)
         gMA.condition &= 0xff;
         gMA.condition = gMA.condition;
 
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xfa:
@@ -570,7 +570,7 @@ static void MATASK_InitLibrary(void)
         gMA.condition = gMA.condition;
 
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
     }
 }
@@ -578,7 +578,7 @@ static void MATASK_InitLibrary(void)
 void MA_TCP_Connect(u8 *unk_1, u8 *unk_2, u16 unk_3)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_20)) {
+    if (!MA_ApiPreExe(TASK_TCP_CONNECT)) {
         ResetApiCallFlag();
         return;
     }
@@ -600,7 +600,7 @@ void MA_TCP_Connect(u8 *unk_1, u8 *unk_2, u16 unk_3)
     gMA.unk_112 = (u32)unk_1;
     gMA.unk_116 = (u32)unk_2;
     gMA.unk_120 = unk_3;
-    MA_TaskSet(TASK_UNK_20, 0);
+    MA_TaskSet(TASK_TCP_CONNECT, 0);
     ResetApiCallFlag();
 }
 
@@ -631,7 +631,7 @@ static void MATASK_TCP_Connect(void)
     case 1:
         *(u8 *)gMA.unk_112 = gMA.buffer_unk_480.data[0];
         MAU_Socket_Add(gMA.buffer_unk_480.data[0]);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xf0:
@@ -639,14 +639,14 @@ static void MATASK_TCP_Connect(void)
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
     }
 }
 
 void MA_TCP_Disconnect(u8 unk_1)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_21)) {
+    if (!MA_ApiPreExe(TASK_TCP_DISCONNECT)) {
         ResetApiCallFlag();
         return;
     }
@@ -664,7 +664,7 @@ void MA_TCP_Disconnect(u8 unk_1)
     }
 
     gMA.unk_112 = unk_1;
-    MA_TaskSet(TASK_UNK_21, 0);
+    MA_TaskSet(TASK_TCP_DISCONNECT, 0);
     ResetApiCallFlag();
 }
 
@@ -694,7 +694,7 @@ static void MATASK_TCP_Disconnect(void)
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
     }
 }
@@ -702,7 +702,7 @@ static void MATASK_TCP_Disconnect(void)
 void MA_TCP_SendRecv(u8 unk_1, int unk_2, u8 unk_3, int unk_4)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_22)) {
+    if (!MA_ApiPreExe(TASK_TCP_SENDRECV)) {
         ResetApiCallFlag();
         return;
     }
@@ -729,7 +729,7 @@ void MA_TCP_SendRecv(u8 unk_1, int unk_2, u8 unk_3, int unk_4)
     gMA.unk_116 = unk_2;
     gMA.unk_120 = unk_3;
     gMA.unk_124 = unk_4;
-    MA_TaskSet(TASK_UNK_22, 0);
+    MA_TaskSet(TASK_TCP_SENDRECV, 0);
     ResetApiCallFlag();
 }
 
@@ -765,12 +765,12 @@ static void MATASK_TCP_SendRecv(void)
     case 1:
         MAU_memcpy((u8 *)gMA.unk_116, &gMA.buffer_unk_480.data[1], gMA.buffer_unk_480.size - 1);
         *(u8 *)gMA.unk_124 = gMA.buffer_unk_480.size - 1;
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xf0:
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
     }
 }
@@ -778,7 +778,7 @@ static void MATASK_TCP_SendRecv(void)
 void MA_GetHostAddress(u8 *unk_1, char *unk_2)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_23)) {
+    if (!MA_ApiPreExe(TASK_GETHOSTADDRESS)) {
         ResetApiCallFlag();
         return;
     }
@@ -791,7 +791,7 @@ void MA_GetHostAddress(u8 *unk_1, char *unk_2)
 
     gMA.unk_112 = (u32)unk_1;
     gMA.unk_116 = (u32)unk_2;
-    MA_TaskSet(TASK_UNK_23, 0);
+    MA_TaskSet(TASK_GETHOSTADDRESS, 0);
     ResetApiCallFlag();
 }
 
@@ -821,12 +821,12 @@ static void MATASK_GetHostAddress(void)
 
     case 1:
         MAU_memcpy((u8 *)gMA.unk_112, gMA.buffer_unk_480.data, 4);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xf0:
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
     }
 }
@@ -834,7 +834,7 @@ static void MATASK_GetHostAddress(void)
 void MA_GetLocalAddress(u8 *address)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_24)) {
+    if (!MA_ApiPreExe(TASK_GETLOCALADDRESS)) {
         ResetApiCallFlag();
         return;
     }
@@ -881,7 +881,7 @@ void MA_TelServer(const char *pTelNo, const char *pUserID, const char *pPassword
     int len_telno, len_userid, len_password;
 
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_03)) {
+    if (!MA_ApiPreExe(TASK_TELSERVER)) {
         ResetApiCallFlag();
         return;
     }
@@ -906,7 +906,7 @@ void MA_TelServer(const char *pTelNo, const char *pUserID, const char *pPassword
     gMA.unk_116 = (u32)pUserID;
     gMA.unk_120 = (u32)pPassword;
     *(vu32 *)REG_TM3CNT = 0;
-    MA_TaskSet(TASK_UNK_03, 0);
+    MA_TaskSet(TASK_TELSERVER, 0);
 
     gMA.condition |= MA_CONDITION_APIWAIT;
     ResetApiCallFlag();
@@ -1037,7 +1037,7 @@ static void MATASK_TelServer(void)
         gMA.unk_92 = 3;
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xf9:
@@ -1071,7 +1071,7 @@ static void MATASK_TelServer(void)
         gMA.condition = gMA.condition;
 
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
     }
 }
@@ -1081,7 +1081,7 @@ void MA_Tel(const char *pTelNo)
     int len;
 
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_04)) {
+    if (!MA_ApiPreExe(TASK_TEL)) {
         ResetApiCallFlag();
         return;
     }
@@ -1095,7 +1095,7 @@ void MA_Tel(const char *pTelNo)
 
     gMA.unk_112 = (u32)pTelNo;
     *(vu32 *)REG_TM3CNT = 0;
-    MA_TaskSet(TASK_UNK_04, 0);
+    MA_TaskSet(TASK_TEL, 0);
 
     ResetApiCallFlag();
 
@@ -1164,7 +1164,7 @@ static void MATASK_Tel(void)
         gMA.unk_112 = 0;
         gMA.buffer_unk_480.size = 0;
         InitPrevBuf();
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xfa:
@@ -1193,7 +1193,7 @@ static void MATASK_Tel(void)
         gMA.condition = gMA.condition;
 
         MA_SetApiError(gMA.task_error, gMA.error_unk_94);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
     }
 }
@@ -1201,13 +1201,13 @@ static void MATASK_Tel(void)
 void MA_Receive(void)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_05)) {
+    if (!MA_ApiPreExe(TASK_RECEIVE)) {
         ResetApiCallFlag();
         return;
     }
 
     *(vu32 *)REG_TM3CNT = 0;
-    MA_TaskSet(TASK_UNK_05, 0);
+    MA_TaskSet(TASK_RECEIVE, 0);
 
     ResetApiCallFlag();
 
@@ -1275,7 +1275,7 @@ static void MATASK_Receive(void)
         gMA.unk_112 = 0;
         gMA.buffer_unk_480.size = 0;
         InitPrevBuf();
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xfa:
@@ -1304,7 +1304,7 @@ static void MATASK_Receive(void)
         gMA.condition = gMA.condition;
 
         MA_SetApiError(gMA.task_error, gMA.error_unk_94);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
     }
 }
@@ -1313,7 +1313,7 @@ void MA_SData(const u8 *pSendData, u8 sendSize, u8 *pResult)
 {
     SetApiCallFlag();
     *pResult = FALSE;
-    if (!MA_ApiPreExe(TASK_UNK_06)) {
+    if (!MA_ApiPreExe(TASK_SDATA)) {
         ResetApiCallFlag();
         return;
     }
@@ -1343,7 +1343,7 @@ void MA_GData(u8 *pRecvData, u8 *pRecvSize)
     u8 size;
 
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_07)) {
+    if (!MA_ApiPreExe(TASK_GDATA)) {
         ResetApiCallFlag();
         return;
     }
@@ -1412,7 +1412,7 @@ static void MATASK_P2P(void)
             gMA.condition = gMA.condition;
 
             MA_SetApiError(MAAPIE_OFFLINE, 0);
-            MA_TaskSet(TASK_UNK_00, 0);
+            MA_TaskSet(TASK_NONE, 0);
             return;
         }
     }
@@ -1434,12 +1434,12 @@ static void MATASK_P2P(void)
 
 void MA_Condition(u8 *pCondition)
 {
-    MA_ConditionMain(pCondition, TASK_UNK_08);
+    MA_ConditionMain(pCondition, TASK_CONDITION);
 }
 
 void MA_Condition2(u8 *pCondition)
 {
-    MA_ConditionMain(pCondition, TASK_UNK_09);
+    MA_ConditionMain(pCondition, TASK_CONDITION2);
 }
 
 void MA_ConditionMain(u8 *pCondition, int task)
@@ -1512,7 +1512,7 @@ static void MATASK_Condition(void)
         if (gMA.unk_116 == 1) {
             gMA.task_step = 3;
         } else {
-            MA_TaskSet(TASK_UNK_00, 0);
+            MA_TaskSet(TASK_NONE, 0);
         }
         break;
 
@@ -1541,7 +1541,7 @@ static void MATASK_Condition(void)
         gMA.condition &= 0xff;
         gMA.condition = gMA.condition;
 
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xfa:
@@ -1570,12 +1570,12 @@ static void MATASK_Condition(void)
         gMA.condition = gMA.condition;
 
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xfc:
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
     }
 }
@@ -1583,17 +1583,17 @@ static void MATASK_Condition(void)
 void MA_Offline(void)
 {
     SetApiCallFlag();
-    if (!gMA.unk_92 || !MA_ApiPreExe(TASK_UNK_0A)) {
+    if (!gMA.unk_92 || !MA_ApiPreExe(TASK_OFFLINE)) {
         ResetApiCallFlag();
         return;
     }
 
     if (gMA.unk_92 == 7 || gMA.unk_92 == 8) {
-        MA_TaskSet(TASK_UNK_0A, 1);
+        MA_TaskSet(TASK_OFFLINE, 1);
     } else if (gMA.unk_92 == 4 || gMA.unk_92 == 5) {
-        MA_TaskSet(TASK_UNK_0A, 100);
+        MA_TaskSet(TASK_OFFLINE, 100);
     } else {
-        MA_TaskSet(TASK_UNK_0A, 0);
+        MA_TaskSet(TASK_OFFLINE, 0);
     }
     ResetApiCallFlag();
 }
@@ -1649,7 +1649,7 @@ static void MATASK_Offline(void)
         gMA.condition &= 0xff;
         gMA.condition = gMA.condition;
 
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         MA_ChangeSIOMode(MA_SIO_BYTE);
         break;
 
@@ -1707,7 +1707,7 @@ void MA_SMTP_Connect(const char *pMailAddress)
     int len;
 
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_0B)) {
+    if (!MA_ApiPreExe(TASK_SMTP_CONNECT)) {
         ResetApiCallFlag();
         return;
     }
@@ -1721,7 +1721,7 @@ void MA_SMTP_Connect(const char *pMailAddress)
 
     MA_GetSMTPServerName(gMA.unk_880);
     gMA.unk_112 = (u32)pMailAddress;
-    MA_TaskSet(TASK_UNK_0B, 0);
+    MA_TaskSet(TASK_SMTP_CONNECT, 0);
     ResetApiCallFlag();
 }
 
@@ -1762,7 +1762,7 @@ static void MATASK_SMTP_Connect(void)
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_SMTP, 0);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         return;
     }
 
@@ -1869,7 +1869,7 @@ static void MATASK_SMTP_Connect(void)
         gMA.unk_92 = 4;
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_SMTP << MA_CONDITION_SHIFT;
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xf0:
@@ -1884,7 +1884,7 @@ static void MATASK_SMTP_Connect(void)
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
         break;
     }
@@ -1896,7 +1896,7 @@ void MA_SMTP_Sender(const char * const pRecipients[])
     int len;
 
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_0C)) {
+    if (!MA_ApiPreExe(TASK_SMTP_SENDER)) {
         ResetApiCallFlag();
         return;
     }
@@ -1924,7 +1924,7 @@ void MA_SMTP_Sender(const char * const pRecipients[])
     }
 
     gMA.unk_112 = (u32)pRecipients;
-    MA_TaskSet(TASK_UNK_0C, 0);
+    MA_TaskSet(TASK_SMTP_SENDER, 0);
     ResetApiCallFlag();
 }
 
@@ -1957,7 +1957,7 @@ static void MATASK_SMTP_Sender(void)
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_SMTP, 0);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         return;
     }
 
@@ -2053,7 +2053,7 @@ static void MATASK_SMTP_Sender(void)
         break;
 
     case 4:
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         gMA.unk_96 = 1;
         break;
 
@@ -2069,7 +2069,7 @@ static void MATASK_SMTP_Sender(void)
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
         break;
     }
@@ -2078,7 +2078,7 @@ static void MATASK_SMTP_Sender(void)
 void MA_SMTP_Send(const char *pSendData, u16 sendSize, int endFlag)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_0D)) {
+    if (!MA_ApiPreExe(TASK_SMTP_SEND)) {
         ResetApiCallFlag();
         return;
     }
@@ -2094,7 +2094,7 @@ void MA_SMTP_Send(const char *pSendData, u16 sendSize, int endFlag)
     gMA.unk_116 = sendSize;
     gMA.unk_120 = endFlag;
     gMA.unk_124 += sendSize;
-    MA_TaskSet(TASK_UNK_0D, 0);
+    MA_TaskSet(TASK_SMTP_SEND, 0);
     ResetApiCallFlag();
 }
 
@@ -2127,7 +2127,7 @@ static void MATASK_SMTP_Send(void)
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_SMTP, 0);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         return;
     }
 
@@ -2197,7 +2197,7 @@ static void MATASK_SMTP_Send(void)
         break;
 
     case 3:
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 50:
@@ -2262,7 +2262,7 @@ static void MATASK_SMTP_Send(void)
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
         break;
     }
@@ -2271,24 +2271,24 @@ static void MATASK_SMTP_Send(void)
 void MA_POP3_Quit(void)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_15)) {
+    if (!MA_ApiPreExe(TASK_POP3_QUIT)) {
         ResetApiCallFlag();
         return;
     }
 
-    MA_TaskSet(TASK_UNK_15, 0);
+    MA_TaskSet(TASK_POP3_QUIT, 0);
     ResetApiCallFlag();
 }
 
 void MA_SMTP_Quit(void)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_0E)) {
+    if (!MA_ApiPreExe(TASK_SMTP_QUIT)) {
         ResetApiCallFlag();
         return;
     }
 
-    MA_TaskSet(TASK_UNK_0E, 0);
+    MA_TaskSet(TASK_SMTP_QUIT, 0);
     ResetApiCallFlag();
 }
 
@@ -2323,7 +2323,7 @@ static void MATASK_SMTP_POP3_Quit(void)
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         return;
     }
 
@@ -2363,7 +2363,7 @@ static void MATASK_SMTP_POP3_Quit(void)
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xf0:
@@ -2378,7 +2378,7 @@ static void MATASK_SMTP_POP3_Quit(void)
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
         break;
     }
@@ -2408,7 +2408,7 @@ void MA_POP3_Connect(const char *pUserID, const char *pPassword)
     char *end;
 
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_0F)) {
+    if (!MA_ApiPreExe(TASK_POP3_CONNECT)) {
         ResetApiCallFlag();
         return;
     }
@@ -2445,7 +2445,7 @@ void MA_POP3_Connect(const char *pUserID, const char *pPassword)
     MAU_strcat((char *)gMA.unk_120, pPassword);
     MAU_strcat((char *)gMA.unk_120, "\r\n");
 
-    MA_TaskSet(TASK_UNK_0F, 0);
+    MA_TaskSet(TASK_POP3_CONNECT, 0);
     ResetApiCallFlag();
 }
 
@@ -2485,7 +2485,7 @@ static void MATASK_POP3_Connect(void)
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_POP3, 0);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         return;
     }
 
@@ -2596,7 +2596,7 @@ static void MATASK_POP3_Connect(void)
         gMA.unk_92 = 5;
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_POP3 << MA_CONDITION_SHIFT;
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xf0:
@@ -2611,7 +2611,7 @@ static void MATASK_POP3_Connect(void)
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
         break;
     }
@@ -2620,14 +2620,14 @@ static void MATASK_POP3_Connect(void)
 void MA_POP3_Stat(u16 *pNum, u32 *pSize)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_10)) {
+    if (!MA_ApiPreExe(TASK_POP3_STAT)) {
         ResetApiCallFlag();
         return;
     }
 
     gMA.unk_112 = (u32)pNum;
     gMA.unk_116 = (u32)pSize;
-    MA_TaskSet(TASK_UNK_10, 0);
+    MA_TaskSet(TASK_POP3_STAT, 0);
     ResetApiCallFlag();
 }
 
@@ -2661,7 +2661,7 @@ static void MATASK_POP3_Stat(void)
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_POP3, 0);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         return;
     }
 
@@ -2703,7 +2703,7 @@ static void MATASK_POP3_Stat(void)
         break;
 
     case 2:
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xf0:
@@ -2718,7 +2718,7 @@ static void MATASK_POP3_Stat(void)
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
         break;
     }
@@ -2727,7 +2727,7 @@ static void MATASK_POP3_Stat(void)
 void MA_POP3_List(u16 mailNo, u32 *pSize)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_11)) {
+    if (!MA_ApiPreExe(TASK_POP3_LIST)) {
         ResetApiCallFlag();
         return;
     }
@@ -2742,7 +2742,7 @@ void MA_POP3_List(u16 mailNo, u32 *pSize)
     MAU_strcpy(gMA.unk_880, "LIST ");
     MAU_itoa(mailNo, &gMA.unk_880[MAU_strlen(gMA.unk_880)], 10);
     MAU_strcat(gMA.unk_880, "\r\n");
-    MA_TaskSet(TASK_UNK_11, 0);
+    MA_TaskSet(TASK_POP3_LIST, 0);
 
     ResetApiCallFlag();
 }
@@ -2777,7 +2777,7 @@ static void MATASK_POP3_List(void)
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_POP3, 0);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         return;
     }
 
@@ -2817,7 +2817,7 @@ static void MATASK_POP3_List(void)
         break;
 
     case 100:
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xf0:
@@ -2832,7 +2832,7 @@ static void MATASK_POP3_List(void)
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
         break;
     }
@@ -2841,7 +2841,7 @@ static void MATASK_POP3_List(void)
 void MA_POP3_Retr(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_12)) {
+    if (!MA_ApiPreExe(TASK_POP3_RETR)) {
         ResetApiCallFlag();
         return;
     }
@@ -2858,14 +2858,14 @@ void MA_POP3_Retr(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
         if (recvBufSize == 0) {
             gMA.unk_112 = recvBufSize;
             gMA.unk_120 = recvBufSize;
-            MA_TaskSet(TASK_UNK_12, 1);
+            MA_TaskSet(TASK_POP3_RETR, 1);
         } else if (gMA.prevbuf_size != 0 && gMA.prevbuf_size <= recvBufSize) {
             MAU_memcpy(pRecvData, gMA.prevbuf, gMA.prevbuf_size);
             *pRecvSize = gMA.prevbuf_size + *pRecvSize;
             gMA.prevbuf_size = 0;
 
             gMA.status |= STATUS_UNK_15;
-            MA_TaskSet(TASK_UNK_12, 1);
+            MA_TaskSet(TASK_POP3_RETR, 1);
         } else {
             MAU_memcpy(pRecvData, gMA.prevbuf, recvBufSize);
             gMA.prevbuf_size -= recvBufSize;
@@ -2892,7 +2892,7 @@ void MA_POP3_Retr(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
         MAU_itoa(mailNo, &gMA.unk_880[MAU_strlen(gMA.unk_880)], 10);
         MAU_strcat(gMA.unk_880, "\r\n");
 
-        MA_TaskSet(TASK_UNK_12, 0);
+        MA_TaskSet(TASK_POP3_RETR, 0);
     }
 
     ResetApiCallFlag();
@@ -2929,7 +2929,7 @@ static void MATASK_POP3_Retr(void)
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_POP3, 0);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         return;
     }
 
@@ -2988,7 +2988,7 @@ static void MATASK_POP3_Retr(void)
                     *(u16 *)gMA.unk_120 += gMA.unk_116;
                     gMA.unk_116 = 0;
                     gMA.condition |= MA_CONDITION_BUFFER_FULL;
-                    MA_TaskSet(TASK_UNK_00, 0);
+                    MA_TaskSet(TASK_NONE, 0);
                     gMA.condition |= MA_CONDITION_APIWAIT;
                     break;
                 }
@@ -3017,7 +3017,7 @@ static void MATASK_POP3_Retr(void)
         break;
 
     case 100:
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xf0:
@@ -3032,7 +3032,7 @@ static void MATASK_POP3_Retr(void)
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
         break;
     }
@@ -3041,7 +3041,7 @@ static void MATASK_POP3_Retr(void)
 void MA_POP3_Dele(u16 mailNo)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_13)) {
+    if (!MA_ApiPreExe(TASK_POP3_DELE)) {
         ResetApiCallFlag();
         return;
     }
@@ -3050,7 +3050,7 @@ void MA_POP3_Dele(u16 mailNo)
     MAU_itoa(mailNo, &gMA.unk_880[MAU_strlen(gMA.unk_880)], 10);
     MAU_strcat(gMA.unk_880, "\r\n");
 
-    MA_TaskSet(TASK_UNK_13, 0);
+    MA_TaskSet(TASK_POP3_DELE, 0);
     ResetApiCallFlag();
 }
 
@@ -3083,7 +3083,7 @@ static void MATASK_POP3_Dele(void)
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_POP3, 0);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         return;
     }
 
@@ -3120,7 +3120,7 @@ static void MATASK_POP3_Dele(void)
         break;
 
     case 2:
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xf0:
@@ -3135,7 +3135,7 @@ static void MATASK_POP3_Dele(void)
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
         break;
     }
@@ -3144,7 +3144,7 @@ static void MATASK_POP3_Dele(void)
 void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_12)) {
+    if (!MA_ApiPreExe(TASK_POP3_RETR)) {
         ResetApiCallFlag();
         return;
     }
@@ -3161,14 +3161,14 @@ void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
         if (recvBufSize == 0) {
             gMA.unk_112 = recvBufSize;
             gMA.unk_120 = recvBufSize;
-            MA_TaskSet(TASK_UNK_12, 1);
+            MA_TaskSet(TASK_POP3_RETR, 1);
         } else if (gMA.prevbuf_size != 0 && gMA.prevbuf_size <= recvBufSize) {
             MAU_memcpy(pRecvData, gMA.prevbuf, gMA.prevbuf_size);
             *pRecvSize = gMA.prevbuf_size + *pRecvSize;
             gMA.prevbuf_size = 0;
 
             gMA.status |= STATUS_UNK_15;
-            MA_TaskSet(TASK_UNK_12, 1);
+            MA_TaskSet(TASK_POP3_RETR, 1);
         } else {
             MAU_memcpy(pRecvData, gMA.prevbuf, recvBufSize);
             gMA.prevbuf_size -= recvBufSize;
@@ -3194,7 +3194,7 @@ void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
         MAU_itoa(mailNo, &gMA.unk_880[MAU_strlen(gMA.unk_880)], 10);
         MAU_strcat(gMA.unk_880, " 0\r\n");
 
-        MA_TaskSet(TASK_UNK_12, 0);
+        MA_TaskSet(TASK_POP3_RETR, 0);
     }
 
     ResetApiCallFlag();
@@ -3231,7 +3231,7 @@ static void MATASK_POP3_Head(void)
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_POP3, 0);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         return;
     }
 
@@ -3289,7 +3289,7 @@ static void MATASK_POP3_Head(void)
                     *(u16 *)gMA.unk_120 += gMA.unk_116;
                     gMA.unk_116 = 0;
                     gMA.condition |= MA_CONDITION_BUFFER_FULL;
-                    MA_TaskSet(TASK_UNK_00, 0);
+                    MA_TaskSet(TASK_NONE, 0);
                     gMA.condition |= MA_CONDITION_APIWAIT;
                     break;
                 }
@@ -3319,7 +3319,7 @@ static void MATASK_POP3_Head(void)
         break;
 
     case 100:
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xf0:
@@ -3334,7 +3334,7 @@ static void MATASK_POP3_Head(void)
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
         break;
     }
@@ -3428,12 +3428,12 @@ static const char strServerRoot[] = "/";
 
 void MA_HTTP_Get(const char *pURL, char *pHeadBuf, u16 headBufSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword)
 {
-    MA_HTTP_GetPost(pURL, pHeadBuf, headBufSize, NULL, 0, pRecvData, recvBufSize, pRecvSize, pUserID, pPassword, TASK_UNK_16);
+    MA_HTTP_GetPost(pURL, pHeadBuf, headBufSize, NULL, 0, pRecvData, recvBufSize, pRecvSize, pUserID, pPassword, TASK_HTTP_GET);
 }
 
 void MA_HTTP_Post(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword)
 {
-    MA_HTTP_GetPost(pURL, pHeadBuf, headBufSize, pSendData, sendSize, pRecvData, recvBufSize, pRecvSize, pUserID, pPassword, TASK_UNK_17);
+    MA_HTTP_GetPost(pURL, pHeadBuf, headBufSize, pSendData, sendSize, pRecvData, recvBufSize, pRecvSize, pUserID, pPassword, TASK_HTTP_POST);
 }
 
 #define param PARAM(PARAM_HTTP_GETPOST)
@@ -3506,10 +3506,10 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8
             }
         }
 
-        if ((server_unk_2 == 1 && param.task == TASK_UNK_17) ||
-                (server_unk_2 == 2 && param.task == TASK_UNK_16) ||
-                (server_unk_2 == 3 && param.task == TASK_UNK_17) ||
-                (server_unk_2 == 4 && param.task == TASK_UNK_16)) {
+        if ((server_unk_2 == 1 && param.task == TASK_HTTP_POST) ||
+                (server_unk_2 == 2 && param.task == TASK_HTTP_GET) ||
+                (server_unk_2 == 3 && param.task == TASK_HTTP_POST) ||
+                (server_unk_2 == 4 && param.task == TASK_HTTP_GET)) {
             MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
             ResetApiCallFlag();
             return;
@@ -4323,7 +4323,7 @@ static void MATASK_HTTP_GetPost(void)
                     *param.pRecvSize += param.recvBufSize;
                     gMA.unk_124 = 0;
                     gMA.condition |= MA_CONDITION_BUFFER_FULL;
-                    MA_TaskSet(TASK_UNK_00, 0);
+                    MA_TaskSet(TASK_NONE, 0);
                     gMA.condition |= MA_CONDITION_APIWAIT;
                     break;
                 }
@@ -4354,7 +4354,7 @@ static void MATASK_HTTP_GetPost(void)
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
         param.unk_20 = 0;
         break;
@@ -4363,7 +4363,7 @@ static void MATASK_HTTP_GetPost(void)
         gMA.unk_92 = 3;
         gMA.condition &= ~MA_CONDITION_MASK;
         gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
         param.unk_20 = 0;
         if (gMA.status & STATUS_UNK_16) {
@@ -4382,21 +4382,21 @@ static void CopyEEPROMString(char *dest, char *src, int size)
     if (i == size) *dest = '\0';
 }
 
-static void CopyEEPROMData(int unk_1, char *dest)
+static void CopyEEPROMData(int task, char *dest)
 {
-    switch (unk_1) {  // MAGIC
-    case 0x18:
+    switch (task) {
+    case TASK_GETTEL:
         MAU_DecodeEEPROMTelNo(gMA.eeprom_telno, dest);
         CopyEEPROMString(&dest[EEPROM_TELNO_SIZE * 2 + 1],
                 gMA.eeprom_unk_1275, sizeof(gMA.eeprom_unk_1275));
         break;
 
-    case 0x19:
+    case TASK_GETUSERID:
         CopyEEPROMString(dest,
                 gMA.eeprom_unk_1161, sizeof(gMA.eeprom_unk_1161));
         break;
 
-    case 0x1a:
+    case TASK_GETMAILID:
         CopyEEPROMString(dest,
                 gMA.eeprom_unk_1193, sizeof(gMA.eeprom_unk_1193));
         break;
@@ -4499,7 +4499,7 @@ static void MATASK_GetEEPROMData(void)
         gMA.condition &= 0xff;
         gMA.condition = gMA.condition;
 
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xfa:
@@ -4528,7 +4528,7 @@ static void MATASK_GetEEPROMData(void)
         gMA.condition = gMA.condition;
 
         MA_SetApiError(gMA.task_error, gMA.error_unk_94);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
     }
 }
@@ -4536,14 +4536,14 @@ static void MATASK_GetEEPROMData(void)
 void MA_EEPROMRead(u8 *unk_1)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_1C)) {
+    if (!MA_ApiPreExe(TASK_EEPROM_READ)) {
         ResetApiCallFlag();
         return;
     }
 
     gMA.unk_112 = (u32)unk_1;
     *(vu32 *)REG_TM3CNT = 0;
-    MA_TaskSet(TASK_UNK_1C, 0);
+    MA_TaskSet(TASK_EEPROM_READ, 0);
 
     ResetApiCallFlag();
 
@@ -4625,7 +4625,7 @@ static void MATASK_EEPROM_Read(void)
         gMA.condition &= 0xff;
         gMA.condition = gMA.condition;
 
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xfa:
@@ -4654,7 +4654,7 @@ static void MATASK_EEPROM_Read(void)
         gMA.condition = gMA.condition;
 
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
     }
 }
@@ -4662,14 +4662,14 @@ static void MATASK_EEPROM_Read(void)
 void MA_EEPROMWrite(u8 *unk_1)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_1D)) {
+    if (!MA_ApiPreExe(TASK_EEPROM_WRITE)) {
         ResetApiCallFlag();
         return;
     }
 
     gMA.unk_112 = (u32)unk_1;
     *(vu32 *)REG_TM3CNT = 0;
-    MA_TaskSet(TASK_UNK_1D, 0);
+    MA_TaskSet(TASK_EEPROM_WRITE, 0);
 
     ResetApiCallFlag();
 
@@ -4749,7 +4749,7 @@ static void MATASK_EEPROM_Write(void)
         gMA.condition &= 0xff;
         gMA.condition = gMA.condition;
 
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
 
     case 0xfa:
@@ -4778,7 +4778,7 @@ static void MATASK_EEPROM_Write(void)
         gMA.condition = gMA.condition;
 
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
-        MA_TaskSet(TASK_UNK_00, 0);
+        MA_TaskSet(TASK_NONE, 0);
         break;
     }
 }
@@ -4786,23 +4786,23 @@ static void MATASK_EEPROM_Write(void)
 void MA_GetTel(MA_TELDATA *pTelData)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_18)) {
+    if (!MA_ApiPreExe(TASK_GETTEL)) {
         ResetApiCallFlag();
         return;
     }
 
     MAU_memset(pTelData, 36, 0);  // MAGIC
     if (gMA.unk_101 == 1) {
-        CopyEEPROMData(TASK_UNK_18, (char *)pTelData);
+        CopyEEPROMData(TASK_GETTEL, (char *)pTelData);
         ResetApiCallFlag();
         gMA.condition &= ~MA_CONDITION_APIWAIT;
         return;
     }
 
-    gMA.unk_112 = TASK_UNK_18;
+    gMA.unk_112 = TASK_GETTEL;
     gMA.unk_116 = (u32)pTelData;
     *(vu32 *)REG_TM3CNT = 0;
-    MA_TaskSet(TASK_UNK_1B, 0);
+    MA_TaskSet(TASK_GETEEPROMDATA, 0);
     gMA.condition |= MA_CONDITION_APIWAIT;
     ResetApiCallFlag();
 
@@ -4814,23 +4814,23 @@ void MA_GetTel(MA_TELDATA *pTelData)
 void MA_GetUserID(char *pUserIDBuf)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_19)) {
+    if (!MA_ApiPreExe(TASK_GETUSERID)) {
         ResetApiCallFlag();
         return;
     }
 
     if (gMA.unk_101 == 1) {
-        CopyEEPROMData(TASK_UNK_19, pUserIDBuf);
+        CopyEEPROMData(TASK_GETUSERID, pUserIDBuf);
         ResetApiCallFlag();
         gMA.condition &= ~MA_CONDITION_APIWAIT;
         return;
     }
 
     MAU_memset(pUserIDBuf, 33, 0);  // MAGIC
-    gMA.unk_112 = TASK_UNK_19;
+    gMA.unk_112 = TASK_GETUSERID;
     gMA.unk_116 = (u32)pUserIDBuf;
     *(vu32 *)REG_TM3CNT = 0;
-    MA_TaskSet(TASK_UNK_1B, 0);
+    MA_TaskSet(TASK_GETEEPROMDATA, 0);
     gMA.condition |= MA_CONDITION_APIWAIT;
     ResetApiCallFlag();
 
@@ -4842,23 +4842,23 @@ void MA_GetUserID(char *pUserIDBuf)
 void MA_GetMailID(char *pBufPtr)
 {
     SetApiCallFlag();
-    if (!MA_ApiPreExe(TASK_UNK_1A)) {
+    if (!MA_ApiPreExe(TASK_GETMAILID)) {
         ResetApiCallFlag();
         return;
     }
 
     MAU_memset(pBufPtr, 31, 0);  // MAGIC
     if (gMA.unk_101 == 1) {
-        CopyEEPROMData(TASK_UNK_1A, pBufPtr);
+        CopyEEPROMData(TASK_GETMAILID, pBufPtr);
         ResetApiCallFlag();
         gMA.condition &= ~MA_CONDITION_APIWAIT;
         return;
     }
 
-    gMA.unk_112 = TASK_UNK_1A;
+    gMA.unk_112 = TASK_GETMAILID;
     gMA.unk_116 = (u32)pBufPtr;
     *(vu32 *)REG_TM3CNT = 0;
-    MA_TaskSet(TASK_UNK_1B, 0);
+    MA_TaskSet(TASK_GETEEPROMDATA, 0);
     gMA.condition |= MA_CONDITION_APIWAIT;
     ResetApiCallFlag();
 
@@ -4919,17 +4919,17 @@ static void (*const taskProcTable[])(void) = {
 
 void MAAPI_Main(void)
 {
-    if (gMA.task != TASK_UNK_01 &&
-            gMA.task != TASK_UNK_02 &&
-            gMA.task != TASK_UNK_03 &&
-            gMA.task != TASK_UNK_04 &&
-            gMA.task != TASK_UNK_08 &&
-            gMA.task != TASK_UNK_09 &&
-            gMA.task != TASK_UNK_05 &&
-            gMA.task != TASK_UNK_1B &&
-            gMA.task != TASK_UNK_1C &&
-            gMA.task != TASK_UNK_1D &&
-            gMA.task != TASK_UNK_1E &&
+    if (gMA.task != TASK_INITLIBRARY &&
+            gMA.task != TASK_INITLIBRARY2 &&
+            gMA.task != TASK_TELSERVER &&
+            gMA.task != TASK_TEL &&
+            gMA.task != TASK_CONDITION &&
+            gMA.task != TASK_CONDITION2 &&
+            gMA.task != TASK_RECEIVE &&
+            gMA.task != TASK_GETEEPROMDATA &&
+            gMA.task != TASK_EEPROM_READ &&
+            gMA.task != TASK_EEPROM_WRITE &&
+            gMA.task != TASK_STOP &&
             !(gMA.status & STATUS_UNK_0)) {
         return;
     }
