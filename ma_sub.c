@@ -10,7 +10,7 @@ int MAU_strlen(const char *str)
     static const char *eos;
 
     eos = str;
-    while (*eos++ != '\0');
+    while (*eos++ != '\0') {}
     return (u16)(eos - str - 1);
 }
 
@@ -99,8 +99,8 @@ const char *MAU_strrchr(const char *str, int c)
 
     string = str;
     start = str;
-    while (*string++ != '\0');
-    while (--string != start && *string != (char)c);
+    while (*string++ != '\0') {}
+    while (--string != start && *string != (char)c) {}
     if (*string == (char)c) return string;
     return NULL;
 }

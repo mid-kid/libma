@@ -93,7 +93,7 @@ enum tasks {
     TASK_TCP_DISCONNECT,
     TASK_TCP_SENDRECV,
     TASK_GETHOSTADDRESS,
-    TASK_GETLOCALADDRESS
+    TASK_GETLOCALADDRESS,
 };
 
 enum ma_sio_modes {
@@ -250,6 +250,6 @@ extern MA_VAR gMA;
 
 #include <stddef.h>
 #define PARAM_BASE (offsetof(MA_VAR, unk_112))
-#define PARAM(type) ((*((struct { char _[PARAM_BASE]; type p; } *)&gMA)).p)
+#define PARAM(type) ((*((struct {char _[PARAM_BASE]; type p;} *)&gMA)).p)
 
 #endif // _MA_VAR_H

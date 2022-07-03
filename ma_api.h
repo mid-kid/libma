@@ -36,8 +36,11 @@ void MA_POP3_List(u16 mailNo, u32 *pSize);
 void MA_POP3_Retr(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize);
 void MA_POP3_Dele(u16 mailNo);
 void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize);
-void MA_HTTP_Get(const char *pURL, char *pHeadBuf, u16 headBufSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword);
-void MA_HTTP_Post(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword);
+void MA_HTTP_Get(const char *pURL, char *pHeadBuf, u16 headBufSize, u8 *pRecvData,
+    u16 recvBufSize, u16 *pRecvSize, const char *pUserID, const char *pPassword);
+void MA_HTTP_Post(const char *pURL, char *pHeadBuf, u16 headBufSize,
+    const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize,
+    u16 *pRecvSize, const char *pUserID, const char *pPassword);
 void MA_EEPROMRead(u8 *unk_1);
 void MA_EEPROMWrite(u8 *unk_1);
 void MA_GetTel(MA_TELDATA *pTelData);
@@ -49,4 +52,4 @@ void MAAPI_Main(void);
 u16 MAAPI_GetConditionFlag(void);
 u8 MAAPI_ErrorCheck(u16 *pProtocolError);
 
-#endif
+#endif // _MA_API

@@ -3,7 +3,8 @@
 #include "ma_sub.h"
 #include "md5.h"
 
-static void gb_MakeSecretCode(const char *key1, const char *key2, const char *key3, u8 *out);
+static void gb_MakeSecretCode(const char *key1, const char *key2,
+    const char *key3, u8 *out);
 static void gb_OutSecretCode(int length, const char *string, u8 *out);
 static void gb_CreateMD5Hash(u8 *out, const char *key1, const char *key3);
 static void gb_BitHalfMove(u8 *out, const u8 *in);
@@ -15,7 +16,8 @@ static void Base64_decode(int length, const char *string, u8 *out);
 static int i, j, k;
 static int len;
 
-void MA_MakeAuthorizationCode(const char *key1, const char *key2, const char *key3, char *out)
+void MA_MakeAuthorizationCode(const char *key1, const char *key2,
+    const char *key3, char *out)
 {
     static u8 seq_bin[0x24];
     static char seq_text[0x31];
@@ -35,7 +37,8 @@ void MA_MakeAuthorizationCode(const char *key1, const char *key2, const char *ke
     MAU_strcpy(out + 0x2c, seq_text);
 }
 
-static void gb_MakeSecretCode(const char *key1, const char *key2, const char *key3, u8 *out)
+static void gb_MakeSecretCode(const char *key1, const char *key2,
+    const char *key3, u8 *out)
 {
     static u8 hash[0x11];
     static int j;
@@ -82,28 +85,28 @@ static void gb_BitHalfMove(u8 *out, const u8 *in)
 
     for (i = 0; i < half; i++) {
         j = i * 2;
-        out[i] = out[i] |
-            (in[j] & 0x40) << 1 |
-            (in[j] & 0x10) << 2 |
-            (in[j] & 0x04) << 3 |
-            (in[j] & 0x01) << 4 |
-            (in[j + 1] & 0x40) >> 3 |
-            (in[j + 1] & 0x10) >> 2 |
-            (in[j + 1] & 0x04) >> 1 |
-            (in[j + 1] & 0x01) >> 0;
+        out[i] = out[i]
+            | (in[j] & 0x40) << 1
+            | (in[j] & 0x10) << 2
+            | (in[j] & 0x04) << 3
+            | (in[j] & 0x01) << 4
+            | (in[j + 1] & 0x40) >> 3
+            | (in[j + 1] & 0x10) >> 2
+            | (in[j + 1] & 0x04) >> 1
+            | (in[j + 1] & 0x01) >> 0;
     }
 
     for (; i < 0x24; i++) {
         j = (i - half) * 2;
-        out[i] = out[i] |
-            (in[j] & 0x80) << 0 |
-            (in[j] & 0x20) << 1 |
-            (in[j] & 0x08) << 2 |
-            (in[j] & 0x02) << 3 |
-            (in[j + 1] & 0x80) >> 4 |
-            (in[j + 1] & 0x20) >> 3 |
-            (in[j + 1] & 0x08) >> 2 |
-            (in[j + 1] & 0x02) >> 1;
+        out[i] = out[i]
+            | (in[j] & 0x80) << 0
+            | (in[j] & 0x20) << 1
+            | (in[j] & 0x08) << 2
+            | (in[j] & 0x02) << 3
+            | (in[j + 1] & 0x80) >> 4
+            | (in[j + 1] & 0x20) >> 3
+            | (in[j + 1] & 0x08) >> 2
+            | (in[j + 1] & 0x02) >> 1;
     }
 }
 
@@ -119,10 +122,10 @@ static void gb_BitChangeAndRotation(u8 *out, u8 *in)
 
         c = *outp;
         c ^= *inp;
-        buf = (c & 0xb6) |
-            (c & 0x08) << 3 |
-            (c & 0x01) << 3 |
-            (c & 0x40) >> 6;
+        buf = (c & 0xb6)
+            | (c & 0x08) << 3
+            | (c & 0x01) << 3
+            | (c & 0x40) >> 6;
         *outp = buf;
     }
 }
@@ -137,7 +140,8 @@ static void CalcValueMD5(u8 *data, u32 size, u8 *out)
     MD5Final(out, &context);
 }
 
-static const char xchg[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const char xchg[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 static void Base64_encode(int length, u8 *data, char *out)
 {
@@ -155,7 +159,7 @@ static void Base64_encode(int length, u8 *data, char *out)
             code = (code << 8) | *data++;
             len++;
         }
-        brk:
+    brk:
 
         // Write four 6-bit symbols into the resulting string
         for (k = 0; k < 4; k++) {

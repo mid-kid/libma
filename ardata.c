@@ -1,8 +1,8 @@
-#include <stdbool.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <ctype.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 struct buf {
     size_t size;
@@ -162,7 +162,8 @@ void replace_record(char *data, struct arrecord *records, unsigned record_count)
     }
 }
 
-bool parse_arfile(struct buf *arfile, struct arrecord *records, unsigned record_count)
+bool parse_arfile(struct buf *arfile, struct arrecord *records,
+    unsigned record_count)
 {
     char *p, *e;
 

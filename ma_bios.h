@@ -25,8 +25,10 @@ void MABIOS_CheckStatus(MA_BUF *data_recv);
 void MABIOS_CheckStatus2(MA_BUF *data_recv);
 void MABIOS_ChangeClock(u8 mode);
 void MABIOS_EEPROM_Read(MA_BUF *data_recv, u8 offset, u8 size);
-void MABIOS_EEPROM_Write(MA_BUF *data_recv, u8 offset, const u8 *data_send, u8 size);
-void MABIOS_PPPConnect(MA_BUF *data_recv, char *userid, char *password, u8 *dns1, u8 *dns2);
+void MABIOS_EEPROM_Write(MA_BUF *data_recv, u8 offset, const u8 *data_send,
+    u8 size);
+void MABIOS_PPPConnect(MA_BUF *data_recv, char *userid, char *password,
+    u8 *dns1, u8 *dns2);
 void MABIOS_PPPDisconnect(void);
 void MABIOS_TCPConnect(MA_BUF *data_recv, u8 *ip, u16 port);
 void MABIOS_TCPDisconnect(MA_BUF *data_recv, u8 socket);
@@ -44,4 +46,4 @@ void MA_IntrTimer(void);
 void MA_Bios_disconnect(void);
 void MA_IntrSerialIO(void);
 
-#endif
+#endif // _MA_BIOS

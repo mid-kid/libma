@@ -1,0 +1,21 @@
+IndentWidth: 4
+SpacesBeforeTrailingComments: 2
+BreakBeforeBraces: Linux
+BreakBeforeBinaryOperators: NonAssignment
+ReferenceAlignment: Right
+AlignTrailingComments: False
+AlignEscapedNewlines: DontAlign
+AlignAfterOpenBracket: DontAlign
+AllowShortBlocksOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+AllowShortLoopsOnASingleLine: True
+AllowShortFunctionsOnASingleLine: None
+SpaceAroundPointerQualifiers: Both
+
+IncludeCategories:
+  - Regex: '^<.*>$'
+    SortPriority: -1
+
+PenaltyBreakOpenParenthesis: 20
+PenaltyBreakAssignment: 20
+PenaltyExcessCharacter: 10
