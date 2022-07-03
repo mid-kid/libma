@@ -1,5 +1,4 @@
 #include "ma_ango.h"
-#include "libma.h"
 
 #include "ma_sub.h"
 #include "md5.h"
@@ -7,7 +6,7 @@
 static void gb_MakeSecretCode(const char *key1, const char *key2, const char *key3, u8 *out);
 static void gb_OutSecretCode(int length, const char *string, u8 *out);
 static void gb_CreateMD5Hash(u8 *out, const char *key1, const char *key3);
-static void gb_BitHalfMove(u8 *out, u8 *in);
+static void gb_BitHalfMove(u8 *out, const u8 *in);
 static void gb_BitChangeAndRotation(u8 *out, u8 *in);
 static void CalcValueMD5(u8 *data, u32 size, u8 *out);
 static void Base64_encode(int length, u8 *data, char *out);
@@ -39,7 +38,7 @@ void MA_MakeAuthorizationCode(const char *key1, const char *key2, const char *ke
 static void gb_MakeSecretCode(const char *key1, const char *key2, const char *key3, u8 *out)
 {
     static u8 hash[0x11];
-    static u32 j;
+    static int j;
 
     MAU_memset(hash, 0, 0x11);
     gb_CreateMD5Hash(hash, key1, key3);
@@ -64,7 +63,7 @@ static void gb_OutSecretCode(int length, const char *string, u8 *out)
 
 static void gb_CreateMD5Hash(u8 *out, const char *key1, const char *key3)
 {
-    static u8 buf[100];
+    static char buf[100];
 
     MAU_memset(buf, 0, sizeof(buf));
     MAU_memcpy(buf, key1, 0x30);
@@ -74,7 +73,7 @@ static void gb_CreateMD5Hash(u8 *out, const char *key1, const char *key3)
     CalcValueMD5(buf, len, out);
 }
 
-static void gb_BitHalfMove(u8 *out, u8 *in)
+static void gb_BitHalfMove(u8 *out, const u8 *in)
 {
     static int half;
 

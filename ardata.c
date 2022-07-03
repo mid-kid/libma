@@ -121,6 +121,7 @@ struct arrecord *parse_ardata(struct buf *ardata, unsigned count)
     unsigned i;
     size_t offs = 0;
 
+    if (!count) return NULL;
     struct arrecord *records = malloc(sizeof(struct arrecord) * count);
     if (!records) return NULL;
 
@@ -172,7 +173,6 @@ bool parse_arfile(struct buf *arfile, struct arrecord *records, unsigned record_
     e = arfile->data + arfile->size;
     while (p < e) {
         char size_str[11];
-        unsigned size = 0;
 
         if (*p == '\n') break;
         if (p + 60 >= e) return false;
@@ -185,8 +185,7 @@ bool parse_arfile(struct buf *arfile, struct arrecord *records, unsigned record_
         p += 10;
         if (*p++ != '`') return false;
         if (*p++ != '\n') return false;
-        sscanf(size_str, "%u", &size);
-        p += size;
+        p += strtoul(size_str, NULL, 10);
     }
 
     return true;
@@ -209,17 +208,19 @@ int main(int argc, char *argv[])
 
     record_count = file_lines(ardata);
     records = parse_ardata(ardata, record_count);
+    free(ardata);
     if (!records) return 1;
 
     if (!parse_arfile(arfile, records, record_count)) {
         fprintf(stderr, "Error parsing %s\n", argv[1]);
+        free(records);
+        free(arfile);
         return 1;
     }
 
     file_write(argv[1], arfile);
 
     free(records);
-    free(ardata);
     free(arfile);
 
     return 0;

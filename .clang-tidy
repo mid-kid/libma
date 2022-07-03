@@ -1,0 +1,3 @@
+Checks: '
+  -bugprone-branch-clone,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling'

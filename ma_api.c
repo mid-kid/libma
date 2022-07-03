@@ -12,7 +12,7 @@
 
 static void MA_SetApiError(u8 error, u16 unk_2);
 static int ApiValisStatusCheck(u8 task);
-static int MA_ApiPreExe(u8 unk_1);
+static int MA_ApiPreExe(u8 task);
 static void MakeEndLineBuffer(u8 *end, int size);
 static int IsEndMultiLine(void);
 static void InitPrevBuf(void);
@@ -25,8 +25,8 @@ static void MATASK_TCP_Connect(void);
 static void MATASK_TCP_Disconnect(void);
 static void MATASK_TCP_SendRecv(void);
 static void MATASK_GetHostAddress(void);
-static int EEPROMSumCheck(u8 *data);
-static int EEPROMRegistrationCheck(u8 *data);
+static int EEPROMSumCheck(const u8 *data);
+static int EEPROMRegistrationCheck(const u8 *data);
 static void MATASK_TelServer(void);
 static void MATASK_Tel(void);
 static void MATASK_Receive(void);
@@ -34,7 +34,7 @@ static void MATASK_P2P(void);
 static void MA_ConditionMain(u8 *pCondition, int task);
 static void MATASK_Condition(void);
 static void MATASK_Offline(void);
-static int CheckSMTPResponse(char *response);
+static int CheckSMTPResponse(const char *response);
 static void MATASK_SMTP_Connect(void);
 static void MATASK_SMTP_Sender(void);
 static void MATASK_SMTP_Send(void);
@@ -848,7 +848,7 @@ void MA_GetLocalAddress(u8 *address)
     gMA.condition &= ~MA_CONDITION_APIWAIT;
 }
 
-static int EEPROMSumCheck(u8 *data)
+static int EEPROMSumCheck(const u8 *data)
 {
     static u16 tmp;
     static u16 sum;
@@ -867,7 +867,7 @@ static int EEPROMSumCheck(u8 *data)
     }
 }
 
-static int EEPROMRegistrationCheck(u8 *data)
+static int EEPROMRegistrationCheck(const u8 *data)
 {
     if (data[0] == 'M' && data[1] == 'A') {
         return TRUE;
@@ -1691,7 +1691,7 @@ static void MATASK_Offline(void)
     }
 }
 
-static int CheckSMTPResponse(char *response)
+static int CheckSMTPResponse(const char *response)
 {
     if ((response[0] >= '0' && response[0] <= '9') &&
             (response[1] >= '0' && response[1] <= '9') &&
@@ -1810,7 +1810,7 @@ static void MATASK_SMTP_Connect(void)
             if (gMA.error_unk_94 == 220) {
                 MAU_strcpy(gMA.unk_880, "HELO ");
                 cp1 = &gMA.unk_880[5];
-                cp2 = (u8 *)gMA.unk_112;
+                cp2 = (char *)gMA.unk_112;
                 while (*cp2 && *cp2 != '@') *cp1++ = *cp2++;
                 *cp1 = '\0';
                 MAU_strcat(gMA.unk_880, "\r\n");
@@ -2959,8 +2959,8 @@ static void MATASK_POP3_Retr(void)
 
                     pop3res = CheckPOP3Response(gMA.prevbuf);
                     if (pop3res == 0) {
-                        dataLen -= cp - (char *)&gMA.buffer_unk_480.data[1];
-                        gMA.buffer_unk_480.data = (char *)&cp[-1];
+                        dataLen -= (int)cp - (int)&gMA.buffer_unk_480.data[1];
+                        gMA.buffer_unk_480.data = (u8 *)&cp[-1];
                         gMA.unk_140 = 1;
                     } else if (pop3res == 1) {
                         gMA.task_error = MAAPIE_POP3;
@@ -3260,8 +3260,8 @@ static void MATASK_POP3_Head(void)
                     ConcatPrevBuf(&gMA.buffer_unk_480.data[1], cp - (char *)&gMA.buffer_unk_480.data[1]);
                     pop3res = CheckPOP3Response(gMA.prevbuf);
                     if (pop3res == 0) {
-                        dataLen -= cp - (char *)&gMA.buffer_unk_480.data[1];
-                        gMA.buffer_unk_480.data = (char *)&cp[-1];
+                        dataLen -= (int)cp - (int)&gMA.buffer_unk_480.data[1];
+                        gMA.buffer_unk_480.data = (u8 *)&cp[-1];
                         gMA.unk_140 = 1;
                     } else if (pop3res == 1) {
                         gMA.task_error = MAAPIE_POP3;
@@ -3365,7 +3365,7 @@ static const char *ExtractServerName(char *pServerName, const char *pURL, u8 *un
         MAU_strcpy(pServerName, pURL);
         *unk_3 = 0;
     } else {
-        len = cp - pURL;
+        len = (int)(cp - pURL);
         if (len > 0xff) {
             *pServerName = '\0';
             return NULL;
@@ -3601,10 +3601,10 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize, const u8
 
 #define ConcatUserAgent_WriteAscii(dest, code) \
 { \
-    if (code < 0x20 || code >= 0x7f) { \
-        *dest = '0'; \
+    if ((code) < 0x20 || (code) >= 0x7f) { \
+        *(dest) = '0'; \
     } else { \
-        *dest = code; \
+        *(dest) = (code); \
     } \
 }
 

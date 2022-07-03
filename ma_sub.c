@@ -1,7 +1,6 @@
 #include "ma_sub.h"
 #include "libma.h"
 
-#include <stdlib.h>
 #include "ma_var.h"
 
 static void xtoa(unsigned num, char *dest, unsigned base, int negative);
@@ -46,7 +45,7 @@ const char *MAU_strncpy_CRLF_LF(char *dest, const char *src, int size)
     if (size == 0) return NULL;
 
     while (size != 0) {
-        if ((src[0] == '\r') && (src[1] == '\n')) {
+        if (src[0] == '\r' && src[1] == '\n') {
             *dest = '\0';
             return src + 2;
         }
@@ -169,7 +168,7 @@ void MAU_memcpy(void *dest, const void *src, int size)
 
 void MAU_memset(void *dest, u8 c, int size)
 {
-    char *d = dest;
+    u8 *d = dest;
 
     while (size--) *d++ = c;
 }

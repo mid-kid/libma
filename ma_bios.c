@@ -1079,7 +1079,7 @@ void MA_SendRetry(void)
 void MA_RecvRetry(void)
 {
     MA_InitIoBuffer(&gMA.iobuf_packet_recv, gMA.iobuf_packet_recv.writeptr, 0, 1);
-    gMA.recv_garbage_counter = 0;
+    gMA.recv_rubbish_counter = 0;
     gMA.status &= ~STATUS_UNK_3;
     gMA.intr_sio_mode = 2;
     gMA.iobuf_packet_send.state = 0;
@@ -1281,7 +1281,7 @@ int MA_ProcessCheckStatusResponse(u8 response)
 
     case 5:
     case 4:
-        switch(gMA.unk_92) {  // MAGIC
+        switch (gMA.unk_92) {  // MAGIC
         case 3:
             ret = MA_CONDITION_PPP;
             break;
@@ -1682,7 +1682,7 @@ static void MA_IntrSio_Send(void)
         MA_InitIoBuffer(&gMA.iobuf_footer, (u8 *)MaPacketData_PreStart, 4, 0);
     }
     MA_InitIoBuffer(&gMA.iobuf_packet_recv, gMA.buffer_recv_ptr->data, 0, 1);
-    gMA.recv_garbage_counter = 0;
+    gMA.recv_rubbish_counter = 0;
     gMA.status &= ~STATUS_UNK_3;
     gMA.intr_sio_mode = 2;
     gMA.iobuf_packet_send.state = 0;
@@ -1697,9 +1697,9 @@ static void MA_IntrSio_Recv(u8 byte)
     static int amari;
 
     if (gMA.sio_mode == MA_SIO_BYTE) {
-        recvByte = *(vu8 *)REG_SIODATA8;
+        recvByte = ((vu8 *)REG_SIODATA8)[0];
     } else {
-        recvByte = *(vu8 *)(REG_SIODATA32 + 3 - byte);
+        recvByte = ((vu8 *)REG_SIODATA32)[3 - byte];
     }
 
     switch(gMA.iobuf_packet_recv.state) {  // MAGIC
@@ -1723,10 +1723,10 @@ static void MA_IntrSio_Recv(u8 byte)
             // Adapter is still busy, keep waiting
             if (recvByte == MAPROT_IDLE_SLAVE) break;
 
-            // Allow up to 20 garbage bytes to be received
-            if (++gMA.recv_garbage_counter <= 20) break;
+            // Allow up to 20 rubbish bytes to be received
+            if (++gMA.recv_rubbish_counter <= 20) break;
             MA_SetError(MAAPIE_MA_NOT_FOUND);
-            gMA.recv_garbage_counter = 0;
+            gMA.recv_rubbish_counter = 0;
             break;
 
         case 1:
@@ -1737,7 +1737,7 @@ static void MA_IntrSio_Recv(u8 byte)
             } else {
                 MA_SetError(MAAPIE_MA_NOT_FOUND);
             }
-            gMA.recv_garbage_counter = 0;
+            gMA.recv_rubbish_counter = 0;
             break;
         }
         break;
