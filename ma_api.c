@@ -1,11 +1,8 @@
 #include "ma_api.h"
-#include "libma.h"
 
-#include <stddef.h>
 #include "ma_ango.h"
 #include "ma_bios.h"
 #include "ma_sub.h"
-#include "ma_var.h"
 
 #define CASSETTE_INITIAL_CODE (ROM_BANK0 + 0xac)
 #define CASSETTE_VERSION_NO (ROM_BANK0 + 0xbc)

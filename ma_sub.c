@@ -1,6 +1,6 @@
 #include "ma_sub.h"
-#include "libma.h"
 
+#include <AgbDefine.h>
 #include "ma_var.h"
 
 static void xtoa(unsigned num, char *dest, unsigned base, int negative);

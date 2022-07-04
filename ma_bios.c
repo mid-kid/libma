@@ -1,10 +1,7 @@
 #include "ma_bios.h"
-#include "libma.h"
 
-#include <stddef.h>
 #include "ma_api.h"
 #include "ma_sub.h"
-#include "ma_var.h"
 
 #define MAPROT_IDLE_SLAVE 0xd2
 #define MAPROT_IDLE_MASTER 0x4b

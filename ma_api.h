@@ -1,7 +1,6 @@
 #ifndef _MA_API
 #define _MA_API
 
-#include <AgbTypes.h>
 #include "libma.h"
 
 void SetApiCallFlag(void);
