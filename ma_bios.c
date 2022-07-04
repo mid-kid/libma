@@ -533,7 +533,7 @@ void MABIOS_End(void)
     gMA.status |= STATUS_UNK_1;
 }
 
-void MABIOS_Tel(u8 calltype, char *number)
+void MABIOS_Tel(u8 calltype, const char *number)
 {
     static int telNoLen;
 
@@ -787,8 +787,8 @@ void MABIOS_EEPROM_Write(MA_BUF *data_recv, u8 offset, const u8 *data_send,
     gMA.status |= STATUS_UNK_1;
 }
 
-void MABIOS_PPPConnect(MA_BUF *data_recv, char *userid, char *password,
-    u8 *dns1, u8 *dns2)
+void MABIOS_PPPConnect(MA_BUF *data_recv, const char *userid,
+    const char *password, u8 *dns1, u8 *dns2)
 {
     static u8 *pData;
     static int dataLen;
@@ -1141,11 +1141,13 @@ static void MA_IntrTimer_SIORecv(void)
 
 static void MA_IntrTimer_SIOIdle(void)
 {
-#define param gMA.param.unk
-    if (gMA.task != TASK_NONE && gMA.task != TASK_SDATA
+#define param gMA.param.sdata
+    if (gMA.task != TASK_NONE
+        && gMA.task != TASK_SDATA
         && gMA.task != TASK_GDATA) {
-        return;  // MAGIC
+        return;
     }
+
     if (!(gMA.status & STATUS_UNK_0)) return;
     gMA.counter++;
 
@@ -1156,9 +1158,10 @@ static void MA_IntrTimer_SIOIdle(void)
             (&gMA.buffer_unk_480)->size = 0;
             (&gMA.buffer_unk_480)->data = gMA.unk_212;
             if (gMA.status & STATUS_UNK_13) {
-                MABIOS_Data2(&gMA.buffer_unk_480, (u8 *)param.unk_1, param.unk_2);
-                param.unk_1 = 0;
-                param.unk_2 = 0;
+                MABIOS_Data2(&gMA.buffer_unk_480, param.pSendData,
+                    param.sendSize);
+                param.pSendData = NULL;
+                param.sendSize = 0;
                 gMA.status |= STATUS_UNK_10;
             } else {
                 MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, 0xff);

@@ -16,7 +16,7 @@ void MABIOS_Null(void);
 void MABIOS_Start(void);
 void MABIOS_Start2(void);
 void MABIOS_End(void);
-void MABIOS_Tel(u8 calltype, char *number);
+void MABIOS_Tel(u8 calltype, const char *number);
 void MABIOS_Offline(void);
 void MABIOS_WaitCall(void);
 void MABIOS_Data(MA_BUF *data_recv, const u8 *data_send, u8 size, u8 socket);
@@ -27,8 +27,8 @@ void MABIOS_ChangeClock(u8 mode);
 void MABIOS_EEPROM_Read(MA_BUF *data_recv, u8 offset, u8 size);
 void MABIOS_EEPROM_Write(MA_BUF *data_recv, u8 offset, const u8 *data_send,
     u8 size);
-void MABIOS_PPPConnect(MA_BUF *data_recv, char *userid, char *password,
-    u8 *dns1, u8 *dns2);
+void MABIOS_PPPConnect(MA_BUF *data_recv, const char *userid,
+    const char *password, u8 *dns1, u8 *dns2);
 void MABIOS_PPPDisconnect(void);
 void MABIOS_TCPConnect(MA_BUF *data_recv, u8 *ip, u16 port);
 void MABIOS_TCPDisconnect(MA_BUF *data_recv, u8 socket);

@@ -117,6 +117,124 @@ typedef struct {
 } MA_BUF;
 
 typedef struct {
+    u32 cmd;
+} PARAM_TCP_CUT;
+
+typedef struct {
+    u8 *pHardwareType;
+} PARAM_INITLIBRARY;
+
+typedef struct {
+    u8 *unk_1;
+    u8 *unk_2;
+    u32 unk_3;
+} PARAM_TCP_CONNECT;
+
+typedef struct {
+    u32 unk_1;
+} PARAM_TCP_DISCONNECT;
+
+typedef struct {
+    u32 unk_1;
+    u32 unk_2;
+    u32 unk_3;
+    u32 unk_4;
+} PARAM_TCP_SENDRECV;
+
+typedef struct {
+    u8 *unk_1;
+    char *unk_2;
+} PARAM_GETHOSTADDRESS;
+
+typedef struct {
+    const char *pTelNo;
+    const char *pUserID;
+    const char *pPassword;
+} PARAM_TELSERVER;
+
+typedef struct {
+    const char *pTelNo;
+} PARAM_TEL;
+
+typedef struct {
+    u32 unk_1;
+} PARAM_RECEIVE;
+
+typedef struct {
+    const u8 *pSendData;
+    u32 sendSize;
+} PARAM_SDATA;
+
+typedef struct {
+    u8 *pCondition;
+    u32 unk_2;
+} PARAM_CONDITION;
+
+typedef struct {
+    u32 unk_1;
+} PARAM_OFFLINE;
+
+typedef struct {
+    const char *pMailAddress;
+} PARAM_SMTP_CONNECT;
+
+typedef struct {
+    const char * const *pRecipients;
+} PARAM_SMTP_SENDER;
+
+typedef struct {
+    const char *pSendData;
+    u32 sendSize;
+    u32 endFlag;
+    u32 unk_4;
+    u32 unk_5;
+    u32 unk_6;
+} PARAM_SMTP_SEND;
+
+typedef struct {
+    u32 unk_1;
+} PARAM_SMTP_POP3_QUIT;
+
+typedef struct {
+    char *unk_1;
+    char *unk_2;
+    char *unk_3;
+} PARAM_POP3_CONNECT;
+
+typedef struct {
+    u16 *pNum;
+    u32 *pSize;
+} PARAM_POP3_STAT;
+
+typedef struct {
+    u32 *pSize;
+} PARAM_POP3_LIST;
+
+typedef struct {
+    u8 *pRecvData;
+    u32 recvBufSize;
+    u16 *pRecvSize;
+    u32 _4;
+    u32 _5;
+    u32 _6;
+    u32 _7;
+    u32 unk_8;
+} PARAM_POP3_RETR;
+
+typedef struct {
+    u32 task;
+    char *dest;
+} PARAM_GETEEPROMDATA;
+
+typedef struct {
+    u8 *pData;
+} PARAM_EEPROM_READ;
+
+typedef struct {
+    const u8 *pData;
+} PARAM_EEPROM_WRITE;
+
+typedef struct {
     u32 task;
     u32 unk_2;
     u8 *pRecvData;
@@ -141,17 +259,6 @@ typedef struct {
     u32 counter;
     u32 next_step;
 } PARAM_HTTP_GETPOST;
-
-typedef struct {
-    u32 unk_1;
-    u32 unk_2;
-    u32 unk_3;
-    u32 unk_4;
-    u32 unk_5;
-    u32 unk_6;
-    u32 unk_7;
-    u32 unk_8;
-} PARAM_UNK;
 
 typedef struct {
     vu8 error;
@@ -198,8 +305,30 @@ typedef struct {
     u8 ipaddr[4];
     u8 _110[2];
     union {
-        PARAM_UNK unk;
+        PARAM_TCP_CUT tcp_cut;
+        PARAM_INITLIBRARY initlibrary;
+        PARAM_TCP_CONNECT tcp_connect;
+        PARAM_TCP_DISCONNECT tcp_disconnect;
+        PARAM_TCP_SENDRECV tcp_sendrecv;
+        PARAM_GETHOSTADDRESS gethostaddress;
+        PARAM_TELSERVER telserver;
+        PARAM_TEL tel;
+        PARAM_RECEIVE receive;
+        PARAM_SDATA sdata;
+        PARAM_CONDITION condition;
+        PARAM_OFFLINE offline;
+        PARAM_SMTP_CONNECT smtp_connect;
+        PARAM_SMTP_SENDER smtp_sender;
+        PARAM_SMTP_SEND smtp_send;
+        PARAM_SMTP_POP3_QUIT smtp_pop3_quit;
+        PARAM_POP3_CONNECT pop3_connect;
+        PARAM_POP3_STAT pop3_stat;
+        PARAM_POP3_LIST pop3_list;
+        PARAM_POP3_RETR pop3_retr;
         PARAM_HTTP_GETPOST http_getpost;
+        PARAM_GETEEPROMDATA geteepromdata;
+        PARAM_EEPROM_READ eeprom_read;
+        PARAM_EEPROM_WRITE eeprom_write;
     } param;
     u8 sockets_used[NUM_SOCKETS];
     u8 local_address[4];

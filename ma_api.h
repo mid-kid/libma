@@ -40,8 +40,8 @@ void MA_HTTP_Get(const char *pURL, char *pHeadBuf, u16 headBufSize, u8 *pRecvDat
 void MA_HTTP_Post(const char *pURL, char *pHeadBuf, u16 headBufSize,
     const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize,
     u16 *pRecvSize, const char *pUserID, const char *pPassword);
-void MA_EEPROMRead(u8 *unk_1);
-void MA_EEPROMWrite(u8 *unk_1);
+void MA_EEPROMRead(u8 *pData);
+void MA_EEPROMWrite(const u8 *unk_1);
 void MA_GetTel(MA_TELDATA *pTelData);
 void MA_GetUserID(char *pUserIDBuf);
 void MA_GetMailID(char *pBufPtr);
