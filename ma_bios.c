@@ -1,5 +1,6 @@
 #include "ma_bios.h"
 
+#include <stddef.h>
 #include "ma_api.h"
 #include "ma_sub.h"
 
@@ -1140,6 +1141,7 @@ static void MA_IntrTimer_SIORecv(void)
 
 static void MA_IntrTimer_SIOIdle(void)
 {
+#define param gMA.param.unk
     if (gMA.task != TASK_NONE && gMA.task != TASK_SDATA
         && gMA.task != TASK_GDATA) {
         return;  // MAGIC
@@ -1154,9 +1156,9 @@ static void MA_IntrTimer_SIOIdle(void)
             (&gMA.buffer_unk_480)->size = 0;
             (&gMA.buffer_unk_480)->data = gMA.unk_212;
             if (gMA.status & STATUS_UNK_13) {
-                MABIOS_Data2(&gMA.buffer_unk_480, (u8 *)gMA.unk_112, gMA.unk_116);
-                gMA.unk_112 = 0;
-                gMA.unk_116 = 0;
+                MABIOS_Data2(&gMA.buffer_unk_480, (u8 *)param.unk_1, param.unk_2);
+                param.unk_1 = 0;
+                param.unk_2 = 0;
                 gMA.status |= STATUS_UNK_10;
             } else {
                 MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, 0xff);
@@ -1170,6 +1172,7 @@ static void MA_IntrTimer_SIOIdle(void)
             MABIOS_CheckStatus2(&gMA.buffer_recv);
         }
     }
+#undef param
 }
 
 static void MA_IntrTimer_SIOWaitTime(void)

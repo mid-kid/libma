@@ -143,6 +143,17 @@ typedef struct {
 } PARAM_HTTP_GETPOST;
 
 typedef struct {
+    u32 unk_1;
+    u32 unk_2;
+    u32 unk_3;
+    u32 unk_4;
+    u32 unk_5;
+    u32 unk_6;
+    u32 unk_7;
+    u32 unk_8;
+} PARAM_UNK;
+
+typedef struct {
     vu8 error;
     u8 _1[1];
     vu16 condition;
@@ -186,29 +197,10 @@ typedef struct {
     u16 task_error_unk_2;
     u8 ipaddr[4];
     u8 _110[2];
-    u32 unk_112;
-    u32 unk_116;
-    u32 unk_120;
-    u32 unk_124;
-    u32 unk_128;
-    u32 unk_132;
-    u32 unk_136;
-    u32 unk_140;
-    u32 unk_144;
-    u32 unk_148;
-    u32 unk_152;
-    u32 unk_156;
-    u32 unk_160;
-    u32 unk_164;
-    u32 unk_168;
-    u32 unk_172;
-    u32 unk_176;
-    u32 unk_180;
-    u32 unk_184;
-    u32 unk_188;
-    u32 unk_192;
-    u32 unk_196;
-    u32 unk_200;
+    union {
+        PARAM_UNK unk;
+        PARAM_HTTP_GETPOST http_getpost;
+    } param;
     u8 sockets_used[NUM_SOCKETS];
     u8 local_address[4];
     u8 _210[2];
@@ -247,10 +239,6 @@ typedef struct {
 } MA_VAR;
 
 extern MA_VAR gMA;
-
-#include <stddef.h>
-#define PARAM_BASE (offsetof(MA_VAR, unk_112))
-#define PARAM(type) ((*((struct {char _[PARAM_BASE]; type p;} *)&gMA)).p)
 
 #define MA_SetCondition(cond) \
 { \

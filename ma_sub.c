@@ -1,5 +1,6 @@
 #include "ma_sub.h"
 
+#include <stddef.h>
 #include <AgbDefine.h>
 #include "ma_var.h"
 

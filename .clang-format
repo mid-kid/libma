@@ -13,8 +13,10 @@ AllowShortFunctionsOnASingleLine: None
 SpaceAroundPointerQualifiers: Both
 
 IncludeCategories:
-  - Regex: '^<.*>$'
+  - Regex: '^<Agb'
     SortPriority: -1
+  - Regex: '^<.*>$'
+    SortPriority: -2
 
 PenaltyBreakOpenParenthesis: 20
 PenaltyBreakAssignment: 20
