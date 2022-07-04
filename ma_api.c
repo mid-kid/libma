@@ -322,25 +322,7 @@ static void MATASK_Stop(void)
 
     case 2:
         MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-
+        MA_Reset();
         gMA.cmd_recv = 0;
         MA_TaskSet(TASK_NONE, 0);
         break;
@@ -422,8 +404,7 @@ static void MATASK_TCP_Cut(void)
 
     case 3:
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         gMA.cmd_recv = 0;
@@ -452,28 +433,7 @@ void MA_InitLibraryMain(u8 *pHardwareType, int task)
     SetApiCallFlag();
 
     gMA.unk_88 = 0x4247414d;
-    gMA.unk_92 = 0;
-
-    MA_ChangeSIOMode(MA_SIO_BYTE);
-
-    gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-    gMA.counter = 0;
-    gMA.intr_sio_mode = 0;
-
-    gMA.status &= ~STATUS_UNK_0;
-    gMA.status &= ~STATUS_UNK_9;
-    gMA.status &= ~STATUS_UNK_10;
-    gMA.status &= ~STATUS_UNK_13;
-    gMA.status &= ~STATUS_UNK_2;
-    gMA.condition &= ~MA_CONDITION_PTP_GET;
-    gMA.condition &= ~MA_CONDITION_CONNECT;
-
-    gMA.condition &= 0xff;
-    gMA.condition = gMA.condition;
-    MAU_Socket_Clear();
-    gMA.condition &= 0xff;
-    gMA.condition = gMA.condition;
-
+    MA_Reset();
     InitPrevBuf();
     MABIOS_Init();
 
@@ -522,25 +482,7 @@ static void MATASK_InitLibrary(void)
         *(u8 *)gMA.unk_112 = gMA.adapter_type + 0x78;  // MAGIC
 
         MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-
+        MA_Reset();
         MA_TaskSet(TASK_NONE, 0);
         break;
 
@@ -550,25 +492,7 @@ static void MATASK_InitLibrary(void)
         break;
 
     case 0xfb:
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-
+        MA_Reset();
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         break;
@@ -636,8 +560,7 @@ static void MATASK_TCP_Connect(void)
 
     case 0xf0:
         gMA.unk_92 = 3;  // MAGIC
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
     }
@@ -690,8 +613,7 @@ static void MATASK_TCP_Disconnect(void)
     case 1:
         MAU_Socket_Delete(gMA.unk_112);
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_TaskSet(TASK_NONE, 0);
@@ -1040,8 +962,7 @@ static void MATASK_TelServer(void)
         gMA.local_address[2] = gMA.buffer_unk_480.data[2];
         gMA.local_address[3] = gMA.buffer_unk_480.data[3];
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         MA_TaskSet(TASK_NONE, 0);
         break;
 
@@ -1056,25 +977,7 @@ static void MATASK_TelServer(void)
         break;
 
     case 0xfb:
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-
+        MA_Reset();
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         break;
@@ -1166,8 +1069,7 @@ static void MATASK_Tel(void)
     case 4:
         gMA.status |= STATUS_UNK_9;
         gMA.unk_92 = 7;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_P2P_SEND << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_P2P_SEND);
         gMA.unk_112 = 0;
         gMA.buffer_unk_480.size = 0;
         InitPrevBuf();
@@ -1180,25 +1082,7 @@ static void MATASK_Tel(void)
         break;
 
     case 0xfb:
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-
+        MA_Reset();
         MA_SetApiError(gMA.task_error, gMA.error_unk_94);
         MA_TaskSet(TASK_NONE, 0);
         break;
@@ -1278,8 +1162,7 @@ static void MATASK_Receive(void)
     case 4:
         gMA.status |= STATUS_UNK_9;
         gMA.unk_92 = 8;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_P2P_RECV << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_P2P_RECV);
         gMA.unk_112 = 0;
         gMA.buffer_unk_480.size = 0;
         InitPrevBuf();
@@ -1292,25 +1175,7 @@ static void MATASK_Receive(void)
         break;
 
     case 0xfb:
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-
+        MA_Reset();
         MA_SetApiError(gMA.task_error, gMA.error_unk_94);
         MA_TaskSet(TASK_NONE, 0);
         break;
@@ -1400,25 +1265,7 @@ static void MATASK_P2P(void)
         switch (gMA.cmd_last) {
         case MACMD_DATA:
             MA_ChangeSIOMode(MA_SIO_BYTE);
-            gMA.unk_92 = 0;
-            MA_ChangeSIOMode(MA_SIO_BYTE);
-            gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-            gMA.counter = 0;
-            gMA.intr_sio_mode = 0;
-            gMA.status &= ~STATUS_UNK_0;
-            gMA.status &= ~STATUS_UNK_9;
-            gMA.status &= ~STATUS_UNK_10;
-            gMA.status &= ~STATUS_UNK_13;
-            gMA.status &= ~STATUS_UNK_2;
-            gMA.condition &= ~MA_CONDITION_PTP_GET;
-            gMA.condition &= ~MA_CONDITION_CONNECT;
-
-            gMA.condition &= 0xff;
-            gMA.condition = gMA.condition;
-            MAU_Socket_Clear();
-            gMA.condition &= 0xff;
-            gMA.condition = gMA.condition;
-
+            MA_Reset();
             MA_SetApiError(MAAPIE_OFFLINE, 0);
             MA_TaskSet(TASK_NONE, 0);
             return;
@@ -1532,25 +1379,7 @@ static void MATASK_Condition(void)
         break;
 
     case 4:
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-
+        MA_Reset();
         MA_TaskSet(TASK_NONE, 0);
         break;
 
@@ -1560,25 +1389,7 @@ static void MATASK_Condition(void)
         break;
 
     case 0xfb:
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-
+        MA_Reset();
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         break;
@@ -1639,26 +1450,7 @@ static void MATASK_Offline(void)
     case 3:
         gMA.condition &= ~MA_CONDITION_PTP_GET;
         gMA.status &= ~STATUS_UNK_9;
-
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-
+        MA_Reset();
         MA_TaskSet(TASK_NONE, 0);
         MA_ChangeSIOMode(MA_SIO_BYTE);
         break;
@@ -1693,8 +1485,7 @@ static void MATASK_Offline(void)
 
     case 103:
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         gMA.task_step = 0;
@@ -1768,8 +1559,7 @@ static void MATASK_SMTP_Connect(void)
 
     if (MA_GetCondition() & MA_CONDITION_UNK_6) {
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_SMTP, 0);
@@ -1879,8 +1669,7 @@ static void MATASK_SMTP_Connect(void)
 
     case 5:
         gMA.unk_92 = 4;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_SMTP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_SMTP);
         MA_TaskSet(TASK_NONE, 0);
         break;
 
@@ -1893,8 +1682,7 @@ static void MATASK_SMTP_Connect(void)
 
     case 0xf1:
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
@@ -1964,8 +1752,7 @@ static void MATASK_SMTP_Sender(void)
 
     if (MA_GetCondition() & MA_CONDITION_UNK_6) {
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_SMTP, 0);
@@ -2080,8 +1867,7 @@ static void MATASK_SMTP_Sender(void)
 
     case 0xf1:
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
@@ -2136,8 +1922,7 @@ static void MATASK_SMTP_Send(void)
 
     if (MA_GetCondition() & MA_CONDITION_UNK_6) {
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_SMTP, 0);
@@ -2276,8 +2061,7 @@ static void MATASK_SMTP_Send(void)
 
     case 0xf1:
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
@@ -2336,8 +2120,7 @@ static void MATASK_SMTP_POP3_Quit(void)
             MA_SetApiError(MAAPIE_POP3, 0);
         }
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_TaskSet(TASK_NONE, 0);
@@ -2377,8 +2160,7 @@ static void MATASK_SMTP_POP3_Quit(void)
 
     case 3:
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_TaskSet(TASK_NONE, 0);
@@ -2393,8 +2175,7 @@ static void MATASK_SMTP_POP3_Quit(void)
 
     case 0xf1:
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
@@ -2498,8 +2279,7 @@ static void MATASK_POP3_Connect(void)
 
     if (MA_GetCondition() & MA_CONDITION_UNK_6) {
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_POP3, 0);
@@ -2614,8 +2394,7 @@ static void MATASK_POP3_Connect(void)
 
     case 6:
         gMA.unk_92 = 5;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_POP3 << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_POP3);
         MA_TaskSet(TASK_NONE, 0);
         break;
 
@@ -2628,8 +2407,7 @@ static void MATASK_POP3_Connect(void)
 
     case 0xf1:
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
@@ -2676,8 +2454,7 @@ static void MATASK_POP3_Stat(void)
 
     if (MA_GetCondition() & MA_CONDITION_UNK_6) {
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_POP3, 0);
@@ -2736,8 +2513,7 @@ static void MATASK_POP3_Stat(void)
 
     case 0xf1:
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
@@ -2793,8 +2569,7 @@ static void MATASK_POP3_List(void)
 
     if (MA_GetCondition() & MA_CONDITION_UNK_6) {
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_POP3, 0);
@@ -2851,8 +2626,7 @@ static void MATASK_POP3_List(void)
 
     case 0xf1:
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
@@ -2946,8 +2720,7 @@ static void MATASK_POP3_Retr(void)
 
     if (MA_GetCondition() & MA_CONDITION_UNK_6) {
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_POP3, 0);
@@ -3058,8 +2831,7 @@ static void MATASK_POP3_Retr(void)
 
     case 0xf1:
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
@@ -3107,8 +2879,7 @@ static void MATASK_POP3_Dele(void)
 
     if (MA_GetCondition() & MA_CONDITION_UNK_6) {
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_POP3, 0);
@@ -3162,8 +2933,7 @@ static void MATASK_POP3_Dele(void)
 
     case 0xf1:
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
@@ -3256,8 +3026,7 @@ static void MATASK_POP3_Head(void)
 
     if (MA_GetCondition() & MA_CONDITION_UNK_6) {
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.sockets_used[0] = FALSE;
         MA_SetApiError(MAAPIE_POP3, 0);
@@ -3368,8 +3137,7 @@ static void MATASK_POP3_Head(void)
 
     case 0xf1:
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
@@ -4410,8 +4178,7 @@ static void MATASK_HTTP_GetPost(void)
 
     case 0xf1:
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
@@ -4420,8 +4187,7 @@ static void MATASK_HTTP_GetPost(void)
 
     case 0xff:
         gMA.unk_92 = 3;
-        gMA.condition &= ~MA_CONDITION_MASK;
-        gMA.condition |= MA_CONDITION_PPP << MA_CONDITION_SHIFT;
+        MA_SetCondition(MA_CONDITION_PPP);
         MA_TaskSet(TASK_NONE, 0);
         gMA.sockets_used[0] = FALSE;
         param.unk_20 = 0;
@@ -4537,25 +4303,7 @@ static void MATASK_GetEEPROMData(void)
 
     case 6:
         MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-
+        MA_Reset();
         MA_TaskSet(TASK_NONE, 0);
         break;
 
@@ -4565,25 +4313,7 @@ static void MATASK_GetEEPROMData(void)
         break;
 
     case 0xfb:
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-
+        MA_Reset();
         MA_SetApiError(gMA.task_error, gMA.error_unk_94);
         MA_TaskSet(TASK_NONE, 0);
         break;
@@ -4664,25 +4394,7 @@ static void MATASK_EEPROM_Read(void)
 
     case 5:
         MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-
+        MA_Reset();
         MA_TaskSet(TASK_NONE, 0);
         break;
 
@@ -4692,25 +4404,7 @@ static void MATASK_EEPROM_Read(void)
         break;
 
     case 0xfb:
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-
+        MA_Reset();
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         break;
@@ -4790,25 +4484,7 @@ static void MATASK_EEPROM_Write(void)
 
     case 5:
         MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-
+        MA_Reset();
         MA_TaskSet(TASK_NONE, 0);
         break;
 
@@ -4818,25 +4494,7 @@ static void MATASK_EEPROM_Write(void)
         break;
 
     case 0xfb:
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-
+        MA_Reset();
         MA_SetApiError(gMA.task_error, gMA.task_error_unk_2);
         MA_TaskSet(TASK_NONE, 0);
         break;

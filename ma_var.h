@@ -252,4 +252,29 @@ extern MA_VAR gMA;
 #define PARAM_BASE (offsetof(MA_VAR, unk_112))
 #define PARAM(type) ((*((struct {char _[PARAM_BASE]; type p;} *)&gMA)).p)
 
+#define MA_SetCondition(cond) \
+{ \
+    gMA.condition &= ~MA_CONDITION_MASK; \
+    gMA.condition |= (cond) << MA_CONDITION_SHIFT; \
+}
+
+#define MA_Reset() \
+{ \
+    gMA.unk_92 = 0; \
+    MA_ChangeSIOMode(MA_SIO_BYTE); \
+    gMA.timer_unk_12 = gMA.timer[gMA.sio_mode]; \
+    gMA.counter = 0; \
+    gMA.intr_sio_mode = 0; \
+    gMA.status &= ~STATUS_UNK_0; \
+    gMA.status &= ~STATUS_UNK_9; \
+    gMA.status &= ~STATUS_UNK_10; \
+    gMA.status &= ~STATUS_UNK_13; \
+    gMA.status &= ~STATUS_UNK_2; \
+    gMA.condition &= ~MA_CONDITION_PTP_GET; \
+    gMA.condition &= ~MA_CONDITION_CONNECT; \
+    MA_SetCondition(MA_CONDITION_IDLE); \
+    MAU_Socket_Clear(); \
+    MA_SetCondition(MA_CONDITION_IDLE); \
+}
+
 #endif // _MA_VAR_H

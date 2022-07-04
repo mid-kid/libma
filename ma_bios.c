@@ -328,24 +328,7 @@ u8 MA_ErrorCheck(void)
 void MA_SetError(u8 error)
 {
     if (error == MAAPIE_MA_NOT_FOUND) {
-        gMA.unk_92 = 0;
-        MA_ChangeSIOMode(MA_SIO_BYTE);
-        gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-        gMA.counter = 0;
-        gMA.intr_sio_mode = 0;
-        gMA.status &= ~STATUS_UNK_0;
-        gMA.status &= ~STATUS_UNK_9;
-        gMA.status &= ~STATUS_UNK_10;
-        gMA.status &= ~STATUS_UNK_13;
-        gMA.status &= ~STATUS_UNK_2;
-        gMA.condition &= ~MA_CONDITION_PTP_GET;
-        gMA.condition &= ~MA_CONDITION_CONNECT;
-
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
-        MAU_Socket_Clear();
-        gMA.condition &= 0xff;
-        gMA.condition = gMA.condition;
+        MA_Reset();
     }
 
     gMA.error = error;
@@ -1200,25 +1183,7 @@ static void MA_IntrTimer_SIOWaitTime(void)
 
         if (gMA.status & STATUS_UNK_14) {
             MA_ChangeSIOMode(MA_SIO_BYTE);
-            gMA.unk_92 = 0;
-            MA_ChangeSIOMode(MA_SIO_BYTE);
-            gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-            gMA.counter = 0;
-            gMA.intr_sio_mode = 0;
-            gMA.status &= ~STATUS_UNK_0;
-            gMA.status &= ~STATUS_UNK_9;
-            gMA.status &= ~STATUS_UNK_10;
-            gMA.status &= ~STATUS_UNK_13;
-            gMA.status &= ~STATUS_UNK_2;
-            gMA.condition &= ~MA_CONDITION_PTP_GET;
-            gMA.condition &= ~MA_CONDITION_CONNECT;
-
-            gMA.condition &= 0xff;
-            gMA.condition = gMA.condition;
-            MAU_Socket_Clear();
-            gMA.condition &= 0xff;
-            gMA.condition = gMA.condition;
-
+            MA_Reset();
             MA_TaskSet(TASK_NONE, 0);
             if (gMA.task != TASK_STOP) {
                 gMA.status &= ~STATUS_UNK_14;
@@ -1253,24 +1218,7 @@ int MA_ProcessCheckStatusResponse(u8 response)
             } else {
                 gMA.status = 0;
             }
-            gMA.unk_92 = 0;
-            MA_ChangeSIOMode(MA_SIO_BYTE);
-            gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-            gMA.counter = 0;
-            gMA.intr_sio_mode = 0;
-            gMA.status &= ~STATUS_UNK_0;
-            gMA.status &= ~STATUS_UNK_9;
-            gMA.status &= ~STATUS_UNK_10;
-            gMA.status &= ~STATUS_UNK_13;
-            gMA.status &= ~STATUS_UNK_2;
-            gMA.condition &= ~MA_CONDITION_PTP_GET;
-            gMA.condition &= ~MA_CONDITION_CONNECT;
-
-            gMA.condition &= 0xff;
-            gMA.condition = gMA.condition;
-            MAU_Socket_Clear();
-            gMA.condition &= 0xff;
-            gMA.condition = gMA.condition;
+            MA_Reset();
         }
         break;
 
@@ -1283,24 +1231,7 @@ int MA_ProcessCheckStatusResponse(u8 response)
             } else {
                 gMA.status = ret;
             }
-            gMA.unk_92 = 0;
-            MA_ChangeSIOMode(MA_SIO_BYTE);
-            gMA.timer_unk_12 = gMA.timer[gMA.sio_mode];
-            gMA.counter = 0;
-            gMA.intr_sio_mode = 0;
-            gMA.status &= ~STATUS_UNK_0;
-            gMA.status &= ~STATUS_UNK_9;
-            gMA.status &= ~STATUS_UNK_10;
-            gMA.status &= ~STATUS_UNK_13;
-            gMA.status &= ~STATUS_UNK_2;
-            gMA.condition &= ~MA_CONDITION_PTP_GET;
-            gMA.condition &= ~MA_CONDITION_CONNECT;
-
-            gMA.condition &= 0xff;
-            gMA.condition = gMA.condition;
-            MAU_Socket_Clear();
-            gMA.condition &= 0xff;
-            gMA.condition = gMA.condition;
+            MA_Reset();
         }
 
     case 5:
@@ -1315,8 +1246,7 @@ int MA_ProcessCheckStatusResponse(u8 response)
         break;
     }
 
-    gMA.condition &= ~MA_CONDITION_MASK;
-    gMA.condition |= ret << MA_CONDITION_SHIFT;
+    MA_SetCondition(ret);
     gMA.intr_sio_mode = 0;
     gMA.iobuf_packet_send.state = 0;
     gMA.iobuf_packet_recv.state = 0;
