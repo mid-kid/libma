@@ -112,7 +112,7 @@ char *MAU_FindPostBlank(char *str)
     if (*str == '\0') return NULL;
     while (*str == ' ') str++;
     if (*str == '\0') return NULL;
-    return str;
+    return (char *)str;
 }
 
 int MAU_strcmp(const char *str1, const char *str2)

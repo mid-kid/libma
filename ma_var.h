@@ -136,9 +136,9 @@ typedef struct {
 
 typedef struct {
     u32 unk_1;
-    u32 unk_2;
+    u8 *unk_2;
     u32 unk_3;
-    u32 unk_4;
+    u8 *unk_4;
 } PARAM_TCP_SENDRECV;
 
 typedef struct {

@@ -13,7 +13,7 @@ void MA_InitLibrary(u8 *pHardwareType);
 void MA_InitLibrary2(u8 *pHardwareType);
 void MA_TCP_Connect(u8 *unk_1, u8 *unk_2, u16 unk_3);
 void MA_TCP_Disconnect(u8 unk_1);
-void MA_TCP_SendRecv(u8 unk_1, int unk_2, u8 unk_3, int unk_4);
+void MA_TCP_SendRecv(u8 unk_1, u8 *unk_2, u8 unk_3, u8 *unk_4);
 void MA_GetHostAddress(u8 *unk_1, char *unk_2);
 void MA_GetLocalAddress(u8 *address);
 void MA_TelServer(const char *pTelNo, const char *pUserID, const char *pPassword);
