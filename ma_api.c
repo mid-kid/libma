@@ -1225,7 +1225,7 @@ void MA_SData(const u8 *pSendData, u8 sendSize, u8 *pResult)
         return;
     }
 
-    if ((s8)(sendSize - 1) < 0) {
+    if (sendSize == 0 || sendSize > 0x80) {
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;
@@ -1272,7 +1272,7 @@ void MA_GData(u8 *pRecvData, u8 *pRecvSize)
 
     gMA.prevbuf_size -= size;
     if (gMA.prevbuf_size != 0) {
-        if ((s8)(gMA.prevbuf[0] - 1) < 0) {
+        if (gMA.prevbuf[0] == 0 || gMA.prevbuf[0] > 0x80) {
             gMA.prevbuf[0] = 0x80;  // MAGIC
         }
 
@@ -1313,7 +1313,7 @@ static void MATASK_P2P(void)
 
     gMA.buffer_unk_480.data = NULL;
     gMA.buffer_unk_480.size = 0;
-    if ((s8)(gMA.prevbuf[0] - 1) < 0) {
+    if (gMA.prevbuf[0] == 0 || gMA.prevbuf[0] > 0x80) {
         gMA.prevbuf[0] = 0x80;  // MAGIC
     }
 
