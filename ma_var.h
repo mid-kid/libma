@@ -105,10 +105,10 @@ enum ma_sio_modes {
 typedef struct {
     vu16 state;
     vu16 size;
-    vu16 readcnt;
-    vu16 checksum;
-    vu8 *readptr;
-    vu8 *writeptr;
+    vu16 readCnt;
+    vu16 checkSum;
+    vu8 *pRead;
+    vu8 *pWrite;
 } MA_IOBUF;
 
 typedef struct {
@@ -125,25 +125,25 @@ typedef struct {
 } PARAM_INITLIBRARY;
 
 typedef struct {
-    u8 *unk_1;
-    u8 *unk_2;
-    u32 unk_3;
+    u8 *pSocket;
+    u8 *pHost;
+    u32 port;
 } PARAM_TCP_CONNECT;
 
 typedef struct {
-    u32 unk_1;
+    u32 socket;
 } PARAM_TCP_DISCONNECT;
 
 typedef struct {
-    u32 unk_1;
-    u8 *unk_2;
-    u32 unk_3;
+    u32 socket;
+    u8 *pSendData;
+    u32 size;
     u8 *unk_4;
 } PARAM_TCP_SENDRECV;
 
 typedef struct {
-    u8 *unk_1;
-    char *unk_2;
+    u8 *pHost;
+    char *pServerName;
 } PARAM_GETHOSTADDRESS;
 
 typedef struct {
@@ -157,10 +157,6 @@ typedef struct {
 } PARAM_TEL;
 
 typedef struct {
-    u32 unk_1;
-} PARAM_RECEIVE;
-
-typedef struct {
     const u8 *pSendData;
     u32 sendSize;
 } PARAM_SDATA;
@@ -171,7 +167,7 @@ typedef struct {
 } PARAM_CONDITION;
 
 typedef struct {
-    u32 unk_1;
+    u32 timeout;
 } PARAM_OFFLINE;
 
 typedef struct {
@@ -186,19 +182,19 @@ typedef struct {
     const char *pSendData;
     u32 sendSize;
     u32 endFlag;
-    u32 unk_4;
-    u32 unk_5;
-    u32 unk_6;
+    u32 totalSize;  // unused
+    u32 timeout;
+    u32 nextStep;
 } PARAM_SMTP_SEND;
 
 typedef struct {
-    u32 unk_1;
+    u32 timeout;
 } PARAM_SMTP_POP3_QUIT;
 
 typedef struct {
-    char *unk_1;
-    char *unk_2;
-    char *unk_3;
+    char *pServerName;
+    char *pUserID;
+    char *pPassword;
 } PARAM_POP3_CONNECT;
 
 typedef struct {
@@ -214,16 +210,13 @@ typedef struct {
     u8 *pRecvData;
     u32 recvBufSize;
     u16 *pRecvSize;
-    u32 _4;
-    u32 _5;
-    u32 _6;
-    u32 _7;
+    u32 _4[4];
     u32 unk_8;
 } PARAM_POP3_RETR;
 
 typedef struct {
     u32 task;
-    char *dest;
+    char *pData;
 } PARAM_GETEEPROMDATA;
 
 typedef struct {
@@ -236,48 +229,46 @@ typedef struct {
 
 typedef struct {
     u32 task;
-    u32 unk_2;
+    u32 unk_2;  // unused
     u8 *pRecvData;
     u32 recvBufSize;
     u16 *pRecvSize;
     const u8 *pSendData;
     u32 sendSize;
     const char *pServerPath;
-    u32 pServerPathLen;
-    const char *unk_10;
-    u32 unk_11;
+    u32 serverPathLen;
+    const char *pServerPathBkp;
+    u32 serverPathLenBkp;
     u32 headBufSize;
     u32 server_unk_1;
     u32 unk_14;
     char *pHeadBuf;
-    u32 unk_16;
-    u32 unk_17;
+    u32 headEnd;
+    u32 headError;
     const char *pUserID;
     const char *pPassword;
-    u32 unk_20;
-    u32 unk_21;
+    u32 headFlags;
+    u32 headFound;
     u32 counter;
-    u32 next_step;
+    u32 nextStep;
 } PARAM_HTTP_GETPOST;
 
 typedef struct {
     vu8 error;
-    u8 _1[1];
     vu16 condition;
     vu8 intr_sio_mode;
-    vu8 sio_mode;
+    vu8 sioMode;
     vu8 adapter_type;
     vu8 unk_7;
     vu16 timer[MA_NUM_SIO_MODES];
     vu16 timer_unk_12;
     vu16 unk_14;
     vu8 interval;
-    u8 _17[3];
-    u32 counter_null[MA_NUM_SIO_MODES];
+    u32 nullCounter[MA_NUM_SIO_MODES];
     u32 counter_timeout[MA_NUM_SIO_MODES];
-    u32 counter_p2p[MA_NUM_SIO_MODES];
-    u32 counter_timeout200msec[MA_NUM_SIO_MODES];
-    u32 counter_adapter[MA_NUM_SIO_MODES];
+    u32 P2PCounter[MA_NUM_SIO_MODES];
+    u32 timeout200msecCounter[MA_NUM_SIO_MODES];
+    u32 timeoutCounter[MA_NUM_SIO_MODES];
     vu32 counter;
     vu32 status;
     vu8 cmd_cur;
@@ -292,18 +283,15 @@ typedef struct {
     u8 unk_84[4];
     u32 unk_88;
     vu8 unk_92;
-    u8 _93[1];
-    vu16 error_unk_94;
+    vu16 error_unk_2;
     vu8 unk_96;
     vu8 task;
-    vu8 task_step;
+    vu8 taskStep;
     u8 sockets[NUM_SOCKETS];
     u8 unk_101;
     u8 task_error;
-    u8 _103[1];
     u16 task_error_unk_2;
     u8 ipaddr[4];
-    u8 _110[2];
     union {
         PARAM_TCP_CUT tcp_cut;
         PARAM_INITLIBRARY initlibrary;
@@ -313,7 +301,6 @@ typedef struct {
         PARAM_GETHOSTADDRESS gethostaddress;
         PARAM_TELSERVER telserver;
         PARAM_TEL tel;
-        PARAM_RECEIVE receive;
         PARAM_SDATA sdata;
         PARAM_CONDITION condition;
         PARAM_OFFLINE offline;
@@ -343,7 +330,7 @@ typedef struct {
     u8 buffer_recv_data[4];
     u8 buffer_footer[4];
     MA_BUF buffer_recv;
-    MA_BUF *buffer_recv_ptr;
+    MA_BUF *pRecvBuf;
     MA_IOBUF *iobuf_sio_tx;
     u8 unk_828[4];
     u8 unk_832[4];
@@ -361,8 +348,8 @@ typedef struct {
     u8 _1291[495];
     u16 prevbuf_size;
     char unk_1788[6];
-    u16 unk_1794;
-    u16 unk_1796;
+    u16 httpRes;
+    u16 gbCenterRes;
     u8 unk_1798[2];
     u8 _1800[92];
 } MA_VAR;
@@ -379,7 +366,7 @@ extern MA_VAR gMA;
 { \
     gMA.unk_92 = 0; \
     MA_ChangeSIOMode(MA_SIO_BYTE); \
-    gMA.timer_unk_12 = gMA.timer[gMA.sio_mode]; \
+    gMA.timer_unk_12 = gMA.timer[gMA.sioMode]; \
     gMA.counter = 0; \
     gMA.intr_sio_mode = 0; \
     gMA.status &= ~STATUS_UNK_0; \
