@@ -8,6 +8,16 @@
 #define CASSETTE_INITIAL_CODE (ROM_BANK0 + 0xac)
 #define CASSETTE_VERSION_NO (ROM_BANK0 + 0xbc)
 
+#define CheckResponse(buf) ( \
+    ((buf)[0] >= '0' && (buf)[0] <= '9') && \
+    ((buf)[1] >= '0' && (buf)[1] <= '9') && \
+    ((buf)[2] >= '0' && (buf)[2] <= '9'))
+
+#define GetResponse(buf) ( \
+    ((buf)[0] - '0') * 100 + \
+    ((buf)[1] - '0') * 10 + \
+    ((buf)[2] - '0'))
+
 static void MA_SetApiError(u8 error, u16 unk_2);
 static int ApiValisStatusCheck(u8 task);
 static int MA_ApiPreExe(u8 task);
@@ -1536,12 +1546,10 @@ static void MATASK_Offline(void)
 
 static int CheckSMTPResponse(const char *response)
 {
-    if ((response[0] >= '0' && response[0] <= '9')
-        && (response[1] >= '0' && response[1] <= '9')
-        && (response[2] >= '0' && response[2] <= '9')) {
-        return FALSE;
+    if (CheckResponse(response)) {
+        return 0;
     } else {
-        return TRUE;
+        return 1;
     }
 }
 
@@ -1648,11 +1656,8 @@ static void MATASK_SMTP_Connect(void)
         }
 
         smtpRes = CheckSMTPResponse(gMA.prevbuf);
-        if (!smtpRes) {
-            gMA.error_unk_2 =
-                (gMA.prevbuf[0] - '0') * 100 +
-                (gMA.prevbuf[1] - '0') * 10 +
-                (gMA.prevbuf[2] - '0');
+        if (smtpRes == 0) {
+            gMA.error_unk_2 = GetResponse(gMA.prevbuf);
             if (gMA.error_unk_2 == 220) {
                 MAU_strcpy(gMA.unk_880, "HELO ");
                 cp1 = &gMA.unk_880[5];
@@ -1691,11 +1696,8 @@ static void MATASK_SMTP_Connect(void)
         }
 
         smtpRes = CheckSMTPResponse(gMA.prevbuf);
-        if (!smtpRes) {
-            gMA.error_unk_2 =
-                (gMA.prevbuf[0] - '0') * 100 +
-                (gMA.prevbuf[1] - '0') * 10 +
-                (gMA.prevbuf[2] - '0');
+        if (smtpRes == 0) {
+            gMA.error_unk_2 = GetResponse(gMA.prevbuf);
             if (gMA.error_unk_2 == 250) {
                 gMA.taskStep++;
                 break;
@@ -1833,11 +1835,8 @@ static void MATASK_SMTP_Sender(void)
         }
 
         smtpRes = CheckSMTPResponse(gMA.prevbuf);
-        if (!smtpRes) {
-            gMA.error_unk_2 =
-                (gMA.prevbuf[0] - '0') * 100 +
-                (gMA.prevbuf[1] - '0') * 10 +
-                (gMA.prevbuf[2] - '0');
+        if (smtpRes == 0) {
+            gMA.error_unk_2 = GetResponse(gMA.prevbuf);
             if (gMA.error_unk_2 == 250) {
                 gMA.taskStep++;
                 break;
@@ -1881,11 +1880,8 @@ static void MATASK_SMTP_Sender(void)
         }
 
         smtpRes = CheckSMTPResponse(gMA.prevbuf);
-        if (!smtpRes) {
-            gMA.error_unk_2 =
-                (gMA.prevbuf[0] - '0') * 100 +
-                (gMA.prevbuf[1] - '0') * 10 +
-                (gMA.prevbuf[2] - '0');
+        if (smtpRes == 0) {
+            gMA.error_unk_2 = GetResponse(gMA.prevbuf);
             if (gMA.error_unk_2 == 250) {
                 gMA.taskStep = 2;
                 break;
@@ -2029,11 +2025,8 @@ static void MATASK_SMTP_Send(void)
         }
 
         smtpRes = CheckSMTPResponse(gMA.prevbuf);
-        if (!smtpRes) {
-            gMA.error_unk_2 =
-                (gMA.prevbuf[0] - '0') * 100 +
-                (gMA.prevbuf[1] - '0') * 10 +
-                (gMA.prevbuf[2] - '0');
+        if (smtpRes == 0) {
+            gMA.error_unk_2 = GetResponse(gMA.prevbuf);
             if (gMA.error_unk_2 == 250) {
                 gMA.taskStep++;
                 break;
@@ -2084,11 +2077,8 @@ static void MATASK_SMTP_Send(void)
         }
 
         smtpRes = CheckSMTPResponse(gMA.prevbuf);
-        if (!smtpRes) {
-            gMA.error_unk_2 =
-                (gMA.prevbuf[0] - '0') * 100 +
-                (gMA.prevbuf[1] - '0') * 10 +
-                (gMA.prevbuf[2] - '0');
+        if (smtpRes == 0) {
+            gMA.error_unk_2 = GetResponse(gMA.prevbuf);
             if (gMA.error_unk_2 == 354) {
                 gMA.taskStep = 1;
                 break;
@@ -4065,13 +4055,8 @@ static void MATASK_HTTP_GetPost(void)
                 }
 
                 if (MAU_strncmp(lineCp, "HTTP", 4) == 0) {
-                    if ((lineCp[9] >= '0' && lineCp[9] <= '9')
-                        && (lineCp[10] >= '0' && lineCp[10] <= '9')
-                        && (lineCp[11] >= '0' && lineCp[11] <= '9')) {
-                        gMA.httpRes =
-                            (lineCp[9] - '0') * 100 +
-                            (lineCp[10] - '0') * 10 +
-                            (lineCp[11] - '0');
+                    if (CheckResponse(&lineCp[9])) {
+                        gMA.httpRes = GetResponse(&lineCp[9]);
                         param.headFound = TRUE;
                         if (param.server_unk_1 != 0 && param.server_unk_1 < 5
                             && param.unk_14 == 0) {
@@ -4119,10 +4104,7 @@ static void MATASK_HTTP_GetPost(void)
                     MA_MakeAuthorizationCode(&lineCp[29], param.pUserID,
                         param.pPassword, gMA.unk_1798);
                 } else if (MAU_strncmp(lineCp, strHttpGbStatus, sizeof(strHttpGbStatus) - 1) == 0) {
-                    gMA.gbCenterRes =
-                        (lineCp[11] - '0') * 100 +
-                        (lineCp[12] - '0') * 10 +
-                        (lineCp[13] - '0');
+                    gMA.gbCenterRes = GetResponse(&lineCp[11]);
                     if (gMA.gbCenterRes == 101) {
                         gMA.status |= STATUS_UNK_16;
                     } else if (gMA.gbCenterRes != 0) {
