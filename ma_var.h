@@ -3,31 +3,31 @@
 
 #include <AgbTypes.h>
 
-#define MA_CONDITION_UNK_5 (1 << 5)
-#define MA_CONDITION_UNK_6 (1 << 6)
+#define MA_CONDITION_BIOS_BUSY (1 << 5)  // Communicating with the adapter
+#define MA_CONDITION_TCPCLOSED (1 << 6)  // Remote closed the connection
 
 #define MAAPIE_UNK_83 0x83
 #define MAAPIE_UNK_84 0x84
 #define MAAPIE_UNK_85 0x85
 #define MAAPIE_UNK_87 0x87
 
-#define STATUS_UNK_0 (1 << 0)
-#define STATUS_UNK_1 (1 << 1)
-#define STATUS_UNK_2 (1 << 2)
-#define STATUS_UNK_3 (1 << 3)
-#define STATUS_UNK_4 (1 << 4)
-#define STATUS_UNK_5 (1 << 5)
-#define STATUS_UNK_6 (1 << 6)
-#define STATUS_UNK_7 (1 << 7)
-#define STATUS_UNK_8 (1 << 8)
-#define STATUS_UNK_9 (1 << 9)
-#define STATUS_UNK_10 (1 << 10)
-#define STATUS_UNK_11 (1 << 11)
-#define STATUS_UNK_12 (1 << 12)
-#define STATUS_UNK_13 (1 << 13)
-#define STATUS_UNK_14 (1 << 14)
-#define STATUS_UNK_15 (1 << 15)
-#define STATUS_UNK_16 (1 << 16)
+#define STATUS_CONNECTED (1 << 0)  // Connected to the adapter
+#define STATUS_SIO_START (1 << 1)  // Send next byte (IntrSio keeps sending until done)
+#define STATUS_CONNTEST (1 << 2)  // If the command fails the adapter is disconnected
+#define STATUS_SIO_RETRY (1 << 3)  // Retrying the last packet
+#define STATUS_SIO_ERR_CHECKSUM (1 << 4)  // Checksum error encountered
+#define STATUS_API_CALL (1 << 5)  // Pause interrupts
+#define STATUS_SIO_RECV_DONE (1 << 6)  // Received a packet correctly
+#define STATUS_INTR_TIMER (1 << 7)  // Pause api calls
+#define STATUS_INTR_SIO (1 << 8)  // Pause api calls
+#define STATUS_CONN_PTP (1 << 9)  // Connected with a p2p connection
+#define STATUS_PTP_SEND_DONE (1 << 10)  // Triggered p2p data send
+#define STATUS_BIOS_STOP (1 << 11)  // MA_BiosStop called
+#define STATUS_CANCEL_REQUEST (1 << 12)  // MA_CancelRequest called
+#define STATUS_PTP_SEND (1 << 13)  // Send p2p data in the next interrupt
+#define STATUS_SIO_SEND_TIMEOUT (1 << 14)  // Timeout during MA_IntrSio_Send
+#define STATUS_BUFFER_EMPTY (1 << 15)  // gMA.prevbuf has just been emptied
+#define STATUS_GBCENTER_ERR_101 (1 << 16)  // Gb-Status http header set to 101
 
 #define MAPROT_REPLY 0x80
 
@@ -42,7 +42,7 @@
 #define MACMD_CHANGECLOCK 0x18
 #define MACMD_EEPROM_READ 0x19
 #define MACMD_EEPROM_WRITE 0x1a
-#define MACMD_UNK_1F 0x1f
+#define MACMD_TCPCLOSED 0x1f
 #define MACMD_PPPCONNECT 0x21
 #define MACMD_PPPDISCONNECT 0x22
 #define MACMD_TCPCONNECT 0x23
@@ -279,7 +279,7 @@ typedef struct {
     vu8 unk_7;
     vu16 timer[MA_NUM_SIO_MODES];
     vu16 timer_unk_12;
-    vu16 unk_14;
+    vu16 retryCount;
     vu8 interval;
     u32 nullCounter[MA_NUM_SIO_MODES];
     u32 counter_timeout[MA_NUM_SIO_MODES];
@@ -300,7 +300,7 @@ typedef struct {
     u8 unk_84[4];
     u32 unk_88;
     vu8 unk_92;
-    vu16 error_unk_2;
+    vu16 errorDetail;
     vu8 unk_96;
     vu8 task;
     vu8 taskStep;
@@ -384,10 +384,10 @@ extern MA_VAR gMA;
     gMA.counter = 0; \
     gMA.intrSioMode = MA_INTR_SIO_IDLE; \
     gMA.status &= ~STATUS_CONNECTED; \
-    gMA.status &= ~STATUS_UNK_9; \
-    gMA.status &= ~STATUS_UNK_10; \
-    gMA.status &= ~STATUS_UNK_13; \
-    gMA.status &= ~STATUS_UNK_2; \
+    gMA.status &= ~STATUS_CONN_PTP; \
+    gMA.status &= ~STATUS_PTP_SEND_DONE; \
+    gMA.status &= ~STATUS_PTP_SEND; \
+    gMA.status &= ~STATUS_CONNTEST; \
     gMA.condition &= ~MA_CONDITION_PTP_GET; \
     gMA.condition &= ~MA_CONDITION_CONNECT; \
     MA_SetCondition(MA_CONDITION_IDLE); \
