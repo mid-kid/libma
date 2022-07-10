@@ -358,10 +358,10 @@ int MAU_Socket_FreeCheck(void)
 
 int MAU_Socket_IpAddrCheck(const u8 *addr)
 {
-    if (addr[0] != gMA.ipaddr[0]) return FALSE;
-    if (addr[1] != gMA.ipaddr[1]) return FALSE;
-    if (addr[2] != gMA.ipaddr[2]) return FALSE;
-    if (addr[3] != gMA.ipaddr[3]) return FALSE;
+    if (addr[0] != gMA.ipAddr[0]) return FALSE;
+    if (addr[1] != gMA.ipAddr[1]) return FALSE;
+    if (addr[2] != gMA.ipAddr[2]) return FALSE;
+    if (addr[3] != gMA.ipAddr[3]) return FALSE;
     return TRUE;
 }
 
@@ -372,8 +372,8 @@ void MAU_Socket_Clear(void)
     for (i = 0; i < NUM_SOCKETS; i++) {
         gMA.sockets_used[i] = FALSE;
     }
-    gMA.ipaddr[0] = 0;
-    gMA.ipaddr[1] = 0;
-    gMA.ipaddr[2] = 0;
-    gMA.ipaddr[3] = 0;
+    gMA.ipAddr[0] = 0;
+    gMA.ipAddr[1] = 0;
+    gMA.ipAddr[2] = 0;
+    gMA.ipAddr[3] = 0;
 }

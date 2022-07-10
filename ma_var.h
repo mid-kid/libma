@@ -53,8 +53,18 @@
 #define MACMD_TESTMODE 0x3f
 #define MACMD_ERROR 0x6e
 
-#define EEPROM_TELNO_SIZE 8
 #define NUM_SOCKETS 2
+
+#define EEPROM_USERID_OFFSET 12
+#define EEPROM_USERID_SIZE 32
+#define EEPROM_MAILID_OFFSET 44
+#define EEPROM_MAILID_SIZE 30
+#define EEPROM_SERVERCONF_OFFSET 74
+#define EEPROM_SERVERCONF_SIZE 44
+#define EEPROM_TELNO1_OFFSET 118
+#define EEPROM_TELNO_SIZE 8
+#define EEPROM_COMMENT1_OFFSET 126
+#define EEPROM_COMMENT_SIZE 16
 
 enum tasks {
     TASK_NONE,
@@ -216,7 +226,7 @@ typedef struct {
 
 typedef struct {
     u32 task;
-    char *pData;
+    void *pData;
 } PARAM_GETEEPROMDATA;
 
 typedef struct {
@@ -288,10 +298,10 @@ typedef struct {
     vu8 task;
     vu8 taskStep;
     u8 sockets[NUM_SOCKETS];
-    u8 unk_101;
+    u8 prevbufHasEEPROMData;
     u8 task_error;
     u16 task_error_unk_2;
-    u8 ipaddr[4];
+    u8 ipAddr[4];
     union {
         PARAM_TCP_CUT tcp_cut;
         PARAM_INITLIBRARY initlibrary;
@@ -334,19 +344,16 @@ typedef struct {
     MA_IOBUF *iobuf_sio_tx;
     u8 unk_828[4];
     u8 unk_832[4];
-    char smtp_server[20];
-    char pop3_server[20];
-    u32 unk_876;
+    struct {
+        char smtp[20];
+        char pop3[20];
+        u32 http;
+    } serverConf;
     char unk_880[14];
     u8 _894[255];
-    u8 prevbuf[12];
-    char eeprom_unk_1161[32];
-    char eeprom_unk_1193[30];
-    char eeprom_unk_1223[44];
-    u8 eeprom_telno[EEPROM_TELNO_SIZE];
-    char eeprom_unk_1275[16];
-    u8 _1291[495];
-    u16 prevbuf_size;
+    u8 prevbuf[192];
+    u8 _1291[445];
+    u16 prevbufSize;
     char unk_1788[6];
     u16 httpRes;
     u16 gbCenterRes;
