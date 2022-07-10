@@ -112,6 +112,13 @@ enum ma_sio_modes {
     MA_NUM_SIO_MODES,
 };
 
+enum ma_intr_sio_modes {
+    MA_INTR_SIO_IDLE,
+    MA_INTR_SIO_SEND,
+    MA_INTR_SIO_RECV,
+    MA_INTR_SIO_WAIT,
+};
+
 typedef struct {
     vu16 state;
     vu16 size;
@@ -266,7 +273,7 @@ typedef struct {
 typedef struct {
     vu8 error;
     vu16 condition;
-    vu8 intr_sio_mode;
+    vu8 intrSioMode;
     vu8 sioMode;
     vu8 adapter_type;
     vu8 unk_7;
@@ -375,8 +382,8 @@ extern MA_VAR gMA;
     MA_ChangeSIOMode(MA_SIO_BYTE); \
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode]; \
     gMA.counter = 0; \
-    gMA.intr_sio_mode = 0; \
-    gMA.status &= ~STATUS_UNK_0; \
+    gMA.intrSioMode = MA_INTR_SIO_IDLE; \
+    gMA.status &= ~STATUS_CONNECTED; \
     gMA.status &= ~STATUS_UNK_9; \
     gMA.status &= ~STATUS_UNK_10; \
     gMA.status &= ~STATUS_UNK_13; \

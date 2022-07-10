@@ -213,7 +213,7 @@ void MABIOS_Init(void)
 
     gMA.condition = 0;
     gMA.error = -1;
-    gMA.intr_sio_mode = 0;
+    gMA.intrSioMode = MA_INTR_SIO_IDLE;
     gMA.adapter_type = -1;
 
     MA_ChangeSIOMode(MA_SIO_BYTE);
@@ -333,7 +333,7 @@ void MA_SetError(u8 error)
     }
 
     gMA.error = error;
-    gMA.intr_sio_mode = 0;
+    gMA.intrSioMode = MA_INTR_SIO_IDLE;
     gMA.iobuf_packet_send.state = 0;
     gMA.iobuf_packet_recv.state = 0;
     gMA.condition |= MA_CONDITION_ERROR;
@@ -465,7 +465,7 @@ void MABIOS_Null(void)
     MA_InitIoBuffer(&gMA.iobuf_packet_send, (u8 *)MaPacketData_NULL,
         tmpPacketLen, 3);
 
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     gMA.status |= STATUS_UNK_2;
     gMA.status |= STATUS_UNK_1;
@@ -483,7 +483,7 @@ void MABIOS_Start(void)
 
     MA_InitIoBuffer(&gMA.iobuf_packet_send, (u8 *)MaPacketData_PreStart, 1, 1);
 
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -509,7 +509,7 @@ void MABIOS_Start2(void)
             sizeof(MaPacketData_Start), 3);
     }
 
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_02);
     gMA.status |= STATUS_UNK_1;
@@ -527,7 +527,7 @@ void MABIOS_End(void)
 
     gMA.cmd_cur = MACMD_END;
     gMA.condition |= MA_CONDITION_UNK_5;
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -560,7 +560,7 @@ void MABIOS_Tel(u8 calltype, const char *number)
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send,
         tmpPacketLen, 3);
 
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_90);
     gMA.status |= STATUS_UNK_1;
@@ -578,7 +578,7 @@ void MABIOS_Offline(void)
 
     gMA.cmd_cur = MACMD_OFFLINE;
     gMA.condition |= MA_CONDITION_UNK_5;
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -596,7 +596,7 @@ void MABIOS_WaitCall(void)
 
     gMA.cmd_cur = MACMD_WAITCALL;
     gMA.condition |= MA_CONDITION_UNK_5;
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -625,7 +625,7 @@ void MABIOS_Data(MA_BUF *pRecvBuf, const u8 *pSendData, u8 size, u8 socket)
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send,
         tmpPacketLen, 3);
 
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -655,7 +655,7 @@ static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pSendData, u8 size)
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send,
         tmpPacketLen, 3);
 
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -673,7 +673,7 @@ void MABIOS_ReInit(void)
 
     gMA.cmd_cur = MACMD_REINIT;
     gMA.condition |= MA_CONDITION_UNK_5;
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -691,7 +691,7 @@ void MABIOS_CheckStatus(MA_BUF *pRecvBuf)
 
     gMA.cmd_cur = MACMD_CHECKSTATUS;
     gMA.condition |= MA_CONDITION_UNK_5;
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     gMA.status |= STATUS_UNK_1;
     MA_SetTimeoutCount(TIMEOUT_30);
@@ -709,7 +709,7 @@ void MABIOS_CheckStatus2(MA_BUF *pRecvBuf)
 
     gMA.cmd_cur = MACMD_CHECKSTATUS;
     gMA.condition |= MA_CONDITION_UNK_5;
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_10);
     gMA.status |= STATUS_UNK_2;
@@ -730,7 +730,7 @@ void MABIOS_ChangeClock(u8 mode)
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send,
         tmpPacketLen, 3);
 
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -751,7 +751,7 @@ void MABIOS_EEPROM_Read(MA_BUF *pRecvBuf, u8 offset, u8 size)
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send,
         tmpPacketLen, 3);
 
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -781,7 +781,7 @@ void MABIOS_EEPROM_Write(MA_BUF *pRecvBuf, u8 offset, const u8 *data_send,
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send,
         tmpPacketLen, 3);
 
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -816,7 +816,7 @@ void MABIOS_PPPConnect(MA_BUF *pRecvBuf, const char *userid,
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send,
         tmpPacketLen, 3);
 
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -834,7 +834,7 @@ void MABIOS_PPPDisconnect(void)
 
     gMA.cmd_cur = MACMD_PPPDISCONNECT;
     gMA.condition |= MA_CONDITION_UNK_5;
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -858,7 +858,7 @@ void MABIOS_TCPConnect(MA_BUF *pRecvBuf, u8 *ip, u16 port)
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send,
         tmpPacketLen, 3);
 
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.unk_83 = 0;  // MAGIC
@@ -879,7 +879,7 @@ void MABIOS_TCPDisconnect(MA_BUF *pRecvBuf, u8 socket)
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send,
         tmpPacketLen, 3);
 
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -903,7 +903,7 @@ void MABIOS_UDPConnect(MA_BUF *pRecvBuf, u8 *ip, u16 port)
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send,
         tmpPacketLen, 3);
 
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -923,7 +923,7 @@ void MABIOS_UDPDisconnect(MA_BUF *pRecvBuf, u8 socket)
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send,
         tmpPacketLen, 3);
 
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -955,7 +955,7 @@ void MABIOS_DNSRequest(MA_BUF *pRecvBuf, char *pServerName)
     MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.buffer_packet_send,
         tmpPacketLen, 3);
 
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -973,7 +973,7 @@ void MABIOS_TestMode(void)
 
     gMA.cmd_cur = MACMD_TESTMODE;
     gMA.condition |= MA_CONDITION_UNK_5;
-    gMA.intr_sio_mode = 1;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_UNK_1;
@@ -1064,7 +1064,7 @@ void MA_CancelRequest(void)
     gMA.condition |= MA_CONDITION_UNK_5;
     gMA.status |= STATUS_UNK_12;
     gMA.timer_unk_12 = 0x5ff9;  // MAGIC
-    gMA.intr_sio_mode = 3;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_WAIT;
 }
 
 void MA_BiosStop(void)
@@ -1072,7 +1072,7 @@ void MA_BiosStop(void)
     gMA.condition |= MA_CONDITION_UNK_5;
     gMA.status |= STATUS_UNK_11;
     gMA.timer_unk_12 = 0;  // MAGIC
-    gMA.intr_sio_mode = 3;  // MAGIC
+    gMA.intrSioMode = MA_INTR_SIO_WAIT;
     gMA.status &= ~STATUS_UNK_12;
 }
 
@@ -1087,7 +1087,7 @@ void MA_RecvRetry(void)
     MA_InitIoBuffer(&gMA.iobuf_packet_recv, gMA.iobuf_packet_recv.pWrite, 0, 1);
     gMA.recv_rubbish_counter = 0;
     gMA.status &= ~STATUS_UNK_3;
-    gMA.intr_sio_mode = 2;
+    gMA.intrSioMode = MA_INTR_SIO_RECV;
     gMA.iobuf_packet_send.state = 0;
     gMA.cmd_last = 0;
     gMA.unk_81 = 0;
@@ -1185,7 +1185,7 @@ static void MA_IntrTimer_SIOWaitTime(void)
     } else if (gMA.status & STATUS_UNK_11) {
         gMA.status &= ~STATUS_UNK_11;
         gMA.condition &= ~MA_CONDITION_UNK_5;
-        gMA.intr_sio_mode = 0;
+        gMA.intrSioMode = MA_INTR_SIO_IDLE;
 
         if (gMA.status & STATUS_UNK_14) {
             MA_ChangeSIOMode(MA_SIO_BYTE);
@@ -1195,14 +1195,14 @@ static void MA_IntrTimer_SIOWaitTime(void)
                 gMA.status &= ~STATUS_UNK_14;
                 MA_SetError(MAAPIE_TIMEOUT);
                 gMA.counter = 0;
-                gMA.intr_sio_mode = 0;
+                gMA.intrSioMode = MA_INTR_SIO_IDLE;
             }
         }
     } else if (gMA.status & 8) {
-        gMA.intr_sio_mode = 1;
+        gMA.intrSioMode = MA_INTR_SIO_SEND;
         MA_SendRetry();
     } else {
-        gMA.intr_sio_mode = 0;
+        gMA.intrSioMode = MA_INTR_SIO_IDLE;
         gMA.pRecvBuf->size = gMA.iobuf_packet_recv.size;
         gMA.counter = 0;
         gMA.condition &= ~MA_CONDITION_UNK_5;
@@ -1253,7 +1253,7 @@ int MA_ProcessCheckStatusResponse(u8 response)
     }
 
     MA_SetCondition(ret);
-    gMA.intr_sio_mode = 0;
+    gMA.intrSioMode = MA_INTR_SIO_IDLE;
     gMA.iobuf_packet_send.state = 0;
     gMA.iobuf_packet_recv.state = 0;
     gMA.status &= ~STATUS_UNK_2;
@@ -1328,8 +1328,8 @@ static void MA_ProcessRecvPacket(u8 cmd)
             gMA.status &= ~STATUS_UNK_13;
             gMA.condition &= ~MA_CONDITION_CONNECT;
 
-            if (gMA.task != 2 && gMA.task != 9) {  // MAGIC
-                gMA.intr_sio_mode = 3;  // MAGIC
+            if (gMA.task != TASK_INITLIBRARY2 && gMA.task != TASK_CONDITION2) {
+                gMA.intrSioMode = MA_INTR_SIO_WAIT;
                 gMA.timer_unk_12 = -0x4003;  // MAGIC
                 i = 0;
             }
@@ -1351,14 +1351,14 @@ static void MA_ProcessRecvPacket(u8 cmd)
 
         case MAPROT_REPLY | MACMD_REINIT:
             MA_ChangeSIOMode(MA_SIO_BYTE);
-            gMA.intr_sio_mode = 3;  // MAGIC
+            gMA.intrSioMode = MA_INTR_SIO_WAIT;
             gMA.timer_unk_12 = -0x2002;  // MAGIC
             i = 0;
             break;
 
         case MAPROT_REPLY | MACMD_CHANGECLOCK:
             MA_ChangeSIOMode(pPacket[6]);
-            gMA.intr_sio_mode = 3;  // MAGIC
+            gMA.intrSioMode = MA_INTR_SIO_WAIT;
             gMA.timer_unk_12 = -0x3d8;  // MAGIC
             i = 0;
             break;
@@ -1374,7 +1374,7 @@ static void MA_ProcessRecvPacket(u8 cmd)
             if (gMA.cmd_last == MACMD_TCPCONNECT && ++gMA.unk_83 != 5) {
                 gMA.timer_unk_12 = -0x4003;  // MAGIC
                 gMA.status |= STATUS_UNK_3;
-                gMA.intr_sio_mode = 3;  // MAGIC
+                gMA.intrSioMode = MA_INTR_SIO_WAIT;
                 i = 0;
                 *(vu32 *)REG_TM3CNT = 0;
                 *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE
@@ -1390,7 +1390,7 @@ static void MA_ProcessRecvPacket(u8 cmd)
 
     gMA.status &= ~STATUS_UNK_6;
     if (i == 1) {
-        gMA.intr_sio_mode = 0;  // MAGIC
+        gMA.intrSioMode = MA_INTR_SIO_IDLE;
         gMA.condition &= ~MA_CONDITION_UNK_5;
     }
     gMA.counter = 0;
@@ -1401,7 +1401,7 @@ void MA_IntrTimer(void)
     static u8 saveSioMode;
 
     gMA.status |= STATUS_UNK_7;
-    saveSioMode = gMA.intr_sio_mode;
+    saveSioMode = gMA.intrSioMode;
     *(vu32 *)REG_TM3CNT = 0;
 
     if (!(gMA.status & STATUS_UNK_1) || gMA.status & STATUS_UNK_8
@@ -1414,7 +1414,7 @@ void MA_IntrTimer(void)
 
     MAAPI_Main();
 
-    if (saveSioMode != gMA.intr_sio_mode) {
+    if (saveSioMode != gMA.intrSioMode) {
         gMA.status &= ~STATUS_UNK_7;
         *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK
                               | gMA.timer_unk_12;
@@ -1429,11 +1429,11 @@ void MA_IntrTimer(void)
         return;
     }
 
-    switch (gMA.intr_sio_mode) {  // MAGIC
-    case 0: MA_IntrTimer_SIOIdle(); break;
-    case 3: MA_IntrTimer_SIOWaitTime(); break;
-    case 1: MA_IntrTimer_SIOSend(); break;
-    case 2: MA_IntrTimer_SIORecv(); break;
+    switch (gMA.intrSioMode) {
+    case MA_INTR_SIO_IDLE: MA_IntrTimer_SIOIdle(); break;
+    case MA_INTR_SIO_WAIT: MA_IntrTimer_SIOWaitTime(); break;
+    case MA_INTR_SIO_SEND: MA_IntrTimer_SIOSend(); break;
+    case MA_INTR_SIO_RECV: MA_IntrTimer_SIORecv(); break;
     }
     MA_StartSioTransmit();
 
@@ -1464,7 +1464,7 @@ void MA_IntrTimer(void)
 
 #define MA_Bios_disconnect_inline() \
 { \
-    gMA.intr_sio_mode = 0; \
+    gMA.intrSioMode = MA_INTR_SIO_IDLE; \
     gMA.iobuf_packet_send.state = 0; \
     gMA.iobuf_packet_recv.state = 0; \
     MA_SetError(MAAPIE_MA_NOT_FOUND); \
@@ -1530,7 +1530,7 @@ static void MA_IntrSio_Send(void)
         gMA.unk_7 = gMA.send_footer[1];
         gMA.timer_unk_12 = -1967;  // MAGIC
         gMA.status |= STATUS_UNK_3;
-        gMA.intr_sio_mode = 3;
+        gMA.intrSioMode = MA_INTR_SIO_WAIT;
         *(vu32 *)REG_TM3CNT = 0;
         *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK
                               | gMA.timer_unk_12;
@@ -1554,7 +1554,7 @@ static void MA_IntrSio_Send(void)
         gMA.unk_7 = gMA.send_footer[1];
         gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
         gMA.status |= STATUS_UNK_3;
-        gMA.intr_sio_mode = 3;
+        gMA.intrSioMode = MA_INTR_SIO_WAIT;
         *(vu32 *)REG_TM3CNT = 0;
         *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK
                               | gMA.timer_unk_12;
@@ -1582,7 +1582,7 @@ static void MA_IntrSio_Send(void)
         gMA.unk_7 = gMA.send_footer[1];
         gMA.timer_unk_12 = -16387;  // MAGIC
         gMA.status |= STATUS_UNK_3;
-        gMA.intr_sio_mode = 3;
+        gMA.intrSioMode = MA_INTR_SIO_WAIT;
         *(vu32 *)REG_TM3CNT = 0;
         *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK
                               | gMA.timer_unk_12;
@@ -1605,7 +1605,7 @@ static void MA_IntrSio_Send(void)
         gMA.unk_7 = gMA.send_footer[1];
         gMA.timer_unk_12 = -1967;  // MAGIC
         gMA.status |= STATUS_UNK_3;
-        gMA.intr_sio_mode = 3;
+        gMA.intrSioMode = MA_INTR_SIO_WAIT;
         *(vu32 *)REG_TM3CNT = 0;
         *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK
                               | gMA.timer_unk_12;
@@ -1622,7 +1622,7 @@ static void MA_IntrSio_Send(void)
     MA_InitIoBuffer(&gMA.iobuf_packet_recv, gMA.pRecvBuf->data, 0, 1);
     gMA.recv_rubbish_counter = 0;
     gMA.status &= ~STATUS_UNK_3;
-    gMA.intr_sio_mode = 2;
+    gMA.intrSioMode = MA_INTR_SIO_RECV;
     gMA.iobuf_packet_send.state = 0;
     gMA.counter = 0;
     gMA.cmd_last = 0;
@@ -1780,7 +1780,7 @@ static void MA_IntrSio_Recv(u8 byte)
                 MA_RecvRetry();
             } else {
                 gMA.status |= STATUS_UNK_6;
-                gMA.intr_sio_mode = 0;
+                gMA.intrSioMode = MA_INTR_SIO_IDLE;
             }
         }
         break;
@@ -1792,13 +1792,13 @@ void MA_IntrSerialIO(void)
     *(vu32 *)REG_TM3CNT &= ~TMR_IF_ENABLE;
     gMA.status |= STATUS_UNK_8;
 
-    switch (gMA.intr_sio_mode) {  // MAGIC
-    case 1:
+    switch (gMA.intrSioMode) {
+    case MA_INTR_SIO_SEND:
         MA_IntrSio_Send();
         gMA.status |= STATUS_UNK_1;
         break;
 
-    case 2:
+    case MA_INTR_SIO_RECV:
         if (gMA.sioMode == MA_SIO_BYTE) {
             MA_IntrSio_Recv(0);
         } else {
