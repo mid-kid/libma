@@ -306,8 +306,8 @@ typedef struct {
     vu8 taskStep;
     u8 sockets[NUM_SOCKETS];
     u8 prevbufHasEEPROMData;
-    u8 task_error;
-    u16 task_error_unk_2;
+    u8 taskError;
+    u16 taskErrorDetail;
     u8 ipAddr[4];
     union {
         PARAM_TCP_CUT tcp_cut;

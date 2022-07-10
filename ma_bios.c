@@ -1271,8 +1271,8 @@ static void ConvertNegaErrToApiErr(void)
         MAAPIE_CONNECT,
     };
 
-    gMA.task_error = errTable[gMA.unk_81];
-    gMA.task_error_unk_2 = 0;
+    gMA.taskError = errTable[gMA.unk_81];
+    gMA.taskErrorDetail = 0;
 }
 
 void MA_DefaultNegaResProc(void)
@@ -1280,13 +1280,13 @@ void MA_DefaultNegaResProc(void)
     switch (gMA.cmd_last) {
     case MACMD_TEL:
         switch (gMA.unk_81) {  // MAGIC
-        case 0: gMA.task_error = MAAPIE_BUSY; break;
-        case 1: gMA.task_error = MAAPIE_CONNECT; break;
-        case 2: gMA.task_error = MAAPIE_ILLEGAL_PARAMETER_LOW; break;
-        case 3: gMA.task_error = MAAPIE_CONNECT; break;
-        case 4: gMA.task_error = MAAPIE_CONNECT; break;
+        case 0: gMA.taskError = MAAPIE_BUSY; break;
+        case 1: gMA.taskError = MAAPIE_CONNECT; break;
+        case 2: gMA.taskError = MAAPIE_ILLEGAL_PARAMETER_LOW; break;
+        case 3: gMA.taskError = MAAPIE_CONNECT; break;
+        case 4: gMA.taskError = MAAPIE_CONNECT; break;
         }
-        gMA.task_error_unk_2 = 0;
+        gMA.taskErrorDetail = 0;
         break;
 
     case MACMD_START:
