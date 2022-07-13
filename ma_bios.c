@@ -73,104 +73,148 @@ static MAPROT_FOOTER *tmppPacketLast;
 static u16 tmpPacketLen;
 static int i;
 
-static const s16 gTimerIntByteInter[] = {
-    -4, -5, -7, -9, -10,
-    -8, -10, -14, -18, -20,
+static const u16 gTimerIntByteInter[] = {
+    TIMER_COUNTER_MS(0.20), TIMER_COUNTER_MS(0.30), TIMER_COUNTER_MS(0.40), TIMER_COUNTER_MS(0.50), TIMER_COUNTER_MS(0.60),
+    TIMER_COUNTER_MS(0.45), TIMER_COUNTER_MS(0.55), TIMER_COUNTER_MS(0.85), TIMER_COUNTER_MS(1.05), TIMER_COUNTER_MS(1.20),
+    //-TIMER_MS(0.25), -TIMER_MS(0.35), -TIMER_MS(0.45), -TIMER_MS(0.55), -TIMER_MS(0.65),
+    //-TIMER_MS(0.50), -TIMER_MS(0.65), -TIMER_MS(0.90), -TIMER_MS(1.10), -TIMER_MS(1.25),
+    //-4, -5, -7, -9, -10,
+    //-8, -10, -14, -18, -20,
 };
 
 static const u32 gNullCounterByte[] = {
-    4097, 3278, 2341, 1821, 1639,
-    2048, 1639, 1170, 910, 819,
+    TIMER_MS(250.05), TIMER_MS(200.05), TIMER_MS(142.90), TIMER_MS(111.15), TIMER_MS(100.05),
+    TIMER_MS(125.00), TIMER_MS(100.05), TIMER_MS(71.40), TIMER_MS(55.55), TIMER_MS(50.00),
+    //4097, 3278, 2341, 1821, 1639,
+    //2048, 1639, 1170, 910, 819,
 };
 
 static const u32 gP2PCounterByte[] = {
-    513, 410, 293, 228, 205,
-    256, 205, 146, 114, 102,
+    TIMER_MS(31.35), TIMER_MS(25.05), TIMER_MS(17.90), TIMER_MS(13.95), TIMER_MS(12.55),
+    TIMER_MS(15.65), TIMER_MS(12.55), TIMER_MS(8.95), TIMER_MS(7.00), TIMER_MS(6.25),
+    //513, 410, 293, 228, 205,
+    //256, 205, 146, 114, 102,
 };
 
 static const u32 gTimeout90CounterByte[] = {
-    368702, 294962, 210687, 163868, 147481,
-    184351, 147481, 105343, 81934, 73740,
+    TIMER_MS(22500.10), TIMER_MS(18000.10), TIMER_MS(12857.20), TIMER_MS(10000.05), TIMER_MS(9000.05),
+    TIMER_MS(11250.05), TIMER_MS(9000.05), TIMER_MS(6428.60), TIMER_MS(5000.05), TIMER_MS(4500.00),
+    //368702, 294962, 210687, 163868, 147481,
+    //184351, 147481, 105343, 81934, 73740,
 };
 
 static const u32 gTimeout30CounterByte[] = {
-    122901, 98321, 70229, 54623, 49161,
-    61450, 49160, 35114, 27311, 24580,
+    TIMER_MS(7500.05), TIMER_MS(6000.05), TIMER_MS(4285.75), TIMER_MS(3333.40), TIMER_MS(3000.10),
+    TIMER_MS(3750.00), TIMER_MS(3000.00), TIMER_MS(2142.85), TIMER_MS(1666.70), TIMER_MS(1500.00),
+    //122901, 98321, 70229, 54623, 49161,
+    //61450, 49160, 35114, 27311, 24580,
 };
 
 static const u32 gTimeout10CounterByte[] = {
-    40967, 32774, 23410, 18208, 16387,
-    20483, 16387, 11705, 9104, 8193,
+    TIMER_MS(2500.05), TIMER_MS(2000.05), TIMER_MS(1428.60), TIMER_MS(1111.15), TIMER_MS(1000.05),
+    TIMER_MS(1250.00), TIMER_MS(1000.05), TIMER_MS(714.30), TIMER_MS(555.60), TIMER_MS(500.00),
+    //40967, 32774, 23410, 18208, 16387,
+    //20483, 16387, 11705, 9104, 8193,
 };
 
 static const u32 gTimeout02CounterByte[] = {
-    8194, 6555, 4682, 3642, 3278,
-    4097, 3277, 2341, 1821, 1639,
+    TIMER_MS(500.05), TIMER_MS(400.05), TIMER_MS(285.75), TIMER_MS(222.30), TIMER_MS(200.05),
+    TIMER_MS(250.05), TIMER_MS(200.00), TIMER_MS(142.90), TIMER_MS(111.15), TIMER_MS(100.05),
+    //8194, 6555, 4682, 3642, 3278,
+    //4097, 3277, 2341, 1821, 1639,
 };
 
 static const u32 gTimeout200msecCounterByte[] = {
-    820, 656, 469, 365, 328,
-    410, 328, 234, 182, 164,
+    TIMER_MS(50.05), TIMER_MS(40.05), TIMER_MS(28.65), TIMER_MS(22.30), TIMER_MS(20.05),
+    TIMER_MS(25.05), TIMER_MS(20.05), TIMER_MS(14.30), TIMER_MS(11.15), TIMER_MS(10.05),
+    //820, 656, 469, 365, 328,
+    //410, 328, 234, 182, 164,
 };
 
 static const u32 gTimeout250msecCounterByte[] = {
-    1025, 820, 586, 456, 410,
-    512, 410, 293, 228, 205,
+    TIMER_MS(62.60), TIMER_MS(50.05), TIMER_MS(35.80), TIMER_MS(27.85), TIMER_MS(25.05),
+    TIMER_MS(31.25), TIMER_MS(25.05), TIMER_MS(17.90), TIMER_MS(13.95), TIMER_MS(12.55),
+    //1025, 820, 586, 456, 410,
+    //512, 410, 293, 228, 205,
 };
 
 static const u32 gTimeout40msecCounterByte[] = {
-    164, 131, 94, 73, 66,
-    82, 65, 47, 36, 33,
+    TIMER_MS(10.05), TIMER_MS(8.00), TIMER_MS(5.75), TIMER_MS(4.50), TIMER_MS(4.05),
+    TIMER_MS(5.05), TIMER_MS(4.00), TIMER_MS(2.90), TIMER_MS(2.20), TIMER_MS(2.05),
+    //164, 131, 94, 73, 66,
+    //82, 65, 47, 36, 33,
 };
 
-static const s16 gTimerIntWordInter[] = {
-    -8, -7, -9, -9, -10,
-    -16, -14, -18, -18, -20,
+static const u16 gTimerIntWordInter[] = {
+    TIMER_COUNTER_MS(0.45), TIMER_COUNTER_MS(0.40), TIMER_COUNTER_MS(0.50), TIMER_COUNTER_MS(0.50), TIMER_COUNTER_MS(0.60),
+    TIMER_COUNTER_MS(0.95), TIMER_COUNTER_MS(0.85), TIMER_COUNTER_MS(1.05), TIMER_COUNTER_MS(1.05), TIMER_COUNTER_MS(1.20),
+    //-TIMER_MS(0.50), -TIMER_MS(0.45), -TIMER_MS(0.55), -TIMER_MS(0.55), -TIMER_MS(0.65),
+    //-TIMER_MS(1.00), -TIMER_MS(0.90), -TIMER_MS(1.10), -TIMER_MS(1.10), -TIMER_MS(1.25),
+    //-8, -7, -9, -9, -10,
+    //-16, -14, -18, -18, -20,
 };
 
 static const u32 gNullCounterWord[] = {
-    2049, 2341, 1821, 1639, 1366,
-    1024, 1170, 910, 819, 683,
+    TIMER_MS(125.05), TIMER_MS(142.90), TIMER_MS(111.15), TIMER_MS(100.05), TIMER_MS(83.40),
+    TIMER_MS(62.50), TIMER_MS(71.40), TIMER_MS(55.55), TIMER_MS(50.00), TIMER_MS(41.70),
+    //2049, 2341, 1821, 1639, 1366,
+    //1024, 1170, 910, 819, 683,
 };
 
 static const u32 gP2PCounterWord[] = {
-    257, 293, 228, 205, 171,
-    128, 146, 114, 102, 85,
+    TIMER_MS(15.70), TIMER_MS(17.90), TIMER_MS(13.95), TIMER_MS(12.55), TIMER_MS(10.45),
+    TIMER_MS(7.85), TIMER_MS(8.95), TIMER_MS(7.00), TIMER_MS(6.25), TIMER_MS(5.20),
+    //257, 293, 228, 205, 171,
+    //128, 146, 114, 102, 85,
 };
 
 static const u32 gTimeout90CounterWord[] = {
-    184351, 210687, 163868, 147481, 122901,
-    92175, 105343, 81934, 73740, 61450,
+    TIMER_MS(11250.05), TIMER_MS(12857.20), TIMER_MS(10000.05), TIMER_MS(9000.05), TIMER_MS(7500.05),
+    TIMER_MS(5625.00), TIMER_MS(6428.60), TIMER_MS(5000.05), TIMER_MS(4500.00), TIMER_MS(3750.00),
+    //184351, 210687, 163868, 147481, 122901,
+    //92175, 105343, 81934, 73740, 61450,
 };
 
 static const u32 gTimeout30CounterWord[] = {
-    61451, 70229, 54623, 49161, 40967,
-    30725, 35114, 27311, 24580, 20483,
+    TIMER_MS(3750.05), TIMER_MS(4285.75), TIMER_MS(3333.40), TIMER_MS(3000.10), TIMER_MS(2500.05),
+    TIMER_MS(1875.00), TIMER_MS(2142.85), TIMER_MS(1666.70), TIMER_MS(1500.00), TIMER_MS(1250.00),
+    //61451, 70229, 54623, 49161, 40967,
+    //30725, 35114, 27311, 24580, 20483,
 };
 
 static const u32 gTimeout10CounterWord[] = {
-    20484, 23410, 18208, 16387, 13656,
-    10242, 11705, 9104, 8193, 6828,
+    TIMER_MS(1250.05), TIMER_MS(1428.60), TIMER_MS(1111.15), TIMER_MS(1000.05), TIMER_MS(833.40),
+    TIMER_MS(625.05), TIMER_MS(714.30), TIMER_MS(555.60), TIMER_MS(500.00), TIMER_MS(416.70),
+    //20484, 23410, 18208, 16387, 13656,
+    //10242, 11705, 9104, 8193, 6828,
 };
 
 static const u32 gTimeout02CounterWord[] = {
-    4097, 4682, 3642, 3278, 2732,
-    2048, 2341, 1821, 1639, 1366,
+    TIMER_MS(250.05), TIMER_MS(285.75), TIMER_MS(222.30), TIMER_MS(200.05), TIMER_MS(166.75),
+    TIMER_MS(125.00), TIMER_MS(142.90), TIMER_MS(111.15), TIMER_MS(100.05), TIMER_MS(83.40),
+    //4097, 4682, 3642, 3278, 2732,
+    //2048, 2341, 1821, 1639, 1366,
 };
 
 static const u32 gTimeout200msecCounterWord[] = {
-    410, 469, 365, 328, 274,
-    205, 234, 182, 164, 137,
+    TIMER_MS(25.05), TIMER_MS(28.65), TIMER_MS(22.30), TIMER_MS(20.05), TIMER_MS(16.75),
+    TIMER_MS(12.55), TIMER_MS(14.30), TIMER_MS(11.15), TIMER_MS(10.05), TIMER_MS(8.40),
+    //410, 469, 365, 328, 274,
+    //205, 234, 182, 164, 137,
 };
 
 static const u32 gTimeout250msecCounterWord[] = {
-    513, 586, 456, 410, 342,
-    256, 293, 228, 205, 171,
+    TIMER_MS(31.35), TIMER_MS(35.80), TIMER_MS(27.85), TIMER_MS(25.05), TIMER_MS(20.90),
+    TIMER_MS(15.65), TIMER_MS(17.90), TIMER_MS(13.95), TIMER_MS(12.55), TIMER_MS(10.45),
+    //513, 586, 456, 410, 342,
+    //256, 293, 228, 205, 171,
 };
 
 static const u32 gTimeout40msecCounterWord[] = {
-    82, 94, 73, 66, 55,
-    41, 47, 36, 33, 27,
+    TIMER_MS(5.05), TIMER_MS(5.75), TIMER_MS(4.50), TIMER_MS(4.05), TIMER_MS(3.40),
+    TIMER_MS(2.55), TIMER_MS(2.90), TIMER_MS(2.20), TIMER_MS(2.05), TIMER_MS(1.65),
+    //82, 94, 73, 66, 55,
+    //41, 47, 36, 33, 27,
 };
 
 static const u8 MaPacketData_PreStart[] = {
@@ -214,13 +258,13 @@ void MABIOS_Init(void)
     gMA.condition = 0;
     gMA.error = -1;
     gMA.intrSioMode = MA_INTR_SIO_IDLE;
-    gMA.adapter_type = -1;
+    gMA.hardwareType = -1;
 
     MA_ChangeSIOMode(MA_SIO_BYTE);
     MA_SetInterval(0);
 
     gMA.counter = 0;
-    gMA.timer_unk_12 = 0;
+    gMA.timerInterval = 0;
     gMA.retryCount = 0;
     gMA.status = 0;
     gMA.iobuf_sio_tx = NULL;
@@ -249,13 +293,13 @@ static void SetInternalRecvBuffer(void)
 
 static void MA_SetInterval(int index)
 {
-    if (gMA.adapter_type == (MATYPE_PROT_SLAVE | MATYPE_PDC)) {
+    if (gMA.hardwareType == (MATYPE_PROT_SLAVE | MATYPE_PDC)) {
         index += 5;
     }
 
     gMA.interval = index;
-    gMA.timer[MA_SIO_BYTE] = gTimerIntByteInter[index];
-    gMA.timer[MA_SIO_WORD] = gTimerIntWordInter[index];
+    gMA.timerDataInterval[MA_SIO_BYTE] = gTimerIntByteInter[index];
+    gMA.timerDataInterval[MA_SIO_WORD] = gTimerIntWordInter[index];
     gMA.nullCounter[MA_SIO_BYTE] = gNullCounterByte[index];
     gMA.nullCounter[MA_SIO_WORD] = gNullCounterWord[index];
     gMA.P2PCounter[MA_SIO_BYTE] = gP2PCounterByte[index];
@@ -263,7 +307,7 @@ static void MA_SetInterval(int index)
     gMA.timeout200msecCounter[MA_SIO_BYTE] = gTimeout200msecCounterByte[index];
     gMA.timeout200msecCounter[MA_SIO_WORD] = gTimeout200msecCounterWord[index];
 
-    switch (gMA.adapter_type) {
+    switch (gMA.hardwareType) {
     case MATYPE_PROT_SLAVE | MATYPE_CDMA:
         gMA.timeoutCounter[MA_SIO_BYTE] = gTimeout250msecCounterByte[index];
         gMA.timeoutCounter[MA_SIO_WORD] = gTimeout250msecCounterWord[index];
@@ -426,10 +470,10 @@ void MA_ChangeSIOMode(u8 mode)
     }
 }
 
-void MA_SetDataInterval(s16 interval_byte, s16 interval_word)
+void MA_SetDataInterval(u16 interval_byte, u16 interval_word)
 {
-    gMA.timer[MA_SIO_BYTE] = interval_byte;
-    gMA.timer[MA_SIO_WORD] = interval_word;
+    gMA.timerDataInterval[MA_SIO_BYTE] = interval_byte;
+    gMA.timerDataInterval[MA_SIO_WORD] = interval_word;
 }
 
 static int MA_IsSupportedHardware(u8 hardware)
@@ -466,7 +510,7 @@ void MABIOS_Null(void)
         tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     gMA.status |= STATUS_CONNTEST;
     gMA.status |= STATUS_SIO_START;
     MA_SetTimeoutCount(TIMEOUT_30);
@@ -484,11 +528,10 @@ void MABIOS_Start(void)
     MA_InitIoBuffer(&gMA.iobuf_packet_send, (u8 *)MaPacketData_PreStart, 1, 1);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
-    *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK
-                          | gMA.timer_unk_12;
+    *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
 }
 
 void MABIOS_Start2(void)
@@ -510,7 +553,7 @@ void MABIOS_Start2(void)
     }
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_02);
     gMA.status |= STATUS_SIO_START;
 }
@@ -528,7 +571,7 @@ void MABIOS_End(void)
     gMA.cmd_cur = MACMD_END;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -561,7 +604,7 @@ void MABIOS_Tel(u8 calltype, const char *number)
         tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_90);
     gMA.status |= STATUS_SIO_START;
 }
@@ -579,7 +622,7 @@ void MABIOS_Offline(void)
     gMA.cmd_cur = MACMD_OFFLINE;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -597,7 +640,7 @@ void MABIOS_WaitCall(void)
     gMA.cmd_cur = MACMD_WAITCALL;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -626,7 +669,7 @@ void MABIOS_Data(MA_BUF *pRecvBuf, const u8 *pSendData, u8 size, u8 socket)
         tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -656,7 +699,7 @@ static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pSendData, u8 size)
         tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -674,7 +717,7 @@ void MABIOS_ReInit(void)
     gMA.cmd_cur = MACMD_REINIT;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -692,7 +735,7 @@ void MABIOS_CheckStatus(MA_BUF *pRecvBuf)
     gMA.cmd_cur = MACMD_CHECKSTATUS;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     gMA.status |= STATUS_SIO_START;
     MA_SetTimeoutCount(TIMEOUT_30);
 }
@@ -710,7 +753,7 @@ void MABIOS_CheckStatus2(MA_BUF *pRecvBuf)
     gMA.cmd_cur = MACMD_CHECKSTATUS;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_10);
     gMA.status |= STATUS_CONNTEST;
     gMA.status |= STATUS_SIO_START;
@@ -731,7 +774,7 @@ void MABIOS_ChangeClock(u8 mode)
         tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -752,7 +795,7 @@ void MABIOS_EEPROM_Read(MA_BUF *pRecvBuf, u8 offset, u8 size)
         tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -782,7 +825,7 @@ void MABIOS_EEPROM_Write(MA_BUF *pRecvBuf, u8 offset, const u8 *data_send,
         tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -817,7 +860,7 @@ void MABIOS_PPPConnect(MA_BUF *pRecvBuf, const char *userid,
         tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -835,7 +878,7 @@ void MABIOS_PPPDisconnect(void)
     gMA.cmd_cur = MACMD_PPPDISCONNECT;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -859,7 +902,7 @@ void MABIOS_TCPConnect(MA_BUF *pRecvBuf, u8 *ip, u16 port)
         tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.unk_83 = 0;  // MAGIC
     gMA.status |= STATUS_SIO_START;
@@ -880,7 +923,7 @@ void MABIOS_TCPDisconnect(MA_BUF *pRecvBuf, u8 socket)
         tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -904,7 +947,7 @@ void MABIOS_UDPConnect(MA_BUF *pRecvBuf, u8 *ip, u16 port)
         tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -924,7 +967,7 @@ void MABIOS_UDPDisconnect(MA_BUF *pRecvBuf, u8 socket)
         tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -956,7 +999,7 @@ void MABIOS_DNSRequest(MA_BUF *pRecvBuf, char *pServerName)
         tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -974,7 +1017,7 @@ void MABIOS_TestMode(void)
     gMA.cmd_cur = MACMD_TESTMODE;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -1063,7 +1106,7 @@ void MA_CancelRequest(void)
 {
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.status |= STATUS_CANCEL_REQUEST;
-    gMA.timer_unk_12 = 0x5ff9;  // MAGIC
+    gMA.timerInterval = TIMER_COUNTER_MS(2500);
     gMA.intrSioMode = MA_INTR_SIO_WAIT;
 }
 
@@ -1071,7 +1114,7 @@ void MA_BiosStop(void)
 {
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.status |= STATUS_BIOS_STOP;
-    gMA.timer_unk_12 = 0;  // MAGIC
+    gMA.timerInterval = 0;  // MAGIC
     gMA.intrSioMode = MA_INTR_SIO_WAIT;
     gMA.status &= ~STATUS_CANCEL_REQUEST;
 }
@@ -1099,13 +1142,13 @@ static void MA_IntrTimer_SIOSend(void)
     case 1:
         MA_SetTransmitData(&gMA.iobuf_packet_send);
         gMA.iobuf_packet_send.state = 2;
-        gMA.timer_unk_12 = -1967;  // MAGIC
+        gMA.timerInterval = TIMER_COUNTER_MS(120);
         break;
 
     case 2:
         MA_InitIoBuffer(&gMA.iobuf_packet_send, (u8 *)MaPacketData_Start,
             sizeof(MaPacketData_Start) - 2, 3);
-        gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+        gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
         MA_SetTransmitData(&gMA.iobuf_packet_send);
         break;
 
@@ -1207,7 +1250,7 @@ static void MA_IntrTimer_SIOWaitTime(void)
         gMA.counter = 0;
         gMA.condition &= ~MA_CONDITION_BIOS_BUSY;
     }
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
 }
 
 int MA_ProcessCheckStatusResponse(u8 response)
@@ -1330,7 +1373,7 @@ static void MA_ProcessRecvPacket(u8 cmd)
 
             if (gMA.task != TASK_INITLIBRARY2 && gMA.task != TASK_CONDITION2) {
                 gMA.intrSioMode = MA_INTR_SIO_WAIT;
-                gMA.timer_unk_12 = -0x4003;  // MAGIC
+                gMA.timerInterval = TIMER_COUNTER_MS(1000);
                 i = 0;
             }
             break;
@@ -1352,14 +1395,14 @@ static void MA_ProcessRecvPacket(u8 cmd)
         case MAPROT_REPLY | MACMD_REINIT:
             MA_ChangeSIOMode(MA_SIO_BYTE);
             gMA.intrSioMode = MA_INTR_SIO_WAIT;
-            gMA.timer_unk_12 = -0x2002;  // MAGIC
+            gMA.timerInterval = TIMER_COUNTER_MS(500);
             i = 0;
             break;
 
         case MAPROT_REPLY | MACMD_CHANGECLOCK:
             MA_ChangeSIOMode(pPacket[6]);
             gMA.intrSioMode = MA_INTR_SIO_WAIT;
-            gMA.timer_unk_12 = -0x3d8;  // MAGIC
+            gMA.timerInterval = TIMER_COUNTER_MS(60);
             i = 0;
             break;
 
@@ -1372,13 +1415,12 @@ static void MA_ProcessRecvPacket(u8 cmd)
             gMA.unk_81 = gMA.iobuf_packet_recv.pWrite[1];
 
             if (gMA.cmd_last == MACMD_TCPCONNECT && ++gMA.unk_83 != 5) {
-                gMA.timer_unk_12 = -0x4003;  // MAGIC
+                gMA.timerInterval = TIMER_COUNTER_MS(1000);
                 gMA.status |= STATUS_SIO_RETRY;
                 gMA.intrSioMode = MA_INTR_SIO_WAIT;
                 i = 0;
                 *(vu32 *)REG_TM3CNT = 0;
-                *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE
-                                      | TMR_PRESCALER_1024CK | gMA.timer_unk_12;
+                *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
             }
             break;
 
@@ -1406,8 +1448,7 @@ void MA_IntrTimer(void)
 
     if (!(gMA.status & STATUS_SIO_START) || gMA.status & STATUS_INTR_SIO
         || gMA.status & STATUS_API_CALL || *(vu16 *)REG_SIOCNT & SIO_START) {
-        *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK
-                              | gMA.timer_unk_12;
+        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
         gMA.status &= ~STATUS_INTR_TIMER;
         return;
     }
@@ -1416,16 +1457,14 @@ void MA_IntrTimer(void)
 
     if (saveSioMode != gMA.intrSioMode) {
         gMA.status &= ~STATUS_INTR_TIMER;
-        *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK
-                              | gMA.timer_unk_12;
+        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
         return;
     }
 
     if (gMA.status & STATUS_SIO_RECV_DONE) {
         MA_ProcessRecvPacket(gMA.cmd_recv);
         gMA.status &= ~STATUS_INTR_TIMER;
-        *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK
-                              | gMA.timer_unk_12;
+        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
         return;
     }
 
@@ -1437,8 +1476,7 @@ void MA_IntrTimer(void)
     }
     MA_StartSioTransmit();
 
-    *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK
-                          | gMA.timer_unk_12;
+    *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
     gMA.status &= ~STATUS_INTR_TIMER;
 }
 
@@ -1527,19 +1565,18 @@ static void MA_IntrSio_Send(void)
             gMA.retryCount = 2;
         }
 
-        gMA.unk_7 = gMA.send_footer[1];
-        gMA.timer_unk_12 = -1967;  // MAGIC
+        gMA.footerError = gMA.send_footer[1];
+        gMA.timerInterval = TIMER_COUNTER_MS(120);
         gMA.status |= STATUS_SIO_RETRY;
         gMA.intrSioMode = MA_INTR_SIO_WAIT;
         *(vu32 *)REG_TM3CNT = 0;
-        *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK
-                              | gMA.timer_unk_12;
+        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
         return;
     }
 
     // Check if the adapter returned an unknown protocol error
     if (gMA.send_footer[1] == MAPROT_ERR_F2 && !(gMA.status & STATUS_CANCEL_REQUEST)) {
-        gMA.unk_7 = MAPROT_ERR_F2;
+        gMA.footerError = MAPROT_ERR_F2;
 
         if (gMA.status & STATUS_SIO_RETRY) {
             if (--gMA.retryCount == 0) {
@@ -1551,13 +1588,12 @@ static void MA_IntrSio_Send(void)
             gMA.retryCount = -2;
         }
 
-        gMA.unk_7 = gMA.send_footer[1];
-        gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+        gMA.footerError = gMA.send_footer[1];
+        gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
         gMA.status |= STATUS_SIO_RETRY;
         gMA.intrSioMode = MA_INTR_SIO_WAIT;
         *(vu32 *)REG_TM3CNT = 0;
-        *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK
-                              | gMA.timer_unk_12;
+        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
         return;
     }
 
@@ -1579,13 +1615,12 @@ static void MA_IntrSio_Send(void)
             gMA.retryCount = 2;
         }
 
-        gMA.unk_7 = gMA.send_footer[1];
-        gMA.timer_unk_12 = -16387;  // MAGIC
+        gMA.footerError = gMA.send_footer[1];
+        gMA.timerInterval = TIMER_COUNTER_MS(1000);
         gMA.status |= STATUS_SIO_RETRY;
         gMA.intrSioMode = MA_INTR_SIO_WAIT;
         *(vu32 *)REG_TM3CNT = 0;
-        *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK
-                              | gMA.timer_unk_12;
+        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
         return;
     }
 
@@ -1602,18 +1637,17 @@ static void MA_IntrSio_Send(void)
             gMA.retryCount = 2;
         }
 
-        gMA.unk_7 = gMA.send_footer[1];
-        gMA.timer_unk_12 = -1967;  // MAGIC
+        gMA.footerError = gMA.send_footer[1];
+        gMA.timerInterval = TIMER_COUNTER_MS(120);
         gMA.status |= STATUS_SIO_RETRY;
         gMA.intrSioMode = MA_INTR_SIO_WAIT;
         *(vu32 *)REG_TM3CNT = 0;
-        *(vu32 *)REG_TM3CNT = TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK
-                              | gMA.timer_unk_12;
+        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
         return;
     }
 
     // Initialize the reception of the reply packet
-    gMA.adapter_type = gMA.send_footer[0];
+    gMA.hardwareType = gMA.send_footer[0];
     if (gMA.sioMode == MA_SIO_BYTE) {
         MA_InitIoBuffer(&gMA.iobuf_footer, (u8 *)MaPacketData_PreStart, 1, 0);
     } else {

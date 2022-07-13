@@ -275,10 +275,10 @@ typedef struct {
     vu16 condition;
     vu8 intrSioMode;
     vu8 sioMode;
-    vu8 adapter_type;
-    vu8 unk_7;
-    vu16 timer[MA_NUM_SIO_MODES];
-    vu16 timer_unk_12;
+    vu8 hardwareType;
+    vu8 footerError;  // unused
+    vu16 timerDataInterval[MA_NUM_SIO_MODES];
+    vu16 timerInterval;
     vu16 retryCount;
     vu8 interval;
     u32 nullCounter[MA_NUM_SIO_MODES];
@@ -370,6 +370,11 @@ typedef struct {
 
 extern MA_VAR gMA;
 
+#define CPU_F 16780000
+#define TIMER_FLAGS (TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK)
+#define TIMER_MS(ms) (((long long)CPU_F * (ms)) / (1024 * 1000))
+#define TIMER_COUNTER_MS(ms) (0xffff - (int)TIMER_MS(ms))
+
 #define MA_SetCondition(cond) \
 { \
     gMA.condition &= ~MA_CONDITION_MASK; \
@@ -380,7 +385,7 @@ extern MA_VAR gMA;
 { \
     gMA.unk_92 = 0; \
     MA_ChangeSIOMode(MA_SIO_BYTE); \
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode]; \
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode]; \
     gMA.counter = 0; \
     gMA.intrSioMode = MA_INTR_SIO_IDLE; \
     gMA.status &= ~STATUS_CONNECTED; \

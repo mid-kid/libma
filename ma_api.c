@@ -49,7 +49,7 @@ static const char *ExtractServerName(char *pServerName, const char *pURL,
 static void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
     const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize,
     u16 *pRecvSize, const char *pUserID, const char *pPassword, u8 task);
-static void ConcatUserAgent(char *user_agent);
+static void ConcatUserAgent(char *pUserAgent);
 static int GetRequestType(void);
 static void CreateHttpRequestHeader(void);
 static int HttpGetNextStep(int unk_1);
@@ -85,7 +85,7 @@ void ResetApiCallFlag(void)
 
 void MA_TaskSet(u8 task, u8 step)
 {
-    gMA.timer_unk_12 = gMA.timer[gMA.sioMode];
+    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
     gMA.task = task;
     gMA.taskStep = step;
     if (gMA.task == 0) gMA.condition &= ~MA_CONDITION_APIWAIT;
@@ -497,7 +497,7 @@ static void MATASK_InitLibrary(void)
         break;
 
     case 3:
-        *param.pHardwareType = gMA.adapter_type + 0x78;  // MAGIC
+        *param.pHardwareType = gMA.hardwareType + 0x78;  // MAGIC
 
         MA_ChangeSIOMode(MA_SIO_BYTE);
         MA_Reset();
@@ -982,7 +982,7 @@ static void MATASK_TelServer(void)
         break;
 
     case 7:
-        MABIOS_Tel(MA_GetCallTypeFromHarwareType(gMA.adapter_type), param.pTelNo);
+        MABIOS_Tel(MA_GetCallTypeFromHarwareType(gMA.hardwareType), param.pTelNo);
         gMA.taskStep++;
         break;
 
@@ -1103,7 +1103,7 @@ static void MATASK_Tel(void)
             break;
         }
 
-        MABIOS_Tel(MA_GetCallTypeFromHarwareType(gMA.adapter_type), param.pTelNo);
+        MABIOS_Tel(MA_GetCallTypeFromHarwareType(gMA.hardwareType), param.pTelNo);
         gMA.taskStep++;
         break;
 
@@ -3489,15 +3489,15 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
     } \
 }
 
-static void ConcatUserAgent(char *user_agent)
+static void ConcatUserAgent(char *pUserAgent)
 {
     static int tmpLen;
     static u8 *tmpp;
     static u8 tmpNum;
     static const char hexChar[] = "0123456789ABCDEF";
 
-    tmpLen = MAU_strlen(user_agent);
-    tmpp = &user_agent[tmpLen];
+    tmpLen = MAU_strlen(pUserAgent);
+    tmpp = &pUserAgent[tmpLen];
 
     ConcatUserAgent_WriteAscii(tmpp++, *(char *)(CASSETTE_INITIAL_CODE + 0));
     ConcatUserAgent_WriteAscii(tmpp++, *(char *)(CASSETTE_INITIAL_CODE + 1));

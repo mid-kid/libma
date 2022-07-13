@@ -10,7 +10,7 @@ u16 MA_GetCondition(void);
 u8 MA_ErrorCheck(void);
 void MA_SetError(u8 error);
 void MA_ChangeSIOMode(u8 mode);
-void MA_SetDataInterval(s16 interval_byte, s16 interval_word);
+void MA_SetDataInterval(u16 interval_byte, u16 interval_word);
 int MA_GetCallTypeFromHarwareType(u8 hardware);
 void MABIOS_Null(void);
 void MABIOS_Start(void);
