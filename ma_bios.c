@@ -73,149 +73,91 @@ static MAPROT_FOOTER *tmppPacketLast;
 static u16 tmpPacketLen;
 static int i;
 
+#define COUNTER_BYTE_INTER1 TIMER_MS(0.20)
+#define COUNTER_BYTE_INTER2 TIMER_MS(0.30)
+#define COUNTER_BYTE_INTER3 TIMER_MS(0.40)
+#define COUNTER_BYTE_INTER4 TIMER_MS(0.50)
+#define COUNTER_BYTE_INTER5 TIMER_MS(0.60)
+
 static const u16 gTimerIntByteInter[] = {
-    TIMER_COUNTER_MS(0.20), TIMER_COUNTER_MS(0.30), TIMER_COUNTER_MS(0.40), TIMER_COUNTER_MS(0.50), TIMER_COUNTER_MS(0.60),
-    TIMER_COUNTER_MS(0.45), TIMER_COUNTER_MS(0.55), TIMER_COUNTER_MS(0.85), TIMER_COUNTER_MS(1.05), TIMER_COUNTER_MS(1.20),
-    //-TIMER_MS(0.25), -TIMER_MS(0.35), -TIMER_MS(0.45), -TIMER_MS(0.55), -TIMER_MS(0.65),
-    //-TIMER_MS(0.50), -TIMER_MS(0.65), -TIMER_MS(0.90), -TIMER_MS(1.10), -TIMER_MS(1.25),
-    //-4, -5, -7, -9, -10,
-    //-8, -10, -14, -18, -20,
+    -COUNTER_BYTE_INTER1,
+    -COUNTER_BYTE_INTER2,
+    -COUNTER_BYTE_INTER3,
+    -COUNTER_BYTE_INTER4,
+    -COUNTER_BYTE_INTER5,
+
+    -COUNTER_BYTE_INTER1 * 2,
+    -COUNTER_BYTE_INTER2 * 2,
+    -COUNTER_BYTE_INTER3 * 2,
+    -COUNTER_BYTE_INTER4 * 2,
+    -COUNTER_BYTE_INTER5 * 2,
 };
 
-static const u32 gNullCounterByte[] = {
-    TIMER_MS(1000) / 4 + 1, TIMER_MS(1000) / 5 + 1, TIMER_MS(1000) / 7 + 1, TIMER_MS(1000) / 9 + 1, TIMER_MS(1000) / 10 + 1,
-    TIMER_MS(1000) / 8 + 0, TIMER_MS(1000) / 10 + 1, TIMER_MS(1000) / 14 + 0, TIMER_MS(1000) / 18 + 0, TIMER_MS(1000) / 20 + 0,
-    //4097, 3278, 2341, 1821, 1639,
-    //2048, 1639, 1170, 910, 819,
-};
+#define COUNTER_BYTE(ms) \
+    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER1), \
+    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER2), \
+    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER3), \
+    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER4), \
+    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER5), \
+    \
+    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER1) / 2, \
+    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER2) / 2, \
+    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER3) / 2, \
+    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER4) / 2, \
+    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER5) / 2,
 
-static const u32 gP2PCounterByte[] = {
-    TIMER_MS(125) / 4 + 1, TIMER_MS(125) / 5 + 1, TIMER_MS(125) / 7 + 1, TIMER_MS(125) / 9 + 1, TIMER_MS(125) / 10 + 1,
-    TIMER_MS(125) / 8 + 0, TIMER_MS(125) / 10 + 1, TIMER_MS(125) / 14 + 0, TIMER_MS(125) / 18 + 1, TIMER_MS(125) / 20 + 0,
-    //513, 410, 293, 228, 205,
-    //256, 205, 146, 114, 102,
-};
+static const u32 gNullCounterByte[] = { COUNTER_BYTE(1000) };
+static const u32 gP2PCounterByte[] = { COUNTER_BYTE(125) };
+static const u32 gTimeout90CounterByte[] = { COUNTER_BYTE(90000 + 0.05) };
+static const u32 gTimeout30CounterByte[] = { COUNTER_BYTE(30000) };
+static const u32 gTimeout10CounterByte[] = { COUNTER_BYTE(10000) };
+static const u32 gTimeout02CounterByte[] = { COUNTER_BYTE(2000) };
+static const u32 gTimeout200msecCounterByte[] = { COUNTER_BYTE(200) };
+static const u32 gTimeout250msecCounterByte[] = { COUNTER_BYTE(250) };
+static const u32 gTimeout40msecCounterByte[] = { COUNTER_BYTE(40 - 0.05) };
 
-static const u32 gTimeout90CounterByte[] = {
-    TIMER_MS(90000) / 4 + 1, TIMER_MS(90000) / 5 + 2, TIMER_MS(90000) / 7 + 1, TIMER_MS(90000) / 9 + 1, TIMER_MS(90000) / 10 + 1,
-    TIMER_MS(90000) / 8 + 1, TIMER_MS(90000) / 10 + 1, TIMER_MS(90000) / 14 + 0, TIMER_MS(90000) / 18 + 1, TIMER_MS(90000) / 20 + 0,
-    //368702, 294962, 210687, 163868, 147481,
-    //184351, 147481, 105343, 81934, 73740,
-};
-
-static const u32 gTimeout30CounterByte[] = {
-    TIMER_MS(30000) / 4 + 1, TIMER_MS(30000) / 5 + 1, TIMER_MS(30000) / 7 + 1, TIMER_MS(30000) / 9 + 1, TIMER_MS(30000) / 10 + 1,
-    TIMER_MS(30000) / 8 + 0, TIMER_MS(30000) / 10 + 0, TIMER_MS(30000) / 14 + 0, TIMER_MS(30000) / 18 + 0, TIMER_MS(30000) / 20 + 0,
-    //122901, 98321, 70229, 54623, 49161,
-    //61450, 49160, 35114, 27311, 24580,
-};
-
-static const u32 gTimeout10CounterByte[] = {
-    TIMER_MS(10000) / 4 + 1, TIMER_MS(10000) / 5 + 1, TIMER_MS(10000) / 7 + 1, TIMER_MS(10000) / 9 + 1, TIMER_MS(10000) / 10 + 1,
-    TIMER_MS(10000) / 8 + 0, TIMER_MS(10000) / 10 + 1, TIMER_MS(10000) / 14 + 1, TIMER_MS(10000) / 18 + 1, TIMER_MS(10000) / 20 + 0,
-    //40967, 32774, 23410, 18208, 16387,
-    //20483, 16387, 11705, 9104, 8193,
-};
-
-static const u32 gTimeout02CounterByte[] = {
-    TIMER_MS(2000) / 4 + 1, TIMER_MS(2000) / 5 + 1, TIMER_MS(2000) / 7 + 1, TIMER_MS(2000) / 9 + 1, TIMER_MS(2000) / 10 + 1,
-    TIMER_MS(2000) / 8 + 1, TIMER_MS(2000) / 10 + 0, TIMER_MS(2000) / 14 + 1, TIMER_MS(2000) / 18 + 1, TIMER_MS(2000) / 20 + 1,
-    //8194, 6555, 4682, 3642, 3278,
-    //4097, 3277, 2341, 1821, 1639,
-};
-
-static const u32 gTimeout200msecCounterByte[] = {
-    TIMER_MS(200) / 4 + 1, TIMER_MS(200) / 5 + 1, TIMER_MS(200) / 7 + 1, TIMER_MS(200) / 9 + 1, TIMER_MS(200) / 10 + 1,
-    TIMER_MS(200) / 8 + 1, TIMER_MS(200) / 10 + 1, TIMER_MS(200) / 14 + 0, TIMER_MS(200) / 18 + 0, TIMER_MS(200) / 20 + 1,
-    //820, 656, 469, 365, 328,
-    //410, 328, 234, 182, 164,
-};
-
-static const u32 gTimeout250msecCounterByte[] = {
-    TIMER_MS(250) / 4 + 1, TIMER_MS(250) / 5 + 1, TIMER_MS(250) / 7 + 1, TIMER_MS(250) / 9 + 1, TIMER_MS(250) / 10 + 1,
-    TIMER_MS(250) / 8 + 0, TIMER_MS(250) / 10 + 1, TIMER_MS(250) / 14 + 1, TIMER_MS(250) / 18 + 1, TIMER_MS(250) / 20 + 1,
-    //1025, 820, 586, 456, 410,
-    //512, 410, 293, 228, 205,
-};
-
-static const u32 gTimeout40msecCounterByte[] = {
-    TIMER_MS(40) / 4 + 1, TIMER_MS(40) / 5 + 0, TIMER_MS(40) / 7 + 1, TIMER_MS(40) / 9 + 1, TIMER_MS(40) / 10 + 1,
-    TIMER_MS(40) / 8 + 1, TIMER_MS(40) / 10 + 0, TIMER_MS(40) / 14 + 1, TIMER_MS(40) / 18 + 0, TIMER_MS(40) / 20 + 1,
-    //164, 131, 94, 73, 66,
-    //82, 65, 47, 36, 33,
-};
+#define COUNTER_WORD_INTER1 TIMER_MS(0.45)
+#define COUNTER_WORD_INTER2 TIMER_MS(0.40)
+#define COUNTER_WORD_INTER3 TIMER_MS(0.50)
+#define COUNTER_WORD_INTER4 TIMER_MS(0.60)
+#define COUNTER_WORD_INTER5 TIMER_MS(0.70)
 
 static const u16 gTimerIntWordInter[] = {
-    TIMER_COUNTER_MS(0.45), TIMER_COUNTER_MS(0.40), TIMER_COUNTER_MS(0.50), TIMER_COUNTER_MS(0.50), TIMER_COUNTER_MS(0.60),
-    TIMER_COUNTER_MS(0.95), TIMER_COUNTER_MS(0.85), TIMER_COUNTER_MS(1.05), TIMER_COUNTER_MS(1.05), TIMER_COUNTER_MS(1.20),
-    //-TIMER_MS(0.50), -TIMER_MS(0.45), -TIMER_MS(0.55), -TIMER_MS(0.55), -TIMER_MS(0.65),
-    //-TIMER_MS(1.00), -TIMER_MS(0.90), -TIMER_MS(1.10), -TIMER_MS(1.10), -TIMER_MS(1.25),
-    //-8, -7, -9, -9, -10,
-    //-16, -14, -18, -18, -20,
+    -COUNTER_WORD_INTER1,
+    -COUNTER_WORD_INTER2,
+    -COUNTER_WORD_INTER3,
+    -COUNTER_WORD_INTER3,
+    -COUNTER_WORD_INTER4,
+
+    -COUNTER_WORD_INTER1 * 2,
+    -COUNTER_WORD_INTER2 * 2,
+    -COUNTER_WORD_INTER3 * 2,
+    -COUNTER_WORD_INTER3 * 2,
+    -COUNTER_WORD_INTER4 * 2,
 };
 
-static const u32 gNullCounterWord[] = {
-    TIMER_MS(1000) / 8 + 1, TIMER_MS(1000) / 7 + 1, TIMER_MS(1000) / 9 + 1, TIMER_MS(1000) / 10 + 1, TIMER_MS(1000) / 12 + 1,
-    TIMER_MS(1000) / 16 + 0, TIMER_MS(1000) / 14 + 0, TIMER_MS(1000) / 18 + 0, TIMER_MS(1000) / 20 + 0, TIMER_MS(1000) / 24 + 1,
-    //2049, 2341, 1821, 1639, 1366,
-    //1024, 1170, 910, 819, 683,
-};
+#define COUNTER_WORD(ms) \
+    TIMER_MS((ms) / (float)COUNTER_WORD_INTER1), \
+    TIMER_MS((ms) / (float)COUNTER_WORD_INTER2), \
+    TIMER_MS((ms) / (float)COUNTER_WORD_INTER3), \
+    TIMER_MS((ms) / (float)COUNTER_WORD_INTER4), \
+    TIMER_MS((ms) / (float)COUNTER_WORD_INTER5), \
+    \
+    TIMER_MS((ms) / (float)COUNTER_WORD_INTER1) / 2, \
+    TIMER_MS((ms) / (float)COUNTER_WORD_INTER2) / 2, \
+    TIMER_MS((ms) / (float)COUNTER_WORD_INTER3) / 2, \
+    TIMER_MS((ms) / (float)COUNTER_WORD_INTER4) / 2, \
+    TIMER_MS((ms) / (float)COUNTER_WORD_INTER5) / 2,
 
-static const u32 gP2PCounterWord[] = {
-    TIMER_MS(125) / 8 + 1, TIMER_MS(125) / 7 + 1, TIMER_MS(125) / 9 + 1, TIMER_MS(125) / 10 + 1, TIMER_MS(125) / 12 + 1,
-    TIMER_MS(125) / 16 + 0, TIMER_MS(125) / 14 + 0, TIMER_MS(125) / 18 + 1, TIMER_MS(125) / 20 + 0, TIMER_MS(125) / 24 + 0,
-    //257, 293, 228, 205, 171,
-    //128, 146, 114, 102, 85,
-};
-
-static const u32 gTimeout90CounterWord[] = {
-    TIMER_MS(90000) / 8 + 1, TIMER_MS(90000) / 7 + 1, TIMER_MS(90000) / 9 + 1, TIMER_MS(90000) / 10 + 1, TIMER_MS(90000) / 12 + 1,
-    TIMER_MS(90000) / 16 + 0, TIMER_MS(90000) / 14 + 0, TIMER_MS(90000) / 18 + 1, TIMER_MS(90000) / 20 + 0, TIMER_MS(90000) / 24 + 0,
-    //184351, 210687, 163868, 147481, 122901,
-    //92175, 105343, 81934, 73740, 61450,
-};
-
-static const u32 gTimeout30CounterWord[] = {
-    TIMER_MS(30000) / 8 + 1, TIMER_MS(30000) / 7 + 1, TIMER_MS(30000) / 9 + 1, TIMER_MS(30000) / 10 + 1, TIMER_MS(30000) / 12 + 1,
-    TIMER_MS(30000) / 16 + 0, TIMER_MS(30000) / 14 + 0, TIMER_MS(30000) / 18 + 0, TIMER_MS(30000) / 20 + 0, TIMER_MS(30000) / 24 + 0,
-    //61451, 70229, 54623, 49161, 40967,
-    //30725, 35114, 27311, 24580, 20483,
-};
-
-static const u32 gTimeout10CounterWord[] = {
-    TIMER_MS(10000) / 8 + 1, TIMER_MS(10000) / 7 + 1, TIMER_MS(10000) / 9 + 1, TIMER_MS(10000) / 10 + 1, TIMER_MS(10000) / 12 + 1,
-    TIMER_MS(10000) / 16 + 1, TIMER_MS(10000) / 14 + 1, TIMER_MS(10000) / 18 + 1, TIMER_MS(10000) / 20 + 0, TIMER_MS(10000) / 24 + 1,
-    //20484, 23410, 18208, 16387, 13656,
-    //10242, 11705, 9104, 8193, 6828,
-};
-
-static const u32 gTimeout02CounterWord[] = {
-    TIMER_MS(2000) / 8 + 1, TIMER_MS(2000) / 7 + 1, TIMER_MS(2000) / 9 + 1, TIMER_MS(2000) / 10 + 1, TIMER_MS(2000) / 12 + 1,
-    TIMER_MS(2000) / 16 + 0, TIMER_MS(2000) / 14 + 1, TIMER_MS(2000) / 18 + 1, TIMER_MS(2000) / 20 + 1, TIMER_MS(2000) / 24 + 1,
-    //4097, 4682, 3642, 3278, 2732,
-    //2048, 2341, 1821, 1639, 1366,
-};
-
-static const u32 gTimeout200msecCounterWord[] = {
-    TIMER_MS(200) / 8 + 1, TIMER_MS(200) / 7 + 1, TIMER_MS(200) / 9 + 1, TIMER_MS(200) / 10 + 1, TIMER_MS(200) / 12 + 1,
-    TIMER_MS(200) / 16 + 1, TIMER_MS(200) / 14 + 0, TIMER_MS(200) / 18 + 0, TIMER_MS(200) / 20 + 1, TIMER_MS(200) / 24 + 1,
-    //410, 469, 365, 328, 274,
-    //205, 234, 182, 164, 137,
-};
-
-static const u32 gTimeout250msecCounterWord[] = {
-    TIMER_MS(250) / 8 + 1, TIMER_MS(250) / 7 + 1, TIMER_MS(250) / 9 + 1, TIMER_MS(250) / 10 + 1, TIMER_MS(250) / 12 + 1,
-    TIMER_MS(250) / 16 + 0, TIMER_MS(250) / 14 + 1, TIMER_MS(250) / 18 + 1, TIMER_MS(250) / 20 + 1, TIMER_MS(250) / 24 + 1,
-    //513, 586, 456, 410, 342,
-    //256, 293, 228, 205, 171,
-};
-
-static const u32 gTimeout40msecCounterWord[] = {
-    TIMER_MS(40) / 8 + 1, TIMER_MS(40) / 7 + 1, TIMER_MS(40) / 9 + 1, TIMER_MS(40) / 10 + 1, TIMER_MS(40) / 12 + 1,
-    TIMER_MS(40) / 16 + 1, TIMER_MS(40) / 14 + 1, TIMER_MS(40) / 18 + 0, TIMER_MS(40) / 20 + 1, TIMER_MS(40) / 24 + 0,
-    //82, 94, 73, 66, 55,
-    //41, 47, 36, 33, 27,
-};
+static const u32 gNullCounterWord[] = { COUNTER_WORD(1000) };
+static const u32 gP2PCounterWord[] = { COUNTER_WORD(125) };
+static const u32 gTimeout90CounterWord[] = { COUNTER_WORD(90000) };
+static const u32 gTimeout30CounterWord[] = { COUNTER_WORD(30000) };
+static const u32 gTimeout10CounterWord[] = { COUNTER_WORD(10000) };
+static const u32 gTimeout02CounterWord[] = { COUNTER_WORD(2000) };
+static const u32 gTimeout200msecCounterWord[] = { COUNTER_WORD(200) };
+static const u32 gTimeout250msecCounterWord[] = { COUNTER_WORD(250) };
+static const u32 gTimeout40msecCounterWord[] = { COUNTER_WORD(40) };
 
 static const u8 MaPacketData_PreStart[] = {
     0x4b, 0x4b, 0x4b, 0x4b,

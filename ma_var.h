@@ -372,8 +372,8 @@ extern MA_VAR gMA;
 
 #define CPU_F 16780000
 #define TIMER_FLAGS (TMR_ENABLE | TMR_IF_ENABLE | TMR_PRESCALER_1024CK)
-#define TIMER_MS(ms) (((long long)CPU_F * (ms)) / (1024 * 1000))
-#define TIMER_COUNTER_MS(ms) (0xffff - (int)TIMER_MS(ms))
+#define TIMER_MS(ms) ((int)(((long long)CPU_F * (ms)) / (1024 * 1000) + 1))
+#define TIMER_COUNTER_MS(ms) (0x10000 - TIMER_MS(ms))
 
 #define MA_SetCondition(cond) \
 { \
