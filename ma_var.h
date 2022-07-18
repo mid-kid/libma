@@ -373,9 +373,9 @@ typedef struct {
     MA_IOBUF recvIoBuf;
     MA_IOBUF tempIoBuf;
     u8 sendPacket[MAPROT_HEADER_SIZE + MAPROT_BODY_SIZE + MAPROT_FOOTER_SIZE];
-    u8 internalRecvPacket[4];
+    u8 biosRecvPacket[4];
     u8 replyFooter[4];
-    MA_BUF internalRecvBuf;
+    MA_BUF biosRecvBuf;
     MA_BUF *pRecvBuf;
     MA_IOBUF *pSendIoBuf;
     struct {

@@ -201,8 +201,8 @@ void MABIOS_Init(void)
     gMA.recvFooter[0] = 0;
     gMA.recvFooter[1] = 0;
 
-    gMA.internalRecvBuf.size = sizeof(gMA.internalRecvPacket);
-    gMA.internalRecvBuf.data = gMA.internalRecvPacket;
+    gMA.biosRecvBuf.size = sizeof(gMA.biosRecvPacket);
+    gMA.biosRecvBuf.data = gMA.biosRecvPacket;
     gMA.recvBuf.size = sizeof(gMA.recvPacket);
     gMA.recvBuf.data = gMA.recvPacket;
 
@@ -211,9 +211,9 @@ void MABIOS_Init(void)
 
 static void SetInternalRecvBuffer(void)
 {
-    gMA.internalRecvBuf.size = sizeof(gMA.internalRecvPacket);
-    gMA.internalRecvBuf.data = gMA.internalRecvPacket;
-    gMA.pRecvBuf = &gMA.internalRecvBuf;
+    gMA.biosRecvBuf.size = sizeof(gMA.biosRecvPacket);
+    gMA.biosRecvBuf.data = gMA.biosRecvPacket;
+    gMA.pRecvBuf = &gMA.biosRecvBuf;
 }
 
 static void MA_SetInterval(int index)
@@ -1114,8 +1114,8 @@ static void MA_IntrTimer_SIOIdle(void)
     } else {
         if (gMA.counter > gMA.nullCounter[gMA.sioMode]) {
             gMA.counter = 0;
-            MA_InitBuffer(&gMA.internalRecvBuf, gMA.hwCondition);
-            MABIOS_CheckStatus2(&gMA.internalRecvBuf);
+            MA_InitBuffer(&gMA.biosRecvBuf, gMA.hwCondition);
+            MABIOS_CheckStatus2(&gMA.biosRecvBuf);
         }
     }
 #undef param
