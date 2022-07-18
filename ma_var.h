@@ -25,16 +25,11 @@
 #define STATUS_CONN_PTP (1 << 9)  // Connected with a p2p connection
 #define STATUS_PTP_SEND_DONE (1 << 10)  // Triggered p2p data send
 #define STATUS_BIOS_STOP (1 << 11)  // MA_BiosStop called
-#define STATUS_CANCEL_REQUEST (1 << 12)  // MA_CancelRequest called
+#define STATUS_BIOS_RESTART (1 << 12)  // MA_CancelRequest called, (re)start connection
 #define STATUS_PTP_SEND (1 << 13)  // Send p2p data in the next interrupt
 #define STATUS_SIO_SEND_TIMEOUT (1 << 14)  // Timeout during MA_IntrSio_Send
 #define STATUS_BUFFER_EMPTY (1 << 15)  // gMA.prevBuf has just been emptied
-#define STATUS_GBCENTER_ERR_101 (1 << 16)  // Gb-Status http header set to 101
-
-#define MAPROT_BODY_SIZE 0x100
-#define MAPROT_HEADER_SIZE 6
-#define MAPROT_FOOTER_SIZE 6
-#define MAPROT_REPLY 0x80
+#define STATUS_GBCENTER_ERR_101 (1 << 16)  // GB-Status: 101 (fees not paid)
 
 #define MACMD_NULL 0x0f
 #define MACMD_START 0x10
@@ -58,6 +53,11 @@
 #define MACMD_DNSREQUEST 0x28
 #define MACMD_TESTMODE 0x3f
 #define MACMD_ERROR 0x6e
+
+#define MAPROT_BODY_SIZE 0x100
+#define MAPROT_HEADER_SIZE 6
+#define MAPROT_FOOTER_SIZE 6
+#define MAPROT_REPLY 0x80
 
 #define NUM_SOCKETS 2
 
@@ -175,9 +175,9 @@ typedef struct {
 
 typedef struct {
     u32 socket;
-    u8 *pSendData;
+    u8 *pData;
     u32 size;
-    u8 *unk_4;
+    u8 *pRecvSize;
 } PARAM_TCP_SENDRECV;
 
 typedef struct {
@@ -196,8 +196,8 @@ typedef struct {
 } PARAM_TEL;
 
 typedef struct {
-    const u8 *pSendData;
-    u32 sendSize;
+    const u8 *pData;
+    u32 size;
 } PARAM_SDATA;
 
 typedef struct {
@@ -218,8 +218,8 @@ typedef struct {
 } PARAM_SMTP_SENDER;
 
 typedef struct {
-    const char *pSendData;
-    u32 sendSize;
+    const char *pData;
+    u32 size;
     u32 endFlag;
     u32 totalSize;  // unused
     u32 timeout;
@@ -319,11 +319,11 @@ typedef struct {
     vu8 negaResErr;
     u8 recvRubbishCount;
     u8 tcpConnectRetryCount;
-    u8 unk_84[4];
+    u8 hwCondition[3];
     u32 apiMagic;
-    vu8 unk_92;
+    vu8 connMode;
     vu16 errorDetail;
-    vu8 unk_96;
+    vu8 smtpSender;
     vu8 task;
     vu8 taskStep;
     u8 sockets[NUM_SOCKETS];
@@ -361,15 +361,15 @@ typedef struct {
     u16 _unused210;  // unused
     u8 recvPacket[MAPROT_HEADER_SIZE + MAPROT_BODY_SIZE + MAPROT_FOOTER_SIZE];
     MA_BUF recvBuf;
-    MA_IOBUF iobuf_packet_send;
-    MA_IOBUF iobuf_packet_recv;
-    MA_IOBUF iobuf_footer;
+    MA_IOBUF sendIoBuf;
+    MA_IOBUF recvIoBuf;
+    MA_IOBUF tempIoBuf;
     u8 sendPacket[MAPROT_HEADER_SIZE + MAPROT_BODY_SIZE + MAPROT_FOOTER_SIZE];
-    u8 buffer_recv_data[4];
-    u8 buffer_footer[4];
-    MA_BUF buffer_recv;
+    u8 internalRecvPacket[4];
+    u8 replyFooter[4];
+    MA_BUF internalRecvBuf;
     MA_BUF *pRecvBuf;
-    MA_IOBUF *iobuf_sio_tx;
+    MA_IOBUF *pSendIoBuf;
     struct {
         u8 dns1[4];
         u8 dns2[4];
@@ -379,10 +379,10 @@ typedef struct {
         char pop3[20];
         u32 http;
     } serverConf;
-    char unk_880[269];
-    u8 prevBuf[636];
+    char strBuf[269];
+    u8 prevBuf[637];
     u16 prevBufSize;
-    char unk_1788[6];
+    char endLineBuf[6];
     u16 httpRes;
     u16 gbCenterRes;
     u8 authCode[94];
@@ -403,7 +403,7 @@ extern MA_VAR gMA;
 
 #define MA_Reset() \
 { \
-    gMA.unk_92 = 0; \
+    gMA.connMode = 0; \
     MA_ChangeSIOMode(MA_SIO_BYTE); \
     gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode]; \
     gMA.counter = 0; \

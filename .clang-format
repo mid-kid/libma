@@ -19,5 +19,5 @@ IncludeCategories:
     SortPriority: -2
 
 PenaltyBreakOpenParenthesis: 20
-PenaltyBreakAssignment: 20
+PenaltyBreakAssignment: 30
 PenaltyExcessCharacter: 10
