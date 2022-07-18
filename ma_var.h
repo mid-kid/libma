@@ -61,12 +61,14 @@
 
 #define NUM_SOCKETS 2
 
+#define EEPROM_DNS_OFFSET 4
+#define EEPROM_DNS_SIZE 8
 #define EEPROM_USERID_OFFSET 12
 #define EEPROM_USERID_SIZE 32
 #define EEPROM_MAILID_OFFSET 44
 #define EEPROM_MAILID_SIZE 30
-#define EEPROM_SERVERCONF_OFFSET 74
-#define EEPROM_SERVERCONF_SIZE 44
+#define EEPROM_SERVER_OFFSET 74
+#define EEPROM_SERVER_SIZE 44
 #define EEPROM_TELNO1_OFFSET 118
 #define EEPROM_TELNO_SIZE 8
 #define EEPROM_COMMENT1_OFFSET 126
@@ -357,19 +359,21 @@ typedef struct {
     u8 usedSockets[NUM_SOCKETS];
     u8 localAddr[4];
     u16 _unused210;  // unused
-    u8 recvPacketBuf[MAPROT_HEADER_SIZE + MAPROT_BODY_SIZE + MAPROT_FOOTER_SIZE];
-    MA_BUF buffer_unk_480;
+    u8 recvPacket[MAPROT_HEADER_SIZE + MAPROT_BODY_SIZE + MAPROT_FOOTER_SIZE];
+    MA_BUF recvBuf;
     MA_IOBUF iobuf_packet_send;
     MA_IOBUF iobuf_packet_recv;
     MA_IOBUF iobuf_footer;
-    u8 sendPacketBuf[MAPROT_HEADER_SIZE + MAPROT_BODY_SIZE + MAPROT_FOOTER_SIZE];
+    u8 sendPacket[MAPROT_HEADER_SIZE + MAPROT_BODY_SIZE + MAPROT_FOOTER_SIZE];
     u8 buffer_recv_data[4];
     u8 buffer_footer[4];
     MA_BUF buffer_recv;
     MA_BUF *pRecvBuf;
     MA_IOBUF *iobuf_sio_tx;
-    u8 unk_828[4];
-    u8 unk_832[4];
+    struct {
+        u8 dns1[4];
+        u8 dns2[4];
+    } dnsConf;
     struct {
         char smtp[20];
         char pop3[20];
@@ -414,6 +418,12 @@ extern MA_VAR gMA;
     MA_SetCondition(MA_CONDITION_IDLE); \
     MAU_Socket_Clear(); \
     MA_SetCondition(MA_CONDITION_IDLE); \
+}
+
+#define MA_InitBuffer(pBuf, pData) \
+{ \
+    (pBuf)->size = 0; \
+    (pBuf)->data = (pData); \
 }
 
 #endif // _MA_VAR_H

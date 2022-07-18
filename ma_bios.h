@@ -27,8 +27,8 @@ void MABIOS_ChangeClock(u8 mode);
 void MABIOS_EEPROM_Read(MA_BUF *pRecvBuf, u8 offset, u8 size);
 void MABIOS_EEPROM_Write(MA_BUF *pRecvBuf, u8 offset, const u8 *data_send,
     u8 size);
-void MABIOS_PPPConnect(MA_BUF *pRecvBuf, const char *userid,
-    const char *password, u8 *dns1, u8 *dns2);
+void MABIOS_PPPConnect(MA_BUF *pRecvBuf, const char *pUserID,
+    const char *pPassword, const u8 *dns1, const u8 *dns2);
 void MABIOS_PPPDisconnect(void);
 void MABIOS_TCPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port);
 void MABIOS_TCPDisconnect(MA_BUF *pRecvBuf, u8 socket);

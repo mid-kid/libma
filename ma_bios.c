@@ -203,8 +203,8 @@ void MABIOS_Init(void)
 
     gMA.buffer_recv.size = sizeof(gMA.buffer_recv_data);
     gMA.buffer_recv.data = gMA.buffer_recv_data;
-    gMA.buffer_unk_480.size = sizeof(gMA.recvPacketBuf);
-    gMA.buffer_unk_480.data = gMA.recvPacketBuf;
+    gMA.recvBuf.size = sizeof(gMA.recvPacket);
+    gMA.recvBuf.data = gMA.recvPacket;
 
     *(vu16 *)REG_IME = 1;
 }
@@ -485,12 +485,12 @@ void MABIOS_Start2(void)
 
 void MABIOS_End(void)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     SetInternalRecvBuffer();
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_END, 0);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.sendCmd = MACMD_END;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
@@ -504,7 +504,7 @@ void MABIOS_Tel(u8 calltype, const char *number)
 {
     static int telNoLen;
 
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     SetInternalRecvBuffer();
@@ -524,7 +524,7 @@ void MABIOS_Tel(u8 calltype, const char *number)
 #endif
     }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TEL, telNoLen + 1);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
@@ -534,12 +534,12 @@ void MABIOS_Tel(u8 calltype, const char *number)
 
 void MABIOS_Offline(void)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     SetInternalRecvBuffer();
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_OFFLINE, 0);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.sendCmd = MACMD_OFFLINE;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
@@ -551,12 +551,12 @@ void MABIOS_Offline(void)
 
 void MABIOS_WaitCall(void)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     SetInternalRecvBuffer();
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_WAITCALL, 0);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.sendCmd = MACMD_WAITCALL;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
@@ -568,7 +568,7 @@ void MABIOS_WaitCall(void)
 
 void MABIOS_Data(MA_BUF *pRecvBuf, const u8 *pSendData, u8 size, u8 socket)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     gMA.pRecvBuf = pRecvBuf;
@@ -586,7 +586,7 @@ void MABIOS_Data(MA_BUF *pRecvBuf, const u8 *pSendData, u8 size, u8 socket)
 #endif
     }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DATA, size + 1);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
@@ -596,7 +596,7 @@ void MABIOS_Data(MA_BUF *pRecvBuf, const u8 *pSendData, u8 size, u8 socket)
 
 static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pSendData, u8 size)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     gMA.pRecvBuf = pRecvBuf;
@@ -615,7 +615,7 @@ static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pSendData, u8 size)
 #endif
     }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DATA, size + 2);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
@@ -625,12 +625,12 @@ static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pSendData, u8 size)
 
 void MABIOS_ReInit(void)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     SetInternalRecvBuffer();
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_REINIT, 0);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.sendCmd = MACMD_REINIT;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
@@ -642,12 +642,12 @@ void MABIOS_ReInit(void)
 
 void MABIOS_CheckStatus(MA_BUF *pRecvBuf)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     gMA.pRecvBuf = pRecvBuf;
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHECKSTATUS, 0);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.sendCmd = MACMD_CHECKSTATUS;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
@@ -659,12 +659,12 @@ void MABIOS_CheckStatus(MA_BUF *pRecvBuf)
 
 void MABIOS_CheckStatus2(MA_BUF *pRecvBuf)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!(gMA.status & STATUS_CONNECTED) || gMA.status & STATUS_CONNTEST) return;
 
     gMA.pRecvBuf = pRecvBuf;
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHECKSTATUS, 0);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.sendCmd = MACMD_CHECKSTATUS;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
@@ -677,7 +677,7 @@ void MABIOS_CheckStatus2(MA_BUF *pRecvBuf)
 
 void MABIOS_ChangeClock(u8 mode)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     SetInternalRecvBuffer();
@@ -686,7 +686,7 @@ void MABIOS_ChangeClock(u8 mode)
 
     tmppPacket[MAPROT_HEADER_SIZE + 0] = mode;
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHANGECLOCK, 1);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
@@ -696,7 +696,7 @@ void MABIOS_ChangeClock(u8 mode)
 
 void MABIOS_EEPROM_Read(MA_BUF *pRecvBuf, u8 offset, u8 size)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     gMA.pRecvBuf = pRecvBuf;
@@ -706,7 +706,7 @@ void MABIOS_EEPROM_Read(MA_BUF *pRecvBuf, u8 offset, u8 size)
     tmppPacket[MAPROT_HEADER_SIZE + 0] = offset;
     tmppPacket[MAPROT_HEADER_SIZE + 1] = size;
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_EEPROM_READ, 2);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
@@ -717,7 +717,7 @@ void MABIOS_EEPROM_Read(MA_BUF *pRecvBuf, u8 offset, u8 size)
 void MABIOS_EEPROM_Write(MA_BUF *pRecvBuf, u8 offset, const u8 *data_send,
     u8 size)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     gMA.pRecvBuf = pRecvBuf;
@@ -735,7 +735,7 @@ void MABIOS_EEPROM_Write(MA_BUF *pRecvBuf, u8 offset, const u8 *data_send,
 #endif
     }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_EEPROM_WRITE, size + 1);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
@@ -743,15 +743,15 @@ void MABIOS_EEPROM_Write(MA_BUF *pRecvBuf, u8 offset, const u8 *data_send,
     gMA.status |= STATUS_SIO_START;
 }
 
-void MABIOS_PPPConnect(MA_BUF *pRecvBuf, const char *userid,
-    const char *password, u8 *dns1, u8 *dns2)
+void MABIOS_PPPConnect(MA_BUF *pRecvBuf, const char *pUserID,
+    const char *pPassword, const u8 *dns1, const u8 *dns2)
 {
     static u8 *pData;
     static int dataLen;
     static int userIDLength;
     static int passwordLength;
 
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     pData = tmppPacket + MAPROT_HEADER_SIZE;
     if (!MA_PreSend()) return;
 
@@ -759,17 +759,17 @@ void MABIOS_PPPConnect(MA_BUF *pRecvBuf, const char *userid,
     gMA.sendCmd = MACMD_PPPCONNECT;
     gMA.pRecvBuf = pRecvBuf;
 
-    userIDLength = MAU_strlen(userid);
-    passwordLength = MAU_strlen(password);
+    userIDLength = MAU_strlen(pUserID);
+    passwordLength = MAU_strlen(pPassword);
     dataLen = userIDLength + passwordLength + 10;
     *pData++ = userIDLength;
-    for (; userIDLength; userIDLength--) *pData++ = *userid++;
+    for (; userIDLength; userIDLength--) *pData++ = *pUserID++;
     *pData++ = passwordLength;
-    for (; passwordLength; passwordLength--) *pData++ = *password++;
+    for (; passwordLength; passwordLength--) *pData++ = *pPassword++;
     for (i = 0; i < 4; i++) *pData++ = *dns1++;
     for (i = 0; i < 4; i++) *pData++ = *dns2++;
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_PPPCONNECT, dataLen);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
@@ -779,12 +779,12 @@ void MABIOS_PPPConnect(MA_BUF *pRecvBuf, const char *userid,
 
 void MABIOS_PPPDisconnect(void)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     SetInternalRecvBuffer();
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_PPPDISCONNECT, 0);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.sendCmd = MACMD_PPPDISCONNECT;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
@@ -796,7 +796,7 @@ void MABIOS_PPPDisconnect(void)
 
 void MABIOS_TCPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     gMA.pRecvBuf = pRecvBuf;
@@ -809,7 +809,7 @@ void MABIOS_TCPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
     tmppPacket[MAPROT_HEADER_SIZE + 4 + 0] = ((u8 *)&port)[1];
     tmppPacket[MAPROT_HEADER_SIZE + 4 + 1] = ((u8 *)&port)[0];
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TCPCONNECT, 6);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
@@ -820,7 +820,7 @@ void MABIOS_TCPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
 
 void MABIOS_TCPDisconnect(MA_BUF *pRecvBuf, u8 socket)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     gMA.pRecvBuf = pRecvBuf;
@@ -829,7 +829,7 @@ void MABIOS_TCPDisconnect(MA_BUF *pRecvBuf, u8 socket)
 
     tmppPacket[MAPROT_HEADER_SIZE + 0] = socket;
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TCPDISCONNECT, 1);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
@@ -839,7 +839,7 @@ void MABIOS_TCPDisconnect(MA_BUF *pRecvBuf, u8 socket)
 
 void MABIOS_UDPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     gMA.pRecvBuf = pRecvBuf;
@@ -852,7 +852,7 @@ void MABIOS_UDPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
     tmppPacket[MAPROT_HEADER_SIZE + 4 + 0] = ((u8 *)&port)[1];
     tmppPacket[MAPROT_HEADER_SIZE + 4 + 1] = ((u8 *)&port)[0];
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_UDPCONNECT, 6);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
@@ -862,7 +862,7 @@ void MABIOS_UDPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
 
 void MABIOS_UDPDisconnect(MA_BUF *pRecvBuf, u8 socket)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     gMA.pRecvBuf = pRecvBuf;
@@ -871,7 +871,7 @@ void MABIOS_UDPDisconnect(MA_BUF *pRecvBuf, u8 socket)
 
     tmppPacket[MAPROT_HEADER_SIZE + 0] = socket;
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_UDPDISCONNECT, 1);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
@@ -883,7 +883,7 @@ void MABIOS_DNSRequest(MA_BUF *pRecvBuf, char *pServerName)
 {
     static int serverNameLen;
 
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     gMA.pRecvBuf = pRecvBuf;
@@ -902,7 +902,7 @@ void MABIOS_DNSRequest(MA_BUF *pRecvBuf, char *pServerName)
 #endif
     }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DNSREQUEST, serverNameLen);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
     gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
@@ -912,12 +912,12 @@ void MABIOS_DNSRequest(MA_BUF *pRecvBuf, char *pServerName)
 
 void MABIOS_TestMode(void)
 {
-    tmppPacket = gMA.sendPacketBuf;
+    tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
     SetInternalRecvBuffer();
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TESTMODE, 0);
-    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacketBuf, tmpPacketLen, 3);
+    MA_InitIoBuffer(&gMA.iobuf_packet_send, gMA.sendPacket, tmpPacketLen, 3);
 
     gMA.sendCmd = MACMD_TESTMODE;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
@@ -1103,23 +1103,20 @@ static void MA_IntrTimer_SIOIdle(void)
         && (!(gMA.condition & STATUS_SIO_RETRY) || gMA.status & STATUS_PTP_SEND)) {
         if (gMA.counter > gMA.P2PCounter[gMA.sioMode]) {
             gMA.counter = 0;
-            (&gMA.buffer_unk_480)->size = 0;
-            (&gMA.buffer_unk_480)->data = gMA.recvPacketBuf;
+            MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
             if (gMA.status & STATUS_PTP_SEND) {
-                MABIOS_Data2(&gMA.buffer_unk_480, param.pSendData,
-                    param.sendSize);
+                MABIOS_Data2(&gMA.recvBuf, param.pSendData, param.sendSize);
                 param.pSendData = NULL;
                 param.sendSize = 0;
                 gMA.status |= STATUS_PTP_SEND_DONE;
             } else {
-                MABIOS_Data(&gMA.buffer_unk_480, NULL, 0, 0xff);
+                MABIOS_Data(&gMA.recvBuf, NULL, 0, 0xff);
             }
         }
     } else {
         if (gMA.counter > gMA.nullCounter[gMA.sioMode]) {
             gMA.counter = 0;
-            (&gMA.buffer_recv)->size = 0;
-            (&gMA.buffer_recv)->data = gMA.unk_84;
+            MA_InitBuffer(&gMA.buffer_recv, gMA.unk_84);
             MABIOS_CheckStatus2(&gMA.buffer_recv);
         }
     }
@@ -1257,7 +1254,7 @@ static void MA_ProcessRecvPacket(u8 cmd)
     static u8 *pPacket;
 
     i = 1;
-    pPacket = gMA.sendPacketBuf;
+    pPacket = gMA.sendPacket;
     if (gMA.status & STATUS_CANCEL_REQUEST) {
         gMA.status &= ~STATUS_CANCEL_REQUEST;
         MA_BiosStop();
