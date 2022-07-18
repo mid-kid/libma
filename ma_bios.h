@@ -30,9 +30,9 @@ void MABIOS_EEPROM_Write(MA_BUF *pRecvBuf, u8 offset, const u8 *data_send,
 void MABIOS_PPPConnect(MA_BUF *pRecvBuf, const char *userid,
     const char *password, u8 *dns1, u8 *dns2);
 void MABIOS_PPPDisconnect(void);
-void MABIOS_TCPConnect(MA_BUF *pRecvBuf, u8 *ip, u16 port);
+void MABIOS_TCPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port);
 void MABIOS_TCPDisconnect(MA_BUF *pRecvBuf, u8 socket);
-void MABIOS_UDPConnect(MA_BUF *pRecvBuf, u8 *ip, u16 port);
+void MABIOS_UDPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port);
 void MABIOS_UDPDisconnect(MA_BUF *pRecvBuf, u8 socket);
 void MABIOS_DNSRequest(MA_BUF *pRecvBuf, char *pServerName);
 void MABIOS_TestMode(void);

@@ -293,9 +293,10 @@ int MAU_CheckCRLF(const char *str, u16 size)
 void MAU_Socket_Add(u8 sock)
 {
     int i;
+
     for (i = 0; i < NUM_SOCKETS; i++) {
-        if (!gMA.sockets_used[i]) {
-            gMA.sockets_used[i] = TRUE;
+        if (!gMA.usedSockets[i]) {
+            gMA.usedSockets[i] = TRUE;
             gMA.sockets[i] = sock;
             break;
         }
@@ -308,7 +309,7 @@ void MAU_Socket_Delete(u8 sock)
 
     for (i = 0; i < NUM_SOCKETS; i++) {
         if (gMA.sockets[i] == sock) {
-            gMA.sockets_used[i] = FALSE;
+            gMA.usedSockets[i] = FALSE;
             break;
         }
     }
@@ -332,13 +333,13 @@ int MAU_Socket_Search(u8 sock)
 int MAU_Socket_GetNum(void)
 {
     int i;
-    int c;
+    int ret;
 
-    c = 0;
+    ret = 0;
     for (i = 0; i < NUM_SOCKETS; i++) {
-        if (gMA.sockets_used[i] == TRUE) c++;
+        if (gMA.usedSockets[i] == TRUE) ret++;
     }
-    return c;
+    return ret;
 }
 
 int MAU_Socket_FreeCheck(void)
@@ -348,7 +349,7 @@ int MAU_Socket_FreeCheck(void)
 
     ret = FALSE;
     for (i = 0; i < NUM_SOCKETS; i++) {
-        if (gMA.sockets_used[i] == FALSE) {
+        if (gMA.usedSockets[i] == FALSE) {
             ret = TRUE;
             break;
         }
@@ -358,10 +359,10 @@ int MAU_Socket_FreeCheck(void)
 
 int MAU_Socket_IpAddrCheck(const u8 *addr)
 {
-    if (addr[0] != gMA.ipAddr[0]) return FALSE;
-    if (addr[1] != gMA.ipAddr[1]) return FALSE;
-    if (addr[2] != gMA.ipAddr[2]) return FALSE;
-    if (addr[3] != gMA.ipAddr[3]) return FALSE;
+    if (addr[0] != gMA.socketAddr[0]) return FALSE;
+    if (addr[1] != gMA.socketAddr[1]) return FALSE;
+    if (addr[2] != gMA.socketAddr[2]) return FALSE;
+    if (addr[3] != gMA.socketAddr[3]) return FALSE;
     return TRUE;
 }
 
@@ -370,10 +371,10 @@ void MAU_Socket_Clear(void)
     int i;
 
     for (i = 0; i < NUM_SOCKETS; i++) {
-        gMA.sockets_used[i] = FALSE;
+        gMA.usedSockets[i] = FALSE;
     }
-    gMA.ipAddr[0] = 0;
-    gMA.ipAddr[1] = 0;
-    gMA.ipAddr[2] = 0;
-    gMA.ipAddr[3] = 0;
+    gMA.socketAddr[0] = 0;
+    gMA.socketAddr[1] = 0;
+    gMA.socketAddr[2] = 0;
+    gMA.socketAddr[3] = 0;
 }

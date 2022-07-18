@@ -3,6 +3,8 @@
 
 #include <AgbTypes.h>
 
+#define MAAPI_MAGIC ('M' << 0 | 'A' << 8 | 'G' << 16 | 'B' << 24)
+
 #define MA_CONDITION_BIOS_BUSY (1 << 5)  // Communicating with the adapter
 #define MA_CONDITION_TCPCLOSED (1 << 6)  // Remote closed the connection
 
@@ -26,11 +28,15 @@
 #define STATUS_CANCEL_REQUEST (1 << 12)  // MA_CancelRequest called
 #define STATUS_PTP_SEND (1 << 13)  // Send p2p data in the next interrupt
 #define STATUS_SIO_SEND_TIMEOUT (1 << 14)  // Timeout during MA_IntrSio_Send
-#define STATUS_BUFFER_EMPTY (1 << 15)  // gMA.prevbuf has just been emptied
+#define STATUS_BUFFER_EMPTY (1 << 15)  // gMA.prevBuf has just been emptied
 #define STATUS_GBCENTER_ERR_101 (1 << 16)  // Gb-Status http header set to 101
 
+#define MAPROT_BODY_SIZE 0x100
+#define MAPROT_HEADER_SIZE 6
+#define MAPROT_FOOTER_SIZE 6
 #define MAPROT_REPLY 0x80
 
+#define MACMD_NULL 0x0f
 #define MACMD_START 0x10
 #define MACMD_END 0x11
 #define MACMD_TEL 0x12
@@ -134,6 +140,20 @@ typedef struct {
 } MA_BUF;
 
 typedef struct {
+    u16 magic;
+    u8 cmd;
+    u8 pad;
+    u16 size;
+} MAPROT_HEADER;
+
+typedef struct {
+    u8 checkSum_H;
+    u8 checkSum_L;
+    u8 device;
+    u8 pad[3];
+} MAPROT_FOOTER;
+
+typedef struct {
     u32 cmd;
 } PARAM_TCP_CUT;
 
@@ -143,7 +163,7 @@ typedef struct {
 
 typedef struct {
     u8 *pSocket;
-    u8 *pHost;
+    u8 *pAddr;
     u32 port;
 } PARAM_TCP_CONNECT;
 
@@ -227,7 +247,7 @@ typedef struct {
     u8 *pRecvData;
     u32 recvBufSize;
     u16 *pRecvSize;
-    u32 _4[4];
+    u32 _pad[4];
     u32 unk_8;
 } PARAM_POP3_RETR;
 
@@ -282,33 +302,33 @@ typedef struct {
     vu16 retryCount;
     vu8 interval;
     u32 nullCounter[MA_NUM_SIO_MODES];
-    u32 counter_timeout[MA_NUM_SIO_MODES];
+    u32 timeoutCounter[MA_NUM_SIO_MODES];
     u32 P2PCounter[MA_NUM_SIO_MODES];
     u32 timeout200msecCounter[MA_NUM_SIO_MODES];
-    u32 timeoutCounter[MA_NUM_SIO_MODES];
+    u32 tcpDelayCounter[MA_NUM_SIO_MODES];
     vu32 counter;
     vu32 status;
-    vu8 cmd_cur;
-    vu8 cmd_recv;
-    u16 recv_checksum;
-    vu8 send_footer[4];
-    vu8 recv_footer[4];
-    vu8 cmd_last;
-    vu8 unk_81;
-    u8 recv_rubbish_counter;
-    u8 unk_83;
+    vu8 sendCmd;
+    vu8 recvCmd;
+    u16 checkSum;
+    vu8 sendFooter[4];
+    vu8 recvFooter[4];  // unused
+    vu8 negaResCmd;
+    vu8 negaResErr;
+    u8 recvRubbishCount;
+    u8 tcpConnectRetryCount;
     u8 unk_84[4];
-    u32 unk_88;
+    u32 apiMagic;
     vu8 unk_92;
     vu16 errorDetail;
     vu8 unk_96;
     vu8 task;
     vu8 taskStep;
     u8 sockets[NUM_SOCKETS];
-    u8 prevbufHasEEPROMData;
+    u8 prevBufHasEEPROMData;
     u8 taskError;
     u16 taskErrorDetail;
-    u8 ipAddr[4];
+    u8 socketAddr[4];
     union {
         PARAM_TCP_CUT tcp_cut;
         PARAM_INITLIBRARY initlibrary;
@@ -334,16 +354,15 @@ typedef struct {
         PARAM_EEPROM_READ eeprom_read;
         PARAM_EEPROM_WRITE eeprom_write;
     } param;
-    u8 sockets_used[NUM_SOCKETS];
-    u8 local_address[4];
-    u8 _210[2];
-    u8 unk_212[268];
+    u8 usedSockets[NUM_SOCKETS];
+    u8 localAddr[4];
+    u16 _unused210;  // unused
+    u8 recvPacketBuf[MAPROT_HEADER_SIZE + MAPROT_BODY_SIZE + MAPROT_FOOTER_SIZE];
     MA_BUF buffer_unk_480;
     MA_IOBUF iobuf_packet_send;
     MA_IOBUF iobuf_packet_recv;
     MA_IOBUF iobuf_footer;
-    u8 buffer_packet_send[32];
-    u8 _568[236];
+    u8 sendPacketBuf[MAPROT_HEADER_SIZE + MAPROT_BODY_SIZE + MAPROT_FOOTER_SIZE];
     u8 buffer_recv_data[4];
     u8 buffer_footer[4];
     MA_BUF buffer_recv;
@@ -356,16 +375,13 @@ typedef struct {
         char pop3[20];
         u32 http;
     } serverConf;
-    char unk_880[14];
-    u8 _894[255];
-    u8 prevbuf[192];
-    u8 _1291[445];
-    u16 prevbufSize;
+    char unk_880[269];
+    u8 prevBuf[636];
+    u16 prevBufSize;
     char unk_1788[6];
     u16 httpRes;
     u16 gbCenterRes;
-    u8 unk_1798[2];
-    u8 _1800[92];
+    u8 authCode[94];
 } MA_VAR;
 
 extern MA_VAR gMA;

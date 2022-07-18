@@ -11,7 +11,7 @@ void MA_Stop(void);
 void MA_TCP_Cut(void);
 void MA_InitLibrary(u8 *pHardwareType);
 void MA_InitLibrary2(u8 *pHardwareType);
-void MA_TCP_Connect(u8 *pSocket, u8 *ip, u16 port);
+void MA_TCP_Connect(u8 *pSocket, u8 *pAddr, u16 port);
 void MA_TCP_Disconnect(u8 socket);
 void MA_TCP_SendRecv(u8 unk_1, u8 *unk_2, u8 unk_3, u8 *unk_4);
 void MA_GetHostAddress(u8 *pHost, char *pServerName);
