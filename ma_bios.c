@@ -1160,7 +1160,7 @@ int MA_ProcessCheckStatusResponse(u8 response)
     switch (response) {  // MAGIC
     case 0xff:
         ret = MA_CONDITION_LOST;
-        if (gMA.connMode != 0) {
+        if (gMA.connMode) {
             if (gMA.status & STATUS_CONNTEST) {
                 gMA.status = 0;
                 MA_SetError(MAAPIE_OFFLINE);
@@ -1173,7 +1173,7 @@ int MA_ProcessCheckStatusResponse(u8 response)
 
     case 0:
     case 1:
-        if (gMA.connMode != 0) {
+        if (gMA.connMode) {
             if (gMA.status & STATUS_CONNTEST) {
                 gMA.status = 0;
                 MA_SetError(MAAPIE_OFFLINE);
@@ -1185,12 +1185,12 @@ int MA_ProcessCheckStatusResponse(u8 response)
 
     case 5:
     case 4:
-        switch (gMA.connMode) {  // MAGIC
-        case 3: ret = MA_CONDITION_PPP; break;
-        case 4: ret = MA_CONDITION_SMTP; break;
-        case 5: ret = MA_CONDITION_POP3; break;
-        case 7: ret = MA_CONDITION_P2P_SEND; break;
-        case 8: ret = MA_CONDITION_P2P_RECV; break;
+        switch (gMA.connMode) {
+        case CONN_PPP: ret = MA_CONDITION_PPP; break;
+        case CONN_SMTP: ret = MA_CONDITION_SMTP; break;
+        case CONN_POP3: ret = MA_CONDITION_POP3; break;
+        case CONN_P2P_SEND: ret = MA_CONDITION_P2P_SEND; break;
+        case CONN_P2P_RECV: ret = MA_CONDITION_P2P_RECV; break;
         }
         break;
     }

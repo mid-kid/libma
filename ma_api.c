@@ -105,45 +105,45 @@ static int ApiValisStatusCheck(u8 task)
     ret = TRUE;
     switch (task) {
     case TASK_TELSERVER:
-        if (gMA.connMode == 0) break;
+        if (gMA.connMode == CONN_OFFLINE) break;
         ret = FALSE;
         break;
 
     case TASK_TEL:
-        if (gMA.connMode == 0) break;
+        if (gMA.connMode == CONN_OFFLINE) break;
         ret = FALSE;
         break;
 
     case TASK_RECEIVE:
-        if (gMA.connMode == 0) break;
+        if (gMA.connMode == CONN_OFFLINE) break;
         ret = FALSE;
         break;
 
     case TASK_SDATA:
-        if (gMA.connMode == 7) break;
-        if (gMA.connMode == 8) break;
+        if (gMA.connMode == CONN_P2P_SEND) break;
+        if (gMA.connMode == CONN_P2P_RECV) break;
         ret = FALSE;
         break;
 
     case TASK_GDATA:
-        if (gMA.connMode == 7) break;
-        if (gMA.connMode == 8) break;
+        if (gMA.connMode == CONN_P2P_SEND) break;
+        if (gMA.connMode == CONN_P2P_RECV) break;
         ret = FALSE;
         break;
 
     case TASK_OFFLINE:
-        if (gMA.connMode == 3) break;
-        if (gMA.connMode == 7) break;
-        if (gMA.connMode == 8) break;
-        if (gMA.connMode == 4) break;
-        if (gMA.connMode == 5) break;
+        if (gMA.connMode == CONN_PPP) break;
+        if (gMA.connMode == CONN_P2P_SEND) break;
+        if (gMA.connMode == CONN_P2P_RECV) break;
+        if (gMA.connMode == CONN_SMTP) break;
+        if (gMA.connMode == CONN_POP3) break;
         ret = FALSE;
         break;
 
     case TASK_SMTP_SENDER:
     case TASK_SMTP_SEND:
     case TASK_SMTP_QUIT:
-        if (gMA.connMode == 4) break;
+        if (gMA.connMode == CONN_SMTP) break;
         ret = FALSE;
         break;
 
@@ -153,27 +153,27 @@ static int ApiValisStatusCheck(u8 task)
     case TASK_POP3_DELE:
     case TASK_POP3_HEAD:
     case TASK_POP3_QUIT:
-        if (gMA.connMode == 5) break;
+        if (gMA.connMode == CONN_POP3) break;
         ret = FALSE;
         break;
 
     case TASK_HTTP_GET:
     case TASK_HTTP_POST:
-        if (gMA.connMode == 3) break;
-        if (gMA.connMode == 6) break;
+        if (gMA.connMode == CONN_PPP) break;
+        if (gMA.connMode == CONN_HTTP) break;
         ret = FALSE;
         break;
 
     case TASK_GETTEL:
     case TASK_GETUSERID:
     case TASK_GETMAILID:
-        if (gMA.connMode == 0) break;
+        if (gMA.connMode == CONN_OFFLINE) break;
         ret = FALSE;
         break;
 
     case TASK_EEPROM_READ:
     case TASK_EEPROM_WRITE:
-        if (gMA.connMode == 0) break;
+        if (gMA.connMode == CONN_OFFLINE) break;
         ret = FALSE;
         break;
 
@@ -184,7 +184,7 @@ static int ApiValisStatusCheck(u8 task)
     case TASK_TCP_SENDRECV:
     case TASK_GETHOSTADDRESS:
     case TASK_GETLOCALADDRESS:
-        if (gMA.connMode == 3) break;
+        if (gMA.connMode == CONN_PPP) break;
         ret = FALSE;
         break;
     }
@@ -273,7 +273,7 @@ void MA_End(void)
 {
     int zero;
 
-    if (gMA.connMode) {
+    if (gMA.connMode != CONN_OFFLINE) {
         MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
         return;
     }
@@ -300,7 +300,8 @@ void MA_Stop(void)
     }
 
     if (gMA.task == TASK_STOP
-        || (!gMA.connMode && !(gMA.condition & MA_CONDITION_APIWAIT))) {
+        || (gMA.connMode == CONN_OFFLINE
+            && !(gMA.condition & MA_CONDITION_APIWAIT))) {
         ResetApiCallFlag();
         return;
     }
@@ -349,13 +350,16 @@ void MA_TCP_Cut(void)
         return;
     }
 
-    if (gMA.connMode == 3 && gMA.task == 0) {
+    if (gMA.connMode == CONN_PPP && gMA.task == TASK_NONE) {
         ResetApiCallFlag();
         return;
     }
 
-    if (!(gMA.connMode == 6 || gMA.connMode == 4 || gMA.connMode == 5
-            || (0x0a < gMA.task && gMA.task < 0x18 && gMA.condition & 1))) {
+    if (gMA.connMode != CONN_HTTP
+        && gMA.connMode != CONN_SMTP
+        && gMA.connMode != CONN_POP3
+        && !(TASK_SMTP_CONNECT <= gMA.task && gMA.task <= TASK_HTTP_POST
+             && gMA.condition & MA_CONDITION_PPP)) {
         MA_SetApiError(MAAPIE_CANNOT_EXECUTE, 0);
         ResetApiCallFlag();
         return;
@@ -380,7 +384,7 @@ void MA_TCP_Cut(void)
 
     param.cmd = gMA.sendCmd;
     gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
-    if (!(gMA.condition & MA_CONDITION_BIOS_BUSY || gMA.connMode == 3)) {
+    if (!(gMA.condition & MA_CONDITION_BIOS_BUSY) && gMA.connMode != CONN_PPP) {
         gMA.condition |= MA_CONDITION_APIWAIT;
         MA_TaskSet(TASK_TCP_CUT, 2);
         ResetApiCallFlag();
@@ -417,7 +421,7 @@ static void MATASK_TCP_Cut(void)
         break;
 
     case 3:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.usedSockets[0] = FALSE;
@@ -580,7 +584,7 @@ static void MATASK_TCP_Connect(void)
         break;
 
     case 0xf0:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.taskError, gMA.taskErrorDetail);
         MA_TaskSet(TASK_NONE, 0);
@@ -637,7 +641,7 @@ static void MATASK_TCP_Disconnect(void)
 
     case 1:
         MAU_Socket_Delete(param.socket);
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.usedSockets[0] = FALSE;
@@ -992,7 +996,7 @@ static void MATASK_TelServer(void)
         gMA.localAddr[1] = gMA.recvBuf.data[1];
         gMA.localAddr[2] = gMA.recvBuf.data[2];
         gMA.localAddr[3] = gMA.recvBuf.data[3];
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         MA_TaskSet(TASK_NONE, 0);
         break;
@@ -1101,7 +1105,7 @@ static void MATASK_Tel(void)
 
     case 4:
         gMA.status |= STATUS_CONN_PTP;
-        gMA.connMode = 7;
+        gMA.connMode = CONN_P2P_SEND;
         MA_SetCondition(MA_CONDITION_P2P_SEND);
         param.pTelNo = NULL;
         gMA.recvBuf.size = 0;
@@ -1196,7 +1200,7 @@ static void MATASK_Receive(void)
 
     case 4:
         gMA.status |= STATUS_CONN_PTP;
-        gMA.connMode = 8;
+        gMA.connMode = CONN_P2P_RECV;
         MA_SetCondition(MA_CONDITION_P2P_RECV);
         param.pTelNo = NULL;
         gMA.recvBuf.size = 0;
@@ -1345,7 +1349,7 @@ void MA_ConditionMain(u8 *pCondition, int task)
     }
 
     param.pCondition = pCondition;
-    if (!gMA.connMode) {
+    if (gMA.connMode == CONN_OFFLINE) {
         param.unk_2 = 1;
         *(vu32 *)REG_TM3CNT = 0;
         MA_TaskSet(task, 0);
@@ -1355,7 +1359,7 @@ void MA_ConditionMain(u8 *pCondition, int task)
     }
 
     ResetApiCallFlag();
-    if (gMA.connMode) return;
+    if (gMA.connMode != CONN_OFFLINE) return;
 
     if (!(*(vu32 *)REG_TM3CNT & TMR_IF_ENABLE)
         || !(*(vu32 *)REG_TM3CNT & TMR_ENABLE)) {
@@ -1444,14 +1448,14 @@ static void MATASK_Condition(void)
 void MA_Offline(void)
 {
     SetApiCallFlag();
-    if (!gMA.connMode || !MA_ApiPreExe(TASK_OFFLINE)) {
+    if (gMA.connMode == CONN_OFFLINE || !MA_ApiPreExe(TASK_OFFLINE)) {
         ResetApiCallFlag();
         return;
     }
 
-    if (gMA.connMode == 7 || gMA.connMode == 8) {
+    if (gMA.connMode == CONN_P2P_SEND || gMA.connMode == CONN_P2P_RECV) {
         MA_TaskSet(TASK_OFFLINE, 1);
-    } else if (gMA.connMode == 4 || gMA.connMode == 5) {
+    } else if (gMA.connMode == CONN_SMTP || gMA.connMode == CONN_POP3) {
         MA_TaskSet(TASK_OFFLINE, 100);
     } else {
         MA_TaskSet(TASK_OFFLINE, 0);
@@ -1472,7 +1476,7 @@ static void MATASK_Offline(void)
 
     switch (gMA.taskStep) {
     case 0:
-        if (gMA.connMode != 7 && gMA.connMode != 8) {
+        if (gMA.connMode != CONN_P2P_SEND && gMA.connMode != CONN_P2P_RECV) {
             MABIOS_PPPDisconnect();
         }
         gMA.taskStep++;
@@ -1523,7 +1527,7 @@ static void MATASK_Offline(void)
         break;
 
     case 103:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.usedSockets[0] = FALSE;
@@ -1600,7 +1604,7 @@ static void MATASK_SMTP_Connect(void)
     }
 
     if (MA_GetCondition() & MA_CONDITION_TCPCLOSED) {
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.usedSockets[0] = FALSE;
@@ -1699,7 +1703,7 @@ static void MATASK_SMTP_Connect(void)
         break;
 
     case 5:
-        gMA.connMode = 4;
+        gMA.connMode = CONN_SMTP;
         MA_SetCondition(MA_CONDITION_SMTP);
         MA_TaskSet(TASK_NONE, 0);
         break;
@@ -1711,7 +1715,7 @@ static void MATASK_SMTP_Connect(void)
         break;
 
     case 0xf1:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.taskError, gMA.taskErrorDetail);
         MA_TaskSet(TASK_NONE, 0);
@@ -1785,7 +1789,7 @@ static void MATASK_SMTP_Sender(void)
     }
 
     if (MA_GetCondition() & MA_CONDITION_TCPCLOSED) {
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.usedSockets[0] = FALSE;
@@ -1889,7 +1893,7 @@ static void MATASK_SMTP_Sender(void)
         break;
 
     case 0xf1:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.taskError, gMA.taskErrorDetail);
         MA_TaskSet(TASK_NONE, 0);
@@ -1948,7 +1952,7 @@ static void MATASK_SMTP_Send(void)
     }
 
     if (MA_GetCondition() & MA_CONDITION_TCPCLOSED) {
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.usedSockets[0] = FALSE;
@@ -2073,7 +2077,7 @@ static void MATASK_SMTP_Send(void)
         break;
 
     case 0xf1:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.taskError, gMA.taskErrorDetail);
         MA_TaskSet(TASK_NONE, 0);
@@ -2129,12 +2133,12 @@ static void MATASK_SMTP_POP3_Quit(void)
     }
 
     if (MA_GetCondition() & MA_CONDITION_TCPCLOSED) {
-        if (gMA.connMode == 4) {
+        if (gMA.connMode == CONN_SMTP) {
             MA_SetApiError(MAAPIE_SMTP, 0);
         } else {
             MA_SetApiError(MAAPIE_POP3, 0);
         }
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.usedSockets[0] = FALSE;
@@ -2172,7 +2176,7 @@ static void MATASK_SMTP_POP3_Quit(void)
         break;
 
     case 3:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.usedSockets[0] = FALSE;
@@ -2186,7 +2190,7 @@ static void MATASK_SMTP_POP3_Quit(void)
         break;
 
     case 0xf1:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.taskError, gMA.taskErrorDetail);
         MA_TaskSet(TASK_NONE, 0);
@@ -2294,7 +2298,7 @@ static void MATASK_POP3_Connect(void)
     }
 
     if (MA_GetCondition() & MA_CONDITION_TCPCLOSED) {
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.usedSockets[0] = FALSE;
@@ -2402,7 +2406,7 @@ static void MATASK_POP3_Connect(void)
         break;
 
     case 6:
-        gMA.connMode = 5;
+        gMA.connMode = CONN_POP3;
         MA_SetCondition(MA_CONDITION_POP3);
         MA_TaskSet(TASK_NONE, 0);
         break;
@@ -2414,7 +2418,7 @@ static void MATASK_POP3_Connect(void)
         break;
 
     case 0xf1:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.taskError, gMA.taskErrorDetail);
         MA_TaskSet(TASK_NONE, 0);
@@ -2465,7 +2469,7 @@ static void MATASK_POP3_Stat(void)
     }
 
     if (MA_GetCondition() & MA_CONDITION_TCPCLOSED) {
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.usedSockets[0] = FALSE;
@@ -2521,7 +2525,7 @@ static void MATASK_POP3_Stat(void)
         break;
 
     case 0xf1:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.taskError, gMA.taskErrorDetail);
         MA_TaskSet(TASK_NONE, 0);
@@ -2581,7 +2585,7 @@ static void MATASK_POP3_List(void)
     }
 
     if (MA_GetCondition() & MA_CONDITION_TCPCLOSED) {
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.usedSockets[0] = FALSE;
@@ -2635,7 +2639,7 @@ static void MATASK_POP3_List(void)
         break;
 
     case 0xf1:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.taskError, gMA.taskErrorDetail);
         MA_TaskSet(TASK_NONE, 0);
@@ -2733,7 +2737,7 @@ static void MATASK_POP3_Retr(void)
     }
 
     if (MA_GetCondition() & MA_CONDITION_TCPCLOSED) {
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.usedSockets[0] = FALSE;
@@ -2839,7 +2843,7 @@ static void MATASK_POP3_Retr(void)
         break;
 
     case 0xf1:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.taskError, gMA.taskErrorDetail);
         MA_TaskSet(TASK_NONE, 0);
@@ -2939,7 +2943,7 @@ static void MATASK_POP3_Dele(void)
         break;
 
     case 0xf1:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.taskError, gMA.taskErrorDetail);
         MA_TaskSet(TASK_NONE, 0);
@@ -3035,7 +3039,7 @@ static void MATASK_POP3_Head(void)
     }
 
     if (MA_GetCondition() & MA_CONDITION_TCPCLOSED) {
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.usedSockets[0] = FALSE;
@@ -3142,7 +3146,7 @@ static void MATASK_POP3_Head(void)
         break;
 
     case 0xf1:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.taskError, gMA.taskErrorDetail);
         MA_TaskSet(TASK_NONE, 0);
@@ -3364,7 +3368,7 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
         gMA.authCode[0] = '\0';
         param.unk_14 = 0;
         param.headFlags = 0;
-        gMA.connMode = 6;
+        gMA.connMode = CONN_HTTP;
 
         if (!useDNS) {
             MAU_memcpy(gMA.socketAddr, &gMA.serverConf.http,
@@ -4163,7 +4167,7 @@ static void MATASK_HTTP_GetPost(void)
         break;
 
     case 0xf1:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         MA_SetApiError(gMA.taskError, gMA.taskErrorDetail);
         MA_TaskSet(TASK_NONE, 0);
@@ -4172,7 +4176,7 @@ static void MATASK_HTTP_GetPost(void)
         break;
 
     case 0xff:
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         MA_TaskSet(TASK_NONE, 0);
         gMA.usedSockets[0] = FALSE;

@@ -31,6 +31,14 @@
 #define STATUS_BUFFER_EMPTY (1 << 15)  // gMA.prevBuf has just been emptied
 #define STATUS_GBCENTER_ERR_101 (1 << 16)  // GB-Status: 101 (fees not paid)
 
+#define CONN_OFFLINE 0
+#define CONN_PPP 3
+#define CONN_SMTP 4
+#define CONN_POP3 5
+#define CONN_HTTP 6
+#define CONN_P2P_SEND 7
+#define CONN_P2P_RECV 8
+
 #define MACMD_NULL 0x0f
 #define MACMD_START 0x10
 #define MACMD_END 0x11
@@ -403,7 +411,7 @@ extern MA_VAR gMA;
 
 #define MA_Reset() \
 { \
-    gMA.connMode = 0; \
+    gMA.connMode = CONN_OFFLINE; \
     MA_ChangeSIOMode(MA_SIO_BYTE); \
     gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode]; \
     gMA.counter = 0; \
