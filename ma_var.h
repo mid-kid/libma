@@ -288,7 +288,7 @@ typedef struct {
     u32 serverPathLenBkp;
     u32 headBufSize;
     u32 serverType;
-    u32 unk_14;
+    u32 authStep;
     char *pHeadBuf;
     u32 headEnd;
     u32 headError;

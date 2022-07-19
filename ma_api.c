@@ -10,6 +10,11 @@
 
 #define MAPROT_DATA_SIZE MAPROT_BODY_SIZE - 2  // Max size of MACMD_DATA packet
 
+// TCP port numbers
+#define PORT_SMTP 25
+#define PORT_HTTP 80
+#define PORT_POP3 110
+
 enum server_types {
     SERVER_UNKNOWN,
     SERVER_DOWNLOAD,
@@ -55,7 +60,7 @@ static void MATASK_POP3_Retr(void);
 static void MATASK_POP3_Dele(void);
 static void MATASK_POP3_Head(void);
 static const char *ExtractServerName(char *pServerName, const char *pURL,
-    u8 *pServerType, u8 *pServerHost);
+    u8 *pServerAuth, u8 *pServerType);
 static void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
     const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize,
     u16 *pRecvSize, const char *pUserID, const char *pPassword, u8 task);
@@ -550,7 +555,7 @@ void MA_TCP_Connect(u8 *pSocket, u8 *pAddr, u16 port)
     }
 
     if (MAU_Socket_GetNum() == 0) {
-        MAU_memcpy(gMA.socketAddr, pAddr, 4);
+        MAU_memcpy(gMA.socketAddr, pAddr, sizeof(gMA.socketAddr));
     } else if (!MAU_Socket_IpAddrCheck(pAddr)) {
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
@@ -1633,9 +1638,9 @@ static void MATASK_SMTP_Connect(void)
         break;
 
     case 1:
-        MAU_memcpy(gMA.socketAddr, gMA.recvBuf.data, 4);
+        MAU_memcpy(gMA.socketAddr, gMA.recvBuf.data, sizeof(gMA.socketAddr));
         MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
-        MABIOS_TCPConnect(&gMA.recvBuf, gMA.socketAddr, 25);
+        MABIOS_TCPConnect(&gMA.recvBuf, gMA.socketAddr, PORT_SMTP);
         gMA.taskStep++;
         break;
 
@@ -2327,10 +2332,9 @@ static void MATASK_POP3_Connect(void)
         break;
 
     case 1:
-        MAU_memcpy(gMA.socketAddr, gMA.recvBuf.data,
-            sizeof(gMA.socketAddr));
+        MAU_memcpy(gMA.socketAddr, gMA.recvBuf.data, sizeof(gMA.socketAddr));
         MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
-        MABIOS_TCPConnect(&gMA.recvBuf, gMA.socketAddr, 110);  // MAGIC
+        MABIOS_TCPConnect(&gMA.recvBuf, gMA.socketAddr, PORT_POP3);
         gMA.taskStep++;
         break;
 
@@ -3169,7 +3173,7 @@ static void MATASK_POP3_Head(void)
 }
 
 static const char *ExtractServerName(char *pServerName, const char *pURL,
-    u8 *pServerType, u8 *pServerHost)
+    u8 *pServerAuth, u8 *pServerType)
 {
     static const char strDownload[] = "gameboy.datacenter.ne.jp/cgb/download";
     static const char strUpload[] = "gameboy.datacenter.ne.jp/cgb/upload";
@@ -3192,7 +3196,7 @@ static const char *ExtractServerName(char *pServerName, const char *pURL,
             return NULL;
         }
         MAU_strcpy(pServerName, pURL);
-        *pServerType = SERVER_UNKNOWN;
+        *pServerAuth = SERVER_UNKNOWN;
     } else {
         len = cp - pURL;
         if (len > 0xff) {
@@ -3204,37 +3208,37 @@ static const char *ExtractServerName(char *pServerName, const char *pURL,
         pServerName[len] = '\0';
 
         if (MAU_strnicmp(pURL, strDownload, sizeof(strDownload) - 1) == 0) {
-            *pServerHost = SERVER_DOWNLOAD;
+            *pServerType = SERVER_DOWNLOAD;
             tmpp = MAU_strrchr(pURL, '/');
             tmpp++;
             if (IsDigit(tmpp[0])) {
-                *pServerType = SERVER_DOWNLOAD;
+                *pServerAuth = SERVER_DOWNLOAD;
             } else {
-                *pServerType = SERVER_UNKNOWN;
+                *pServerAuth = SERVER_UNKNOWN;
             }
         } else if (MAU_strnicmp(pURL, strUpload, sizeof(strUpload) - 1) == 0) {
-            *pServerHost = SERVER_UPLOAD;
+            *pServerType = SERVER_UPLOAD;
             tmpp = MAU_strrchr(pURL, '/');
             tmpp++;
             if (IsDigit(tmpp[0])) {
-                *pServerType = SERVER_UPLOAD;
+                *pServerAuth = SERVER_UPLOAD;
             } else {
-                *pServerType = SERVER_UNKNOWN;
+                *pServerAuth = SERVER_UNKNOWN;
             }
         } else if (MAU_strnicmp(pURL, strUtility, sizeof(strUtility) - 1) == 0) {
-            *pServerHost = SERVER_UTILITY;
             *pServerType = SERVER_UTILITY;
+            *pServerAuth = SERVER_UTILITY;
         } else if (MAU_strnicmp(pURL, strRanking, sizeof(strRanking) - 1) == 0) {
-            *pServerHost = SERVER_RANKING;
+            *pServerType = SERVER_RANKING;
             tmpp = MAU_strrchr(pURL, '/');
             tmpp++;
             if (IsDigit(tmpp[0])) {
-                *pServerType = SERVER_RANKING;
+                *pServerAuth = SERVER_RANKING;
             } else {
-                *pServerType = SERVER_UNKNOWN;
+                *pServerAuth = SERVER_UNKNOWN;
             }
         } else {
-            *pServerType = SERVER_UNKNOWN;
+            *pServerAuth = SERVER_UNKNOWN;
         }
     }
 
@@ -3277,8 +3281,8 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
 #define param gMA.param.http_getpost
     int len;
     const char *pServerPath;
+    u8 serverAuth;
     u8 serverType;
-    u8 serverHost;
     int useDNS;
 
     SetApiCallFlag();
@@ -3321,17 +3325,17 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
             return;
         }
 
-        serverHost = SERVER_UNKNOWN;
-        pServerPath = ExtractServerName(gMA.strBuf, pURL, &serverType,
-            &serverHost);
+        serverType = SERVER_UNKNOWN;
+        pServerPath = ExtractServerName(gMA.strBuf, pURL, &serverAuth,
+            &serverType);
         if (gMA.strBuf[0] == '\0') {
             MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
             ResetApiCallFlag();
             return;
         }
 
-        param.serverType = serverType;
-        if (serverHost == SERVER_UNKNOWN) {
+        param.serverType = serverAuth;
+        if (serverType == SERVER_UNKNOWN) {
             param.pUserID = "";
             param.pPassword = "";
         } else if ((len = MAU_strlen(pUserID)) > 16
@@ -3341,10 +3345,10 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
             return;
         }
 
-        if ((serverHost == SERVER_DOWNLOAD && param.task == TASK_HTTP_POST)
-            || (serverHost == SERVER_UPLOAD && param.task == TASK_HTTP_GET)
-            || (serverHost == SERVER_UTILITY && param.task == TASK_HTTP_POST)
-            || (serverHost == SERVER_RANKING && param.task == TASK_HTTP_GET)) {
+        if ((serverType == SERVER_DOWNLOAD && param.task == TASK_HTTP_POST)
+            || (serverType == SERVER_UPLOAD && param.task == TASK_HTTP_GET)
+            || (serverType == SERVER_UTILITY && param.task == TASK_HTTP_POST)
+            || (serverType == SERVER_RANKING && param.task == TASK_HTTP_GET)) {
             MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
             ResetApiCallFlag();
             return;
@@ -3378,7 +3382,7 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
         gMA.httpRes = 0;
         gMA.status &= ~STATUS_GBCENTER_ERR_101;
         gMA.authCode[0] = '\0';
-        param.unk_14 = 0;
+        param.authStep = 0;
         param.headFlags = 0;
         gMA.connMode = CONN_HTTP;
 
@@ -3482,7 +3486,7 @@ static int GetRequestType(void)
     case TASK_HTTP_GET:
         switch (param.serverType) {
         case SERVER_DOWNLOAD:
-            switch (param.unk_14) {  // MAGIC
+            switch (param.authStep) {
             case 0:
             case 1:
                 break;
@@ -3502,7 +3506,7 @@ static int GetRequestType(void)
             break;
 
         case SERVER_UPLOAD:
-            switch (param.unk_14) {  // MAGIC
+            switch (param.authStep) {
             case 0:
             case 1:
                 break;
@@ -3514,7 +3518,7 @@ static int GetRequestType(void)
             break;
 
         case SERVER_RANKING:
-            switch (param.unk_14) {  // MAGIC
+            switch (param.authStep) {
             case 0:
                 break;
 
@@ -3551,7 +3555,10 @@ static void CreateHttpRequestHeader(void)
             break;
 
         case SERVER_UTILITY:
-            switch (param.unk_14) {
+            switch (param.authStep) {
+            case 0:
+                break;
+
             case 1:
                 bAddAuthorization = TRUE;
                 break;
@@ -3562,7 +3569,7 @@ static void CreateHttpRequestHeader(void)
             break;
 
         case SERVER_DOWNLOAD:
-            switch (param.unk_14) {
+            switch (param.authStep) {
             case 0:
                 break;
 
@@ -3585,7 +3592,7 @@ static void CreateHttpRequestHeader(void)
             break;
 
         case SERVER_UPLOAD:
-            switch (param.unk_14) {
+            switch (param.authStep) {
             case 0:
                 break;
 
@@ -3601,7 +3608,7 @@ static void CreateHttpRequestHeader(void)
             break;
 
         case SERVER_RANKING:
-            switch (param.unk_14) {
+            switch (param.authStep) {
             case 0:
                 break;
 
@@ -3680,7 +3687,7 @@ static int HttpGetNextStep(int unk_1)
                 break;
 
             case SERVER_UPLOAD:
-                switch (param.unk_14) {
+                switch (param.authStep) {
                 case 0:
                     step = 8;
                     break;
@@ -3696,7 +3703,7 @@ static int HttpGetNextStep(int unk_1)
                 break;
 
             case SERVER_RANKING:
-                switch (param.unk_14) {
+                switch (param.authStep) {
                 case 0:
                     step = 8;
                     break;
@@ -3724,7 +3731,7 @@ static int HttpGetNextStep(int unk_1)
                 break;
 
             case SERVER_UTILITY:
-                switch (param.unk_14) {
+                switch (param.authStep) {
                 case 0:
                 case 1:
                     step = 110;
@@ -3733,7 +3740,7 @@ static int HttpGetNextStep(int unk_1)
                 break;
 
             case SERVER_DOWNLOAD:
-                switch (param.unk_14) {
+                switch (param.authStep) {
                 case 0:
                 case 1:
                     step = 110;
@@ -3754,7 +3761,7 @@ static int HttpGetNextStep(int unk_1)
                 break;
 
             case SERVER_UPLOAD:
-                switch (param.unk_14) {
+                switch (param.authStep) {
                 case 0:
                 case 1:
                     step = 110;
@@ -3767,7 +3774,7 @@ static int HttpGetNextStep(int unk_1)
                 break;
 
             case SERVER_RANKING:
-                switch (param.unk_14) {
+                switch (param.authStep) {
                 case 0:
                 case 1:
                     step = 110;
@@ -3792,7 +3799,7 @@ static int HttpGetNextStep(int unk_1)
                 break;
 
             case SERVER_DOWNLOAD:
-                switch (param.unk_14) {
+                switch (param.authStep) {
                 case 1:
                 case 2:
                     step = 2;
@@ -3801,7 +3808,7 @@ static int HttpGetNextStep(int unk_1)
                 break;
 
             case SERVER_UTILITY:
-                switch (param.unk_14) {
+                switch (param.authStep) {
                 case 1:
                     step = 2;
                     break;
@@ -3821,7 +3828,7 @@ static int HttpGetNextStep(int unk_1)
                 break;
 
             case SERVER_UPLOAD:
-                switch (param.unk_14) {
+                switch (param.authStep) {
                 case 1:
                 case 2:
                     step = 2;
@@ -3830,7 +3837,7 @@ static int HttpGetNextStep(int unk_1)
                 break;
 
             case SERVER_RANKING:
-                switch (param.unk_14) {
+                switch (param.authStep) {
                 case 1:
                 case 2:
                     step = 2;
@@ -3892,15 +3899,15 @@ static void MATASK_HTTP_GetPost(void)
         break;
 
     case 1:
-        MAU_memcpy(gMA.socketAddr, gMA.recvBuf.data, 4);
+        MAU_memcpy(gMA.socketAddr, gMA.recvBuf.data, sizeof(gMA.socketAddr));
         gMA.taskStep++;
 
     case 2:
         MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
         if (gMA.serverConf.http == 0) {
-            MABIOS_TCPConnect(&gMA.recvBuf, gMA.socketAddr, 80);  // MAGIC
+            MABIOS_TCPConnect(&gMA.recvBuf, gMA.socketAddr, PORT_HTTP);
         } else {
-            MABIOS_TCPConnect(&gMA.recvBuf, gMA.socketAddr, 80);  // MAGIC
+            MABIOS_TCPConnect(&gMA.recvBuf, gMA.socketAddr, PORT_HTTP);
         }
         gMA.taskStep++;
         break;
@@ -3913,9 +3920,11 @@ static void MATASK_HTTP_GetPost(void)
     case 4:
         MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
         if (GetRequestType() == 0) {
-            MABIOS_Data(&gMA.recvBuf, strHttpGet, 4, gMA.sockets[0]);
+            MABIOS_Data(&gMA.recvBuf, strHttpGet, sizeof(strHttpGet) - 1,
+                gMA.sockets[0]);
         } else {
-            MABIOS_Data(&gMA.recvBuf, strHttpPost, 5, gMA.sockets[0]);
+            MABIOS_Data(&gMA.recvBuf, strHttpPost, sizeof(strHttpPost) - 1,
+                gMA.sockets[0]);
         }
         param.nextStep = gMA.taskStep + 1;
         gMA.taskStep = 50;
@@ -3928,10 +3937,11 @@ static void MATASK_HTTP_GetPost(void)
 
     case 6:
         MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
-        if (param.serverPathLen > 254) {
-            MABIOS_Data(&gMA.recvBuf, param.pServerPath, 254, gMA.sockets[0]);
-            param.pServerPath += 254;
-            param.serverPathLen -= 254;
+        if (param.serverPathLen > MAPROT_DATA_SIZE) {
+            MABIOS_Data(&gMA.recvBuf, param.pServerPath, MAPROT_DATA_SIZE,
+                gMA.sockets[0]);
+            param.pServerPath += MAPROT_DATA_SIZE;
+            param.serverPathLen -= MAPROT_DATA_SIZE;
             param.nextStep = gMA.taskStep;
             gMA.taskStep = 50;
             break;
@@ -3969,7 +3979,7 @@ static void MATASK_HTTP_GetPost(void)
                 break;
             }
             gMA.taskStep = HttpGetNextStep(1);
-            param.unk_14++;
+            param.authStep++;
             break;
         }
 
@@ -4014,7 +4024,7 @@ static void MATASK_HTTP_GetPost(void)
                                 || param.serverType == SERVER_UPLOAD
                                 || param.serverType == SERVER_UTILITY
                                 || param.serverType == SERVER_RANKING)
-                            && param.unk_14 == 0) {
+                            && param.authStep == 0) {
                             if (gMA.httpRes != 401) {
                                 gMA.taskError = MAAPIE_HTTP;
                                 if (gMA.httpRes == 200) {
@@ -4034,7 +4044,7 @@ static void MATASK_HTTP_GetPost(void)
                         gMA.taskErrorDetail = 0;
                         param.headError = TRUE;
                     }
-                } else if (param.unk_14 == 0 && (
+                } else if (param.authStep == 0 && (
                             (MAU_strncmp(lineCp, strHttpDate, sizeof(strHttpDate) - 1) == 0 &&
                              !(param.headFlags & 1)) ||
                             (MAU_strncmp(lineCp, strHttpLocation, sizeof(strHttpLocation) - 1) == 0 &&
