@@ -8,6 +8,16 @@
 #define CASSETTE_INITIAL_CODE (ROM_BANK0 + 0xac)
 #define CASSETTE_VERSION_NO (ROM_BANK0 + 0xbc)
 
+#define MAPROT_DATA_SIZE MAPROT_BODY_SIZE - 2  // Max size of MACMD_DATA packet
+
+enum server_types {
+    SERVER_UNKNOWN,
+    SERVER_DOWNLOAD,
+    SERVER_UPLOAD,
+    SERVER_UTILITY,
+    SERVER_RANKING,
+};
+
 static void MA_SetApiError(u8 error, u16 errorDetail);
 static int ApiValisStatusCheck(u8 task);
 static int MA_ApiPreExe(u8 task);
@@ -45,7 +55,7 @@ static void MATASK_POP3_Retr(void);
 static void MATASK_POP3_Dele(void);
 static void MATASK_POP3_Head(void);
 static const char *ExtractServerName(char *pServerName, const char *pURL,
-    u8 *unk_3, u8 *unk_4);
+    u8 *pServerType, u8 *pServerHost);
 static void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
     const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize,
     u16 *pRecvSize, const char *pUserID, const char *pPassword, u8 task);
@@ -61,10 +71,12 @@ static void MATASK_EEPROM_Read(void);
 static void MATASK_EEPROM_Write(void);
 static u16 ErrDetailHexConv(u16 err);
 
+#define IsDigit(c) ((c) >= '0' && (c) <= '9')
+
 #define CheckResponse(buf) ( \
-    ((buf)[0] >= '0' && (buf)[0] <= '9') && \
-    ((buf)[1] >= '0' && (buf)[1] <= '9') && \
-    ((buf)[2] >= '0' && (buf)[2] <= '9'))
+    (IsDigit((buf)[0])) && \
+    (IsDigit((buf)[1])) && \
+    (IsDigit((buf)[2])))
 
 #define GetResponse(buf) ( \
     ((buf)[0] - '0') * 100 + \
@@ -3157,7 +3169,7 @@ static void MATASK_POP3_Head(void)
 }
 
 static const char *ExtractServerName(char *pServerName, const char *pURL,
-    u8 *unk_3, u8 *unk_4)
+    u8 *pServerType, u8 *pServerHost)
 {
     static const char strDownload[] = "gameboy.datacenter.ne.jp/cgb/download";
     static const char strUpload[] = "gameboy.datacenter.ne.jp/cgb/upload";
@@ -3180,7 +3192,7 @@ static const char *ExtractServerName(char *pServerName, const char *pURL,
             return NULL;
         }
         MAU_strcpy(pServerName, pURL);
-        *unk_3 = 0;
+        *pServerType = SERVER_UNKNOWN;
     } else {
         len = cp - pURL;
         if (len > 0xff) {
@@ -3192,37 +3204,37 @@ static const char *ExtractServerName(char *pServerName, const char *pURL,
         pServerName[len] = '\0';
 
         if (MAU_strnicmp(pURL, strDownload, sizeof(strDownload) - 1) == 0) {
-            *unk_4 = 1;
+            *pServerHost = SERVER_DOWNLOAD;
             tmpp = MAU_strrchr(pURL, '/');
             tmpp++;
-            if (tmpp[0] >= '0' && tmpp[0] <= '9') {
-                *unk_3 = 1;
+            if (IsDigit(tmpp[0])) {
+                *pServerType = SERVER_DOWNLOAD;
             } else {
-                *unk_3 = 0;
+                *pServerType = SERVER_UNKNOWN;
             }
         } else if (MAU_strnicmp(pURL, strUpload, sizeof(strUpload) - 1) == 0) {
-            *unk_4 = 2;
+            *pServerHost = SERVER_UPLOAD;
             tmpp = MAU_strrchr(pURL, '/');
             tmpp++;
-            if (tmpp[0] >= '0' && tmpp[0] <= '9') {
-                *unk_3 = 2;
+            if (IsDigit(tmpp[0])) {
+                *pServerType = SERVER_UPLOAD;
             } else {
-                *unk_3 = 0;
+                *pServerType = SERVER_UNKNOWN;
             }
         } else if (MAU_strnicmp(pURL, strUtility, sizeof(strUtility) - 1) == 0) {
-            *unk_4 = 3;
-            *unk_3 = 3;
+            *pServerHost = SERVER_UTILITY;
+            *pServerType = SERVER_UTILITY;
         } else if (MAU_strnicmp(pURL, strRanking, sizeof(strRanking) - 1) == 0) {
-            *unk_4 = 4;
+            *pServerHost = SERVER_RANKING;
             tmpp = MAU_strrchr(pURL, '/');
             tmpp++;
-            if (tmpp[0] >= '0' && tmpp[0] <= '9') {
-                *unk_3 = 4;
+            if (IsDigit(tmpp[0])) {
+                *pServerType = SERVER_RANKING;
             } else {
-                *unk_3 = 0;
+                *pServerType = SERVER_UNKNOWN;
             }
         } else {
-            *unk_3 = 0;
+            *pServerType = SERVER_UNKNOWN;
         }
     }
 
@@ -3265,8 +3277,8 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
 #define param gMA.param.http_getpost
     int len;
     const char *pServerPath;
-    u8 server_unk_1;
-    u8 server_unk_2;
+    u8 serverType;
+    u8 serverHost;
     int useDNS;
 
     SetApiCallFlag();
@@ -3309,17 +3321,17 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
             return;
         }
 
-        server_unk_2 = 0;
-        pServerPath = ExtractServerName(gMA.strBuf, pURL, &server_unk_1,
-            &server_unk_2);
+        serverHost = SERVER_UNKNOWN;
+        pServerPath = ExtractServerName(gMA.strBuf, pURL, &serverType,
+            &serverHost);
         if (gMA.strBuf[0] == '\0') {
             MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
             ResetApiCallFlag();
             return;
         }
 
-        param.server_unk_1 = server_unk_1;
-        if (server_unk_2 == 0) {
+        param.serverType = serverType;
+        if (serverHost == SERVER_UNKNOWN) {
             param.pUserID = "";
             param.pPassword = "";
         } else if ((len = MAU_strlen(pUserID)) > 16
@@ -3329,10 +3341,10 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
             return;
         }
 
-        if ((server_unk_2 == 1 && param.task == TASK_HTTP_POST)
-            || (server_unk_2 == 2 && param.task == TASK_HTTP_GET)
-            || (server_unk_2 == 3 && param.task == TASK_HTTP_POST)
-            || (server_unk_2 == 4 && param.task == TASK_HTTP_GET)) {
+        if ((serverHost == SERVER_DOWNLOAD && param.task == TASK_HTTP_POST)
+            || (serverHost == SERVER_UPLOAD && param.task == TASK_HTTP_GET)
+            || (serverHost == SERVER_UTILITY && param.task == TASK_HTTP_POST)
+            || (serverHost == SERVER_RANKING && param.task == TASK_HTTP_GET)) {
             MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
             ResetApiCallFlag();
             return;
@@ -3357,7 +3369,7 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
         param.serverPathLen = MAU_strlen(param.pServerPath);
         param.pServerPathBkp = param.pServerPath;
         param.serverPathLenBkp = param.serverPathLen;
-        param.unk_2 = 7;
+        param.unused4 = 7;
 
         InitPrevBuf();
         gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
@@ -3468,8 +3480,8 @@ static int GetRequestType(void)
     ret = 0;
     switch (param.task) {
     case TASK_HTTP_GET:
-        switch (param.server_unk_1) {  // MAGIC
-        case 1:
+        switch (param.serverType) {
+        case SERVER_DOWNLOAD:
             switch (param.unk_14) {  // MAGIC
             case 0:
             case 1:
@@ -3484,12 +3496,12 @@ static int GetRequestType(void)
         break;
 
     case TASK_HTTP_POST:
-        switch (param.server_unk_1) {  // MAGIC
-        case 0:
+        switch (param.serverType) {
+        case SERVER_UNKNOWN:
             ret = 1;
             break;
 
-        case 2:
+        case SERVER_UPLOAD:
             switch (param.unk_14) {  // MAGIC
             case 0:
             case 1:
@@ -3501,7 +3513,7 @@ static int GetRequestType(void)
             }
             break;
 
-        case 4:
+        case SERVER_RANKING:
             switch (param.unk_14) {  // MAGIC
             case 0:
                 break;
@@ -3534,11 +3546,11 @@ static void CreateHttpRequestHeader(void)
 
     switch (param.task) {
     case TASK_HTTP_GET:
-        switch (param.server_unk_1) {
-        case 0:
+        switch (param.serverType) {
+        case SERVER_UNKNOWN:
             break;
 
-        case 3:
+        case SERVER_UTILITY:
             switch (param.unk_14) {
             case 1:
                 bAddAuthorization = TRUE;
@@ -3549,7 +3561,7 @@ static void CreateHttpRequestHeader(void)
             }
             break;
 
-        case 1:
+        case SERVER_DOWNLOAD:
             switch (param.unk_14) {
             case 0:
                 break;
@@ -3567,12 +3579,12 @@ static void CreateHttpRequestHeader(void)
         break;
 
     case TASK_HTTP_POST:
-        switch (param.server_unk_1) {
-        case 0:
+        switch (param.serverType) {
+        case SERVER_UNKNOWN:
             bAddContentLength = TRUE;
             break;
 
-        case 2:
+        case SERVER_UPLOAD:
             switch (param.unk_14) {
             case 0:
                 break;
@@ -3588,7 +3600,7 @@ static void CreateHttpRequestHeader(void)
             }
             break;
 
-        case 4:
+        case SERVER_RANKING:
             switch (param.unk_14) {
             case 0:
                 break;
@@ -3646,28 +3658,28 @@ static int HttpGetNextStep(int unk_1)
     case 0:
         switch (param.task) {
         case TASK_HTTP_GET:
-            switch (param.server_unk_1) {
-            case 0:
+            switch (param.serverType) {
+            case SERVER_UNKNOWN:
                 step = 8;
                 break;
 
-            case 1:
+            case SERVER_DOWNLOAD:
                 step = 8;
                 break;
 
-            case 3:
+            case SERVER_UTILITY:
                 step = 8;
                 break;
             }
             break;
 
         case TASK_HTTP_POST:
-            switch (param.server_unk_1) {
-            case 0:
+            switch (param.serverType) {
+            case SERVER_UNKNOWN:
                 step = 100;
                 break;
 
-            case 2:
+            case SERVER_UPLOAD:
                 switch (param.unk_14) {
                 case 0:
                     step = 8;
@@ -3683,7 +3695,7 @@ static int HttpGetNextStep(int unk_1)
                 }
                 break;
 
-            case 4:
+            case SERVER_RANKING:
                 switch (param.unk_14) {
                 case 0:
                     step = 8;
@@ -3706,25 +3718,25 @@ static int HttpGetNextStep(int unk_1)
     case 1:
         switch (param.task) {
         case TASK_HTTP_GET:
-            switch (param.server_unk_1) {
-            case 0:
-                step = 0x6e;
+            switch (param.serverType) {
+            case SERVER_UNKNOWN:
+                step = 110;
                 break;
 
-            case 3:
+            case SERVER_UTILITY:
                 switch (param.unk_14) {
                 case 0:
                 case 1:
-                    step = 0x6e;
+                    step = 110;
                     break;
                 }
                 break;
 
-            case 1:
+            case SERVER_DOWNLOAD:
                 switch (param.unk_14) {
                 case 0:
                 case 1:
-                    step = 0x6e;
+                    step = 110;
                     break;
 
                 case 2:
@@ -3735,17 +3747,17 @@ static int HttpGetNextStep(int unk_1)
             }
             break;
 
-        case 0x17:
-            switch (param.server_unk_1) {
-            case 0:
-                step = 0x6e;
+        case TASK_HTTP_POST:
+            switch (param.serverType) {
+            case SERVER_UNKNOWN:
+                step = 110;
                 break;
 
-            case 2:
+            case SERVER_UPLOAD:
                 switch (param.unk_14) {
                 case 0:
                 case 1:
-                    step = 0x6e;
+                    step = 110;
                     break;
 
                 case 2:
@@ -3754,11 +3766,11 @@ static int HttpGetNextStep(int unk_1)
                 }
                 break;
 
-            case 4:
+            case SERVER_RANKING:
                 switch (param.unk_14) {
                 case 0:
                 case 1:
-                    step = 0x6e;
+                    step = 110;
                     break;
 
                 case 2:
@@ -3774,12 +3786,12 @@ static int HttpGetNextStep(int unk_1)
     case 2:
         switch (param.task) {
         case TASK_HTTP_GET:
-            switch (param.server_unk_1) {
-            case 0:
+            switch (param.serverType) {
+            case SERVER_UNKNOWN:
                 step = 0xff;
                 break;
 
-            case 1:
+            case SERVER_DOWNLOAD:
                 switch (param.unk_14) {
                 case 1:
                 case 2:
@@ -3788,7 +3800,7 @@ static int HttpGetNextStep(int unk_1)
                 }
                 break;
 
-            case 3:
+            case SERVER_UTILITY:
                 switch (param.unk_14) {
                 case 1:
                     step = 2;
@@ -3802,13 +3814,13 @@ static int HttpGetNextStep(int unk_1)
             }
             break;
 
-        case 0x17:
-            switch (param.server_unk_1) {
-            case 0:
+        case TASK_HTTP_POST:
+            switch (param.serverType) {
+            case SERVER_UNKNOWN:
                 step = 0xff;
                 break;
 
-            case 2:
+            case SERVER_UPLOAD:
                 switch (param.unk_14) {
                 case 1:
                 case 2:
@@ -3817,7 +3829,7 @@ static int HttpGetNextStep(int unk_1)
                 }
                 break;
 
-            case 4:
+            case SERVER_RANKING:
                 switch (param.unk_14) {
                 case 1:
                 case 2:
@@ -3998,7 +4010,10 @@ static void MATASK_HTTP_GetPost(void)
                     if (CheckResponse(&lineCp[9])) {
                         gMA.httpRes = GetResponse(&lineCp[9]);
                         param.headFound = TRUE;
-                        if (param.server_unk_1 != 0 && param.server_unk_1 < 5
+                        if ((param.serverType == SERVER_DOWNLOAD
+                                || param.serverType == SERVER_UPLOAD
+                                || param.serverType == SERVER_UTILITY
+                                || param.serverType == SERVER_RANKING)
                             && param.unk_14 == 0) {
                             if (gMA.httpRes != 401) {
                                 gMA.taskError = MAAPIE_HTTP;
@@ -4103,10 +4118,11 @@ static void MATASK_HTTP_GetPost(void)
 
     case 100:
         MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
-        if (param.sendSize > 254) {
-            MABIOS_Data(&gMA.recvBuf, param.pSendData, 254, gMA.sockets[0]);
-            param.pSendData += 254;
-            param.sendSize -= 254;
+        if (param.sendSize > MAPROT_DATA_SIZE) {
+            MABIOS_Data(&gMA.recvBuf, param.pSendData, MAPROT_DATA_SIZE,
+                gMA.sockets[0]);
+            param.pSendData += MAPROT_DATA_SIZE;
+            param.sendSize -= MAPROT_DATA_SIZE;
             param.nextStep = gMA.taskStep;
             gMA.taskStep = 50;
             break;

@@ -276,7 +276,7 @@ typedef struct {
 
 typedef struct {
     u32 task;
-    u32 unk_2;  // unused
+    u32 unused4;
     u8 *pRecvData;
     u32 recvBufSize;
     u16 *pRecvSize;
@@ -287,7 +287,7 @@ typedef struct {
     const char *pServerPathBkp;
     u32 serverPathLenBkp;
     u32 headBufSize;
-    u32 server_unk_1;
+    u32 serverType;
     u32 unk_14;
     char *pHeadBuf;
     u32 headEnd;
@@ -366,7 +366,7 @@ typedef struct {
     } param;
     u8 usedSockets[NUM_SOCKETS];
     u8 localAddr[4];
-    u16 _unused210;  // unused
+    u16 _unused210;
     u8 recvPacket[MAPROT_HEADER_SIZE + MAPROT_BODY_SIZE + MAPROT_FOOTER_SIZE];
     MA_BUF recvBuf;
     MA_IOBUF sendIoBuf;
