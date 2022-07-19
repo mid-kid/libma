@@ -1367,11 +1367,11 @@ void MA_ConditionMain(u8 *pCondition, int task)
 
     param.pCondition = pCondition;
     if (gMA.connMode == CONN_OFFLINE) {
-        param.unk_2 = 1;
+        param.offline = TRUE;
         *(vu32 *)REG_TM3CNT = 0;
         MA_TaskSet(task, 0);
     } else {
-        param.unk_2 = 0;
+        param.offline = FALSE;
         MA_TaskSet(task, 1);
     }
 
@@ -1395,7 +1395,7 @@ static void MATASK_Condition(void)
 
         case MACMD_CHECKSTATUS:
             MA_DefaultNegaResProc();
-            if (param.unk_2 == 1) {
+            if (param.offline == TRUE) {
                 gMA.taskStep = 0xfa;
             } else {
                 gMA.taskStep = 0xfc;
@@ -1426,7 +1426,7 @@ static void MATASK_Condition(void)
         if (gMA.hwCondition[2] >= 0xf0) {  // MAGIC
             *param.pCondition |= 0x80;  // MAGIC
         }
-        if (param.unk_2 == 1) {
+        if (param.offline == TRUE) {
             gMA.taskStep = 3;
         } else {
             MA_TaskSet(TASK_NONE, 0);
@@ -2711,7 +2711,7 @@ void MA_POP3_Retr(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
             return;
         }
 
-        param.unk_8 = 0;
+        param.respFound = FALSE;
         InitPrevBuf();
         gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
         gMA.status &= ~STATUS_BUFFER_EMPTY;
@@ -2775,7 +2775,7 @@ static void MATASK_POP3_Retr(void)
         dataLen = gMA.recvBuf.size - 1;
         if (!(gMA.status & STATUS_BUFFER_EMPTY)) {
             if (param.pRecvData && dataLen > 1) {
-                if (param.unk_8 == 0) {
+                if (!param.respFound) {
                     cp = MAU_SearchCRLF(&gMA.recvBuf.data[1], dataLen);
                     if (cp == NULL) {
                         ConcatPrevBuf(&gMA.recvBuf.data[1], dataLen);
@@ -2790,7 +2790,7 @@ static void MATASK_POP3_Retr(void)
                     if (pop3res == 0) {
                         dataLen -= (u8 *)cp - &gMA.recvBuf.data[1];
                         gMA.recvBuf.data = (u8 *)&cp[-1];
-                        param.unk_8 = 1;
+                        param.respFound = TRUE;
                     } else if (pop3res == 1) {
                         gMA.taskError = MAAPIE_POP3;
                         gMA.taskErrorDetail = 4;
@@ -3014,7 +3014,7 @@ void MA_POP3_Head(u16 mailNo, u8 *pRecvData, u16 recvBufSize, u16 *pRecvSize)
             return;
         }
 
-        param.unk_8 = 0;
+        param.respFound = FALSE;
         InitPrevBuf();
         gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
 
@@ -3077,7 +3077,7 @@ static void MATASK_POP3_Head(void)
         dataLen = gMA.recvBuf.size - 1;
         if (!(gMA.status & STATUS_BUFFER_EMPTY)) {
             if (param.pRecvData && dataLen > 1) {
-                if (param.unk_8 == 0) {
+                if (!param.respFound) {
                     cp = MAU_SearchCRLF(&gMA.recvBuf.data[1], dataLen);
                     if (cp == NULL) {
                         ConcatPrevBuf(&gMA.recvBuf.data[1], dataLen);
@@ -3093,7 +3093,7 @@ static void MATASK_POP3_Head(void)
                     if (pop3res == 0) {
                         dataLen -= (u8 *)cp - &gMA.recvBuf.data[1];
                         gMA.recvBuf.data = (u8 *)&cp[-1];
-                        param.unk_8 = 1;
+                        param.respFound = TRUE;
                     } else if (pop3res == 1) {
                         gMA.taskError = MAAPIE_POP3;
                         gMA.taskErrorDetail = 4;

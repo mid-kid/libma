@@ -210,7 +210,7 @@ typedef struct {
 
 typedef struct {
     u8 *pCondition;
-    u32 unk_2;
+    u32 offline;
 } PARAM_CONDITION;
 
 typedef struct {
@@ -258,7 +258,7 @@ typedef struct {
     u32 recvBufSize;
     u16 *pRecvSize;
     u32 _pad[4];
-    u32 unk_8;
+    u32 respFound;
 } PARAM_POP3_RETR;
 
 typedef struct {
