@@ -9,18 +9,9 @@
 #define MAPROT_MAGIC_1 0x99
 #define MAPROT_MAGIC_2 0x66
 
-#define MAPROT_REPLY 0x80
-
 #define MAPROT_ERR_F0 0xf0
 #define MAPROT_ERR_CHECKSUM 0xf1
 #define MAPROT_ERR_F2 0xf2
-
-#define MATYPE_PROT_MASK 0xf0
-#define MATYPE_PROT_MASTER (MAPROT_REPLY | 0x0)
-#define MATYPE_PROT_SLAVE (MAPROT_REPLY | 0x8)
-
-#define MATYPE_GBC 0
-#define MATYPE_GBA 1
 
 enum timeouts {
     TIMEOUT_02,
@@ -218,7 +209,7 @@ static void SetInternalRecvBuffer(void)
 
 static void MA_SetInterval(int index)
 {
-    if (gMA.hardwareType == (MATYPE_PROT_SLAVE | MATYPE_PDC)) {
+    if (gMA.hardwareType == (MAPROT_TYPE_SLAVE | MATYPE_PDC)) {
         index += 5;
     }
 
@@ -233,17 +224,17 @@ static void MA_SetInterval(int index)
     gMA.timeout200msecCounter[MA_SIO_WORD] = gTimeout200msecCounterWord[index];
 
     switch (gMA.hardwareType) {
-    case MATYPE_PROT_SLAVE | MATYPE_CDMA:
+    case MAPROT_TYPE_SLAVE | MATYPE_CDMA:
         gMA.tcpDelayCounter[MA_SIO_BYTE] = gTimeout250msecCounterByte[index];
         gMA.tcpDelayCounter[MA_SIO_WORD] = gTimeout250msecCounterWord[index];
         break;
 
-    case MATYPE_PROT_SLAVE | MATYPE_PDC:
+    case MAPROT_TYPE_SLAVE | MATYPE_PDC:
         gMA.tcpDelayCounter[MA_SIO_BYTE] = gTimeout200msecCounterByte[index];
         gMA.tcpDelayCounter[MA_SIO_WORD] = gTimeout200msecCounterWord[index];
         break;
 
-    case MATYPE_PROT_SLAVE | MATYPE_PHS_Pocket:
+    case MAPROT_TYPE_SLAVE | MATYPE_PHS_Pocket:
         gMA.tcpDelayCounter[MA_SIO_BYTE] = gTimeout40msecCounterByte[index];
         gMA.tcpDelayCounter[MA_SIO_WORD] = gTimeout40msecCounterWord[index];
         break;
@@ -403,7 +394,7 @@ void MA_SetDataInterval(u16 interval_byte, u16 interval_word)
 
 static int MA_IsSupportedHardware(u8 hardware)
 {
-    if ((hardware & MATYPE_PROT_MASK) == MAPROT_REPLY) {
+    if ((hardware & MAPROT_TYPE_MASK) == MAPROT_REPLY) {
         return TRUE;
     } else {
         return FALSE;
@@ -412,10 +403,10 @@ static int MA_IsSupportedHardware(u8 hardware)
 
 int MA_GetCallTypeFromHarwareType(u8 harware)
 {
-    if (harware == (MATYPE_PROT_SLAVE | MATYPE_PDC)) return 0;
-    if (harware == (MATYPE_PROT_SLAVE | MATYPE_CDMA)) return 2;
-    if (harware == (MATYPE_PROT_SLAVE | MATYPE_PHS_DoCoMo)
-        || harware == (MATYPE_PROT_SLAVE | MATYPE_PHS_Pocket)) {
+    if (harware == (MAPROT_TYPE_SLAVE | MATYPE_PDC)) return 0;
+    if (harware == (MAPROT_TYPE_SLAVE | MATYPE_CDMA)) return 2;
+    if (harware == (MAPROT_TYPE_SLAVE | MATYPE_PHS_DoCoMo)
+        || harware == (MAPROT_TYPE_SLAVE | MATYPE_PHS_Pocket)) {
         return 1;
     }
     return 3;  // MAGIC
@@ -949,7 +940,7 @@ static int MA_Create8BitPacket(u8 *packet, u8 cmd, u16 size)
     checkSum = MA_CalcCheckSum(packet + 2, size + 4);
     tmppPacketLast->checkSum_H = checkSum >> 8;
     tmppPacketLast->checkSum_L = checkSum >> 0;
-    tmppPacketLast->device = MATYPE_PROT_MASTER | MATYPE_GBA;
+    tmppPacketLast->device = MAPROT_TYPE_MASTER | MATYPE_GBA;
     tmppPacketLast->pad[0] = 0;
 
     return size + MAPROT_HEADER_SIZE + MAPROT_FOOTER_SIZE - 2;
@@ -987,7 +978,7 @@ static int MA_Create32BitPacket(u8 *packet, u8 cmd, u16 size)
     checkSum = MA_CalcCheckSum(packet + 2, size + 4);
     tmppPacketLast->checkSum_H = checkSum >> 8;
     tmppPacketLast->checkSum_L = checkSum >> 0;
-    tmppPacketLast->device = MATYPE_PROT_MASTER | MATYPE_GBA;
+    tmppPacketLast->device = MAPROT_TYPE_MASTER | MATYPE_GBA;
     tmppPacketLast->pad[0] = 0;
     tmppPacketLast->pad[1] = 0;
     tmppPacketLast->pad[2] = 0;
@@ -1087,7 +1078,7 @@ static void MA_IntrTimer_SIORecv(void)
 
 static void MA_IntrTimer_SIOIdle(void)
 {
-#define param gMA.param.sdata
+#define param gMA.param.p2p
     if (gMA.task != TASK_NONE
         && gMA.task != TASK_SDATA
         && gMA.task != TASK_GDATA) {
@@ -1111,12 +1102,13 @@ static void MA_IntrTimer_SIOIdle(void)
                 MABIOS_Data(&gMA.recvBuf, NULL, 0, 0xff);
             }
         }
-    } else {
-        if (gMA.counter > gMA.nullCounter[gMA.sioMode]) {
-            gMA.counter = 0;
-            MA_InitBuffer(&gMA.biosRecvBuf, gMA.hwCondition);
-            MABIOS_CheckStatus2(&gMA.biosRecvBuf);
-        }
+        return;
+    }
+
+    if (gMA.counter > gMA.nullCounter[gMA.sioMode]) {
+        gMA.counter = 0;
+        MA_InitBuffer(&gMA.biosRecvBuf, gMA.hwCondition);
+        MABIOS_CheckStatus2(&gMA.biosRecvBuf);
     }
 #undef param
 }
@@ -1157,7 +1149,7 @@ int MA_ProcessCheckStatusResponse(u8 response)
 {
     int ret = 0;
 
-    switch (response) {  // MAGIC
+    switch (response) {
     case 0xff:
         ret = MA_CONDITION_LOST;
         if (gMA.connMode) {
@@ -1686,7 +1678,7 @@ static void MA_IntrSio_Recv(u8 byte)
         // Initialize the recvFooter buffer
         MA_InitIoBuffer(&gMA.tempIoBuf, gMA.replyFooter,
             sizeof(gMA.replyFooter), 0);
-        gMA.replyFooter[0] = MATYPE_PROT_MASTER | MATYPE_GBA;
+        gMA.replyFooter[0] = MAPROT_TYPE_MASTER | MATYPE_GBA;
         if (gMA.checkSum != gMA.recvIoBuf.checkSum
             && !(gMA.status & STATUS_BIOS_RESTART)) {
             gMA.replyFooter[1] = MAPROT_ERR_CHECKSUM;

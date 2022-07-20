@@ -10,6 +10,9 @@
 
 #define MAPROT_DATA_SIZE MAPROT_BODY_SIZE - 2  // Max size of MACMD_DATA packet
 
+#define MAXLEN_TELNO 20
+#define MAXLEN_EMAIL 30
+
 // TCP port numbers
 #define PORT_SMTP 25
 #define PORT_HTTP 80
@@ -518,8 +521,7 @@ static void MATASK_InitLibrary(void)
         break;
 
     case 3:
-        *param.pHardwareType = gMA.hardwareType + 0x78;  // MAGIC
-
+        *param.pHardwareType = gMA.hardwareType - MAPROT_TYPE_SLAVE;
         MA_ChangeSIOMode(MA_SIO_BYTE);
         MA_Reset();
         MA_TaskSet(TASK_NONE, 0);
@@ -757,7 +759,7 @@ void MA_GetHostAddress(u8 *pAddr, char *pServerName)
         return;
     }
 
-    if (MAU_strlen(pServerName) >= 0x100) {  // MAGIC
+    if (MAU_strlen(pServerName) >= MAPROT_BODY_SIZE) {
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;
@@ -1049,7 +1051,7 @@ void MA_Tel(const char *pTelNo)
     }
 
     len = MAU_strlen(pTelNo);
-    if (len > 20 || len == 0) {  // MAGIC
+    if (len > MAXLEN_TELNO || len == 0) {
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;
@@ -1208,11 +1210,11 @@ static void MATASK_Receive(void)
         break;
 
     case 3:
-        if (gMA.recvCmd != (MACMD_WAITCALL | MAPROT_REPLY)) {
+        if (gMA.recvCmd != (MAPROT_REPLY | MACMD_WAITCALL)) {
             gMA.taskStep--;
-            break;
+        } else {
+            gMA.taskStep++;
         }
-        gMA.taskStep++;
         break;
 
     case 4:
@@ -1241,7 +1243,7 @@ static void MATASK_Receive(void)
 
 void MA_SData(const u8 *pSendData, u8 sendSize, u8 *pResult)
 {
-#define param gMA.param.sdata
+#define param gMA.param.p2p
     SetApiCallFlag();
     *pResult = FALSE;
     if (!MA_ApiPreExe(TASK_SDATA)) {
@@ -1575,7 +1577,7 @@ void MA_SMTP_Connect(const char *pMailAddress)
     }
 
     len = MAU_strlen(pMailAddress);
-    if (len > 30 || len == 0) {  // MAGIC
+    if (len > MAXLEN_EMAIL || len == 0) {
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;
@@ -1761,7 +1763,7 @@ void MA_SMTP_Sender(const char * const pRecipients[])
     }
 
     len = MAU_strlen(pRecipients[0]);
-    if (len > 30 || len == 0) {  // MAGIC
+    if (len > MAXLEN_EMAIL || len == 0) {
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;

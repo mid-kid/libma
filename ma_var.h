@@ -5,13 +5,16 @@
 
 #define MAAPI_MAGIC ('M' << 0 | 'A' << 8 | 'G' << 16 | 'B' << 24)
 
-#define MA_CONDITION_BIOS_BUSY (1 << 5)  // Communicating with the adapter
-#define MA_CONDITION_TCPCLOSED (1 << 6)  // Remote closed the connection
+#define MATYPE_GBC 0
+#define MATYPE_GBA 1
 
 #define MAAPIE_UNK_83 0x83
 #define MAAPIE_UNK_84 0x84
 #define MAAPIE_UNK_85 0x85
 #define MAAPIE_UNK_87 0x87
+
+#define MA_CONDITION_BIOS_BUSY (1 << 5)  // Communicating with the adapter
+#define MA_CONDITION_TCPCLOSED (1 << 6)  // Remote closed the connection
 
 #define STATUS_CONNECTED (1 << 0)  // Connected to the adapter
 #define STATUS_SIO_START (1 << 1)  // Send next byte (IntrSio keeps sending until done)
@@ -62,12 +65,16 @@
 #define MACMD_TESTMODE 0x3f
 #define MACMD_ERROR 0x6e
 
+#define NUM_SOCKETS 2
+
+#define MAPROT_REPLY 0x80
+#define MAPROT_TYPE_MASK 0xf0
+#define MAPROT_TYPE_MASTER (MAPROT_REPLY | 0x0)
+#define MAPROT_TYPE_SLAVE (MAPROT_REPLY | 0x8)
+
 #define MAPROT_BODY_SIZE 0x100
 #define MAPROT_HEADER_SIZE 6
 #define MAPROT_FOOTER_SIZE 6
-#define MAPROT_REPLY 0x80
-
-#define NUM_SOCKETS 2
 
 #define EEPROM_DNS_OFFSET 4
 #define EEPROM_DNS_SIZE 8
@@ -206,7 +213,7 @@ typedef struct {
 typedef struct {
     const u8 *pData;
     u32 size;
-} PARAM_SDATA;
+} PARAM_P2P;
 
 typedef struct {
     u8 *pCondition;
@@ -348,7 +355,7 @@ typedef struct {
         PARAM_GETHOSTADDRESS gethostaddress;
         PARAM_TELSERVER telserver;
         PARAM_TEL tel;
-        PARAM_SDATA sdata;
+        PARAM_P2P p2p;
         PARAM_CONDITION condition;
         PARAM_OFFLINE offline;
         PARAM_SMTP_CONNECT smtp_connect;
