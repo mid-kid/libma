@@ -3341,11 +3341,19 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
         if (serverType == SERVER_UNKNOWN) {
             param.pUserID = "";
             param.pPassword = "";
-        } else if ((len = MAU_strlen(pUserID)) > 16
-                   || (len = MAU_strlen(pPassword)) > 16) {
-            MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
-            ResetApiCallFlag();
-            return;
+        } else {
+            len = MAU_strlen(pUserID);
+            if (len > 16) {
+                MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+                ResetApiCallFlag();
+                return;
+            }
+            len = MAU_strlen(pPassword);
+            if (len > 16) {
+                MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
+                ResetApiCallFlag();
+                return;
+            }
         }
 
         if ((serverType == SERVER_DOWNLOAD && param.task == TASK_HTTP_POST)
