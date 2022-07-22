@@ -1425,9 +1425,10 @@ static void MATASK_Condition(void)
 
     case 2:
         *param.pCondition = MA_ProcessCheckStatusResponse(gMA.recvBuf.data[0]);
-        if (gMA.hwCondition[2] >= 0xf0) {  // MAGIC
-            *param.pCondition |= 0x80;  // MAGIC
+        if (gMA.hwCondition[2] >= 0xf0) {
+            *param.pCondition |= MA_CONDITION_FREE_F;
         }
+
         if (param.offline == TRUE) {
             gMA.taskStep = 3;
         } else {

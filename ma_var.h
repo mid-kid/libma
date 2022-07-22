@@ -13,8 +13,10 @@
 #define MAAPIE_UNK_85 0x85
 #define MAAPIE_UNK_87 0x87
 
-#define MA_CONDITION_BIOS_BUSY (1 << 5)  // Communicating with the adapter
-#define MA_CONDITION_TCPCLOSED (1 << 6)  // Remote closed the connection
+#define MA_CONDITION_BIOS_BUSY ((u16)0x0020)  // Communicating with the adapter
+#define MA_CONDITION_TCPCLOSED ((u16)0x0040)  // Remote closed the connection
+
+#define MA_CONDITION_FREE_F (0x80)  // No call fees apply (MA_Condition only)
 
 #define STATUS_CONNECTED (1 << 0)  // Connected to the adapter
 #define STATUS_SIO_START (1 << 1)  // Send next byte (IntrSio keeps sending until done)
