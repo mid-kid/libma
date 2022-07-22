@@ -1,7 +1,8 @@
 Checks: '
   -bugprone-branch-clone,
+  -cert-str34-c,
   -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  -cppcoreguidelines-narrowing-conversions,
   -hicpp-multiway-paths-covered,
   -readability-redundant-declaration,
-  -cppcoreguidelines-narrowing-conversions,
   '
