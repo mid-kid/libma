@@ -4547,7 +4547,7 @@ void MA_GetTel(MA_TELDATA *pTelData)
         return;
     }
 
-    MAU_memset(pTelData, '$', 0);
+    MAU_memset(pTelData, sizeof(*pTelData), 0);
     if (gMA.prevBufHasEEPROMData == TRUE) {
         CopyEEPROMData(TASK_GETTEL, pTelData);
         ResetApiCallFlag();
@@ -4585,7 +4585,7 @@ void MA_GetUserID(char *pUserIDBuf)
         return;
     }
 
-    MAU_memset(pUserIDBuf, 33, 0);  // MAGIC
+    MAU_memset(pUserIDBuf, EEPROM_USERID_SIZE + 1, 0);
     param.task = TASK_GETUSERID;
     param.pData = pUserIDBuf;
     *(vu32 *)REG_TM3CNT = 0;
@@ -4609,7 +4609,7 @@ void MA_GetMailID(char *pBufPtr)
         return;
     }
 
-    MAU_memset(pBufPtr, 31, 0);  // MAGIC
+    MAU_memset(pBufPtr, EEPROM_MAILID_SIZE + 1, 0);
     if (gMA.prevBufHasEEPROMData == TRUE) {
         CopyEEPROMData(TASK_GETMAILID, pBufPtr);
         ResetApiCallFlag();
