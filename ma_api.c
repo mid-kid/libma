@@ -82,12 +82,10 @@ static void MATASK_EEPROM_Read(void);
 static void MATASK_EEPROM_Write(void);
 static u16 ErrDetailHexConv(u16 err);
 
-#define IsDigit(c) ((c) >= '0' && (c) <= '9')
-
 #define CheckResponse(buf) ( \
-    (IsDigit((buf)[0])) && \
-    (IsDigit((buf)[1])) && \
-    (IsDigit((buf)[2])))
+    (MAU_isdigit((buf)[0])) && \
+    (MAU_isdigit((buf)[1])) && \
+    (MAU_isdigit((buf)[2])))
 
 #define GetResponse(buf) ( \
     ((buf)[0] - '0') * 100 + \
@@ -3218,7 +3216,7 @@ static const char *ExtractServerName(char *pServerName, const char *pURL,
             *pServerType = SERVER_DOWNLOAD;
             tmpp = MAU_strrchr(pURL, '/');
             tmpp++;
-            if (IsDigit(tmpp[0])) {
+            if (MAU_isdigit(tmpp[0])) {
                 *pServerAuth = SERVER_DOWNLOAD;
             } else {
                 *pServerAuth = SERVER_UNKNOWN;
@@ -3227,7 +3225,7 @@ static const char *ExtractServerName(char *pServerName, const char *pURL,
             *pServerType = SERVER_UPLOAD;
             tmpp = MAU_strrchr(pURL, '/');
             tmpp++;
-            if (IsDigit(tmpp[0])) {
+            if (MAU_isdigit(tmpp[0])) {
                 *pServerAuth = SERVER_UPLOAD;
             } else {
                 *pServerAuth = SERVER_UNKNOWN;
@@ -3239,7 +3237,7 @@ static const char *ExtractServerName(char *pServerName, const char *pURL,
             *pServerType = SERVER_RANKING;
             tmpp = MAU_strrchr(pURL, '/');
             tmpp++;
-            if (IsDigit(tmpp[0])) {
+            if (MAU_isdigit(tmpp[0])) {
                 *pServerAuth = SERVER_RANKING;
             } else {
                 *pServerAuth = SERVER_UNKNOWN;

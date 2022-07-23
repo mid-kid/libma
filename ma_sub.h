@@ -3,6 +3,8 @@
 
 #include <AgbTypes.h>
 
+#define MAU_isdigit(c) ((c) >= '0' && (c) <= '9')
+
 int MAU_strlen(const char *str);
 void MAU_strcpy(char *dest, const char *src);
 int MAU_strcpy_size(char *dest, const char *src, int size);
@@ -17,17 +19,17 @@ int MAU_strncmp(const char *str1, const char *str2, int size);
 int MAU_strnicmp(const char *str1, const char *str2, int size);
 void MAU_memcpy(void *dest, const void *src, int size);
 void MAU_memset(void *dest, u8 c, int size);
-char *MAU_itoa(int num, char *dest, int base);
-int MAU_atoi(const char *str);
-void MAU_DecodeEEPROMTelNo(const u8 *num, char *str);
-int MAU_IsValidTelNoStr(const char *str);
-int MAU_CheckCRLF(const char *str, u16 size);
+char *MAU_itoa(int num, char *pStr, int base);
+int MAU_atoi(const char *pStr);
+void MAU_DecodeEEPROMTelNo(const u8 *pNum, char *pStr);
+int MAU_IsValidTelNoStr(const char *pStr);
+int MAU_CheckCRLF(const char *pStr, u16 size);
 void MAU_Socket_Add(u8 sock);
 void MAU_Socket_Delete(u8 sock);
 int MAU_Socket_Search(u8 sock);
 int MAU_Socket_GetNum(void);
 int MAU_Socket_FreeCheck(void);
-int MAU_Socket_IpAddrCheck(const u8 *addr);
+int MAU_Socket_IpAddrCheck(const u8 *pAddr);
 void MAU_Socket_Clear(void);
 
 #endif // _MA_SUB

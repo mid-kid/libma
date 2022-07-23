@@ -4,8 +4,6 @@
 #include <AgbDefine.h>
 #include "ma_var.h"
 
-static void xtoa(unsigned num, char *dest, unsigned base, int negative);
-
 int MAU_strlen(const char *str)
 {
     static const char *eos;
@@ -174,20 +172,31 @@ void MAU_memset(void *dest, u8 c, int size)
     while (size--) *d++ = c;
 }
 
-static void xtoa(unsigned num, char *dest, unsigned base, int negative)
+/**
+ * @brief Convert an integer into a string
+ *
+ * Used by MAU_itoa() to perform the actual conversion.
+ *
+ * @param[in] num integer value
+ * @param[out] pStr string
+ * @param[in] base number base
+ * @param[in] neg number is negative
+ */
+static void xtoa(int num, char *pStr, unsigned base, int neg)
 {
     static char *p;
     static char *firstdig;
     static char temp;
     static unsigned digval;
 
-    p = dest;
-    if (negative) {
+    // If the number is negative, prefix with the sign
+    p = pStr;
+    if (neg) {
         *p++ = '-';
         num = -num;
     }
 
-    // Write number into dest backwards
+    // Write number into pStr backwards
     firstdig = p;
     do {
         digval = num % base;
@@ -199,7 +208,7 @@ static void xtoa(unsigned num, char *dest, unsigned base, int negative)
         }
     } while (num != 0);
 
-    // Reverse the string in dest
+    // Reverse the string in pStr
     *p-- = '\0';
     do {
         temp = *p;
@@ -210,32 +219,56 @@ static void xtoa(unsigned num, char *dest, unsigned base, int negative)
     } while (firstdig < p);
 }
 
-char *MAU_itoa(int num, char *dest, int base)
+/**
+ * @brief Convert an integer number into a string
+ *
+ * This function converts an integer into a string of an any base. Digits with
+ * values bigger than 10 are represented as letters starting from "a".
+ *
+ * Negative numbers are only handled in base 10.
+ *
+ * @param[in] num integer value
+ * @param[out] pStr string
+ * @param[in] base number base
+ * @return string
+ */
+char *MAU_itoa(int num, char *pStr, int base)
 {
     if (base == 10 && num < 0) {
-        xtoa(num, dest, 10, TRUE);
+        xtoa(num, pStr, 10, TRUE);
     } else {
-        xtoa(num, dest, base, FALSE);
+        xtoa(num, pStr, base, FALSE);
     }
-    return dest;
+    return pStr;
 }
 
-int MAU_atoi(const char *str)
+/**
+ * @brief Convert a string into an integer
+ *
+ * Converts the initial portion of the string pointed to by pStr into an
+ * integer. The string may optionally start with a '-' or a '+' sign, and any
+ * following base 10 digits will be interpreted.
+ *
+ * @param pStr string
+ * @return integer value
+ */
+int MAU_atoi(const char *pStr)
 {
     static char c;
     static char sign;
     static int total;
 
-    c = *str++;
+    c = *pStr++;
+
     sign = c;
     if (sign == '-' || sign == '+') {
-        c = *str++;
+        c = *pStr++;
     }
 
     total = 0;
-    while (c >= '0' && c <= '9') {
+    while (MAU_isdigit(c)) {
         total = total * 10 + (c - '0');
-        c = *str++;
+        c = *pStr++;
     }
 
     if (sign == '-') return -total;
@@ -244,52 +277,91 @@ int MAU_atoi(const char *str)
 
 static const char telCharTable[] = "0123456789#*";
 
-void MAU_DecodeEEPROMTelNo(const u8 *num, char *str)
+/**
+ * @brief Decode an EEPROM-packed telephone number
+ *
+ * Converts a given EEPROM phone number into an equivalent string.
+ *
+ * The function will read up to EEPROM_TELNO_SIZE bytes from the EEPROM buffer
+ * unless a terminator is encountered. The string buffer must be able to
+ * hold at least EEPROM_TELNO_SIZE * 2 + 1 bytes.
+ *
+ * The phone number contained in the EEPROM is a binary-coded decimal number,
+ * where 0xa and 0xb are '#' and '*', respectively. A value of 0xf indicates the
+ * end of the number.
+ *
+ * @param[in] pNum EEPROM data
+ * @param[out] pStr string
+ */
+void MAU_DecodeEEPROMTelNo(const u8 *pNum, char *pStr)
 {
     static int i;
     static u8 hi;
     static u8 lo;
 
     for (i = 0; i < EEPROM_TELNO_SIZE; i++) {
-        hi = (*num >> 4) & 0xf;
-        lo = (*num >> 0) & 0xf;
-        num++;
+        hi = (*pNum >> 4) & 0xf;
+        lo = (*pNum >> 0) & 0xf;
+        pNum++;
         if (hi == 0xf) {
-            *str = '\0';
+            *pStr = '\0';
             break;
         }
-        *str++ = telCharTable[hi];
+        *pStr++ = telCharTable[hi];
         if (lo == 0xf) {
-            *str = '\0';
+            *pStr = '\0';
             break;
         }
-        *str++ = telCharTable[lo];
+        *pStr++ = telCharTable[lo];
     }
 
-    if (i == EEPROM_TELNO_SIZE) *str = '\0';
+    if (i == EEPROM_TELNO_SIZE) *pStr = '\0';
 }
 
-int MAU_IsValidTelNoStr(const char *str)
+/**
+ * @brief Verify a telephone number string
+ *
+ * Verifies a given string only contains characters allowed by the mobile
+ * adapter to represent a phone number.
+ *
+ * @param[in] pStr string
+ * @return boolean
+ */
+int MAU_IsValidTelNoStr(const char *pStr)
 {
     static unsigned i;
 
-    for (; *str != '\0'; str++) {
+    for (; *pStr != '\0'; pStr++) {
         for (i = 0; i < sizeof(telCharTable); i++) {
-            if (*str == telCharTable[i]) break;
+            if (*pStr == telCharTable[i]) break;
         }
-        if (i == sizeof(telCharTable)) return 0;
+        if (i == sizeof(telCharTable)) return FALSE;
     }
-    return 1;
-}
-
-int MAU_CheckCRLF(const char *str, u16 size)
-{
-    if (size < 3) return FALSE;
-    if (str[size - 2] != '\r') return FALSE;
-    if (str[size - 1] != '\n') return FALSE;
     return TRUE;
 }
 
+/**
+ * @brief Check if a string starts with a CRLF terminator
+ *
+ * @param[in] pStr string
+ * @param[in] size size of string
+ * @return boolean
+ */
+int MAU_CheckCRLF(const char *pStr, u16 size)
+{
+    if (size < 3) return FALSE;
+    if (pStr[size - 2] != '\r') return FALSE;
+    if (pStr[size - 1] != '\n') return FALSE;
+    return TRUE;
+}
+
+/**
+ * @brief Add a socket ID to the list of used sockets
+ *
+ * Does not do anything when the list is full.
+ *
+ * @param[in] sock socket ID
+ */
 void MAU_Socket_Add(u8 sock)
 {
     int i;
@@ -303,6 +375,13 @@ void MAU_Socket_Add(u8 sock)
     }
 }
 
+/**
+ * @brief Delete a socket ID from the list of used sockets
+ *
+ * Does not do anything if the socket ID doesn't appear in the list.
+ *
+ * @param[in] sock socket ID
+ */
 void MAU_Socket_Delete(u8 sock)
 {
     int i;
@@ -315,6 +394,14 @@ void MAU_Socket_Delete(u8 sock)
     }
 }
 
+/**
+ * @brief Check if a socket ID appears in the list of used sockets
+ *
+ * @bug Doesn't check if the socket is actually used
+ *
+ * @param[in] sock socket ID
+ * @return boolean
+ */
 int MAU_Socket_Search(u8 sock)
 {
     int i;
@@ -330,6 +417,11 @@ int MAU_Socket_Search(u8 sock)
     return ret;
 }
 
+/**
+ * @brief Get the number of sockets in use
+ *
+ * @return count
+ */
 int MAU_Socket_GetNum(void)
 {
     int i;
@@ -342,6 +434,11 @@ int MAU_Socket_GetNum(void)
     return ret;
 }
 
+/**
+ * @brief Check if there's a free slot in the list of used sockets
+ *
+ * @return boolean
+ */
 int MAU_Socket_FreeCheck(void)
 {
     int i;
@@ -357,15 +454,24 @@ int MAU_Socket_FreeCheck(void)
     return ret;
 }
 
-int MAU_Socket_IpAddrCheck(const u8 *addr)
+/**
+ * @brief Check if an IP address matches the currently connected address
+ *
+ * @param pAddr IP address
+ * @return boolean
+ */
+int MAU_Socket_IpAddrCheck(const u8 *pAddr)
 {
-    if (addr[0] != gMA.socketAddr[0]) return FALSE;
-    if (addr[1] != gMA.socketAddr[1]) return FALSE;
-    if (addr[2] != gMA.socketAddr[2]) return FALSE;
-    if (addr[3] != gMA.socketAddr[3]) return FALSE;
+    if (pAddr[0] != gMA.socketAddr[0]) return FALSE;
+    if (pAddr[1] != gMA.socketAddr[1]) return FALSE;
+    if (pAddr[2] != gMA.socketAddr[2]) return FALSE;
+    if (pAddr[3] != gMA.socketAddr[3]) return FALSE;
     return TRUE;
 }
 
+/**
+ * @brief Clear the list of used sockets
+ */
 void MAU_Socket_Clear(void)
 {
     int i;
