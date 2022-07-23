@@ -73,7 +73,7 @@ static void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
 static void ConcatUserAgent(char *pUserAgent);
 static int GetRequestType(void);
 static void CreateHttpRequestHeader(void);
-static int HttpGetNextStep(int unk_1);
+static int HttpGetNextStep(int index);
 static void MATASK_HTTP_GetPost(void);
 static void CopyEEPROMString(char *pDest, const char *pSrc, int size);
 static void CopyEEPROMData(int task, void *pDest);
@@ -3671,12 +3671,12 @@ static void CreateHttpRequestHeader(void)
 #undef param
 }
 
-static int HttpGetNextStep(int unk_1)
+static int HttpGetNextStep(int index)
 {
 #define param gMA.param.http_getpost
     static int step;
 
-    switch (unk_1) {
+    switch (index) {
     case 0:
         switch (param.task) {
         case TASK_HTTP_GET:
