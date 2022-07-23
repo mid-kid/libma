@@ -4749,24 +4749,24 @@ u8 MAAPI_ErrorCheck(u16 *pProtocolError)
     }
 
     switch (gMA.error) {
-    case MAAPIE_UNK_83:
+    case MAAPIE_PROT_ILLEGAL_CMD:
         gMA.error = MAAPIE_SYSTEM;
-        gMA.errorDetail = 0;  // MAGIC
+        gMA.errorDetail = 0;
         break;
 
-    case MAAPIE_UNK_84:
+    case MAAPIE_PROT_CHECKSUM:
         gMA.error = MAAPIE_SYSTEM;
-        gMA.errorDetail = 1;  // MAGIC
+        gMA.errorDetail = 1;
         break;
 
-    case MAAPIE_UNK_87:
+    case MAAPIE_PROT_UNUSED3:
         gMA.error = MAAPIE_SYSTEM;
-        gMA.errorDetail = 2;  // MAGIC
+        gMA.errorDetail = 2;
         break;
 
-    case MAAPIE_UNK_85:
+    case MAAPIE_PROT_INTERNAL:
         gMA.error = MAAPIE_SYSTEM;
-        gMA.errorDetail = 3;  // MAGIC
+        gMA.errorDetail = 3;
         break;
     }
 

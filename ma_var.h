@@ -8,10 +8,10 @@
 #define MATYPE_GBC 0
 #define MATYPE_GBA 1
 
-#define MAAPIE_UNK_83 0x83
-#define MAAPIE_UNK_84 0x84
-#define MAAPIE_UNK_85 0x85
-#define MAAPIE_UNK_87 0x87
+#define MAAPIE_PROT_ILLEGAL_CMD 0x83
+#define MAAPIE_PROT_CHECKSUM 0x84
+#define MAAPIE_PROT_INTERNAL 0x85
+#define MAAPIE_PROT_UNUSED3 0x87
 
 #define MA_CONDITION_BIOS_BUSY ((u16)0x0020)  // Communicating with the adapter
 #define MA_CONDITION_TCPCLOSED ((u16)0x0040)  // Remote closed the connection

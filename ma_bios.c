@@ -9,9 +9,9 @@
 #define MAPROT_MAGIC_1 0x99
 #define MAPROT_MAGIC_2 0x66
 
-#define MAPROT_ERR_F0 0xf0
+#define MAPROT_ERR_ILLEGAL_CMD 0xf0
 #define MAPROT_ERR_CHECKSUM 0xf1
-#define MAPROT_ERR_F2 0xf2
+#define MAPROT_ERR_INTERNAL 0xf2
 
 enum timeouts {
     TIMEOUT_02,
@@ -1506,14 +1506,14 @@ static void MA_IntrSio_Send(void)
         return;
     }
 
-    // Check if the adapter returned an unknown protocol error
-    if (gMA.sendFooter[1] == MAPROT_ERR_F2
+    // Check if the adapter returned an internal error
+    if (gMA.sendFooter[1] == MAPROT_ERR_INTERNAL
         && !(gMA.status & STATUS_BIOS_RESTART)) {
-        gMA.footerError = MAPROT_ERR_F2;
+        gMA.footerError = MAPROT_ERR_INTERNAL;
 
         if (gMA.status & STATUS_SIO_RETRY) {
             if (--gMA.retryCount == 0) {
-                MA_SetError(MAAPIE_UNK_85);
+                MA_SetError(MAAPIE_PROT_INTERNAL);
                 MA_Bios_Error();
                 return;
             }
@@ -1531,15 +1531,15 @@ static void MA_IntrSio_Send(void)
     }
 
     // Check if the adapter supports the command and didn't fail the checksum
-    if ((gMA.sendFooter[1] == MAPROT_ERR_F0
+    if ((gMA.sendFooter[1] == MAPROT_ERR_ILLEGAL_CMD
             || gMA.sendFooter[1] == MAPROT_ERR_CHECKSUM)
         && !(gMA.status & STATUS_BIOS_RESTART)) {
         if (gMA.status & STATUS_SIO_RETRY) {
             if (--gMA.retryCount == 0) {
-                if (gMA.sendFooter[1] == MAPROT_ERR_F0) {
-                    MA_SetError(MAAPIE_UNK_83);
+                if (gMA.sendFooter[1] == MAPROT_ERR_ILLEGAL_CMD) {
+                    MA_SetError(MAAPIE_PROT_ILLEGAL_CMD);
                 } else {
-                    MA_SetError(MAAPIE_UNK_84);
+                    MA_SetError(MAAPIE_PROT_CHECKSUM);
                 }
                 MA_Bios_Error();
                 return;
@@ -1658,13 +1658,11 @@ static void MA_IntrSio_Recv(u8 byte)
             break;
 
         case 2:  // Size (high byte, assume 0)
-            ((u8 *)&gMA.recvIoBuf.size)[3 - gMA.recvIoBuf.readCnt] =
-                0;
+            ((u8 *)&gMA.recvIoBuf.size)[3 - gMA.recvIoBuf.readCnt] = 0;
             break;
 
         case 3:  // Size (low byte)
-            ((u8 *)&gMA.recvIoBuf.size)[3 - gMA.recvIoBuf.readCnt] =
-                recvByte;
+            ((u8 *)&gMA.recvIoBuf.size)[3 - gMA.recvIoBuf.readCnt] = recvByte;
             break;
         }
 
