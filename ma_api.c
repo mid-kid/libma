@@ -8,7 +8,7 @@
 #define CASSETTE_INITIAL_CODE (ROM_BANK0 + 0xac)
 #define CASSETTE_VERSION_NO (ROM_BANK0 + 0xbc)
 
-#define MAPROT_DATA_SIZE MAPROT_BODY_SIZE - 2  // Max size of MACMD_DATA packet
+#define MAPROT_DATA_SIZE (MAPROT_BODY_SIZE - 2)  // Max size of MACMD_DATA packet
 
 #define MAXLEN_TELNO 20
 #define MAXLEN_EMAIL 30
@@ -691,7 +691,7 @@ void MA_TCP_SendRecv(u8 socket, u8 *pData, u8 size, u8 *pRecvSize)
         return;
     }
 
-    if (size >= 0xff) {
+    if (size > MAPROT_DATA_SIZE) {
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;
@@ -1991,11 +1991,12 @@ static void MATASK_SMTP_Send(void)
         gMA.taskStep++;
 
     case 1:
-        if (param.size >= 0xff) {
+        if (param.size > MAPROT_DATA_SIZE) {
             MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
-            MABIOS_Data(&gMA.recvBuf, param.pData, 254, gMA.sockets[0]);
-            param.pData += 254;
-            param.size -= 254;
+            MABIOS_Data(&gMA.recvBuf, param.pData, MAPROT_DATA_SIZE,
+                gMA.sockets[0]);
+            param.pData += MAPROT_DATA_SIZE;
+            param.size -= MAPROT_DATA_SIZE;
             param.nextStep = gMA.taskStep;
             gMA.taskStep = 50;
             break;
@@ -3194,7 +3195,7 @@ static const char *ExtractServerName(char *pServerName, const char *pURL,
 
     cp = MAU_strchr(pURL, '/');
     if (!cp) {
-        if (MAU_strchr(pURL, '\0') - pURL > 0xff) {
+        if (MAU_strchr(pURL, '\0') - pURL >= MAPROT_BODY_SIZE) {
             *pServerName = '\0';
             return NULL;
         }
@@ -3202,7 +3203,7 @@ static const char *ExtractServerName(char *pServerName, const char *pURL,
         *pServerAuth = SERVER_UNKNOWN;
     } else {
         len = cp - pURL;
-        if (len > 0xff) {
+        if (len >= MAPROT_BODY_SIZE) {
             *pServerName = '\0';
             return NULL;
         }
@@ -4077,10 +4078,12 @@ static void MATASK_HTTP_GetPost(void)
                         }
                     }
                 } else if (MAU_strncmp(lineCp, strHttpAuthenticate, sizeof(strHttpAuthenticate) - 1) == 0) {
-                    MA_MakeAuthorizationCode(&lineCp[29], param.pUserID,
+                    MA_MakeAuthorizationCode(
+                        &lineCp[sizeof(strHttpAuthenticate) - 1], param.pUserID,
                         param.pPassword, gMA.authCode);
                 } else if (MAU_strncmp(lineCp, strHttpGbStatus, sizeof(strHttpGbStatus) - 1) == 0) {
-                    gMA.gbCenterRes = GetResponse(&lineCp[11]);
+                    gMA.gbCenterRes =
+                        GetResponse(&lineCp[sizeof(strHttpGbStatus) - 1]);
                     if (gMA.gbCenterRes == 101) {
                         gMA.status |= STATUS_GBCENTER_ERR_101;
                     } else if (gMA.gbCenterRes != 0) {

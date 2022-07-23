@@ -3,12 +3,16 @@
 #include "ma_sub.h"
 #include "md5.h"
 
-static void gb_MakeSecretCode(const char *key1, const char *key2,
-    const char *key3, u8 *out);
-static void gb_OutSecretCode(int length, const char *string, u8 *out);
-static void gb_CreateMD5Hash(u8 *out, const char *key1, const char *key3);
+#define HASH_SIZE 0x10
+#define KEY_SIZE_BIN 0x24
+#define KEY_SIZE_TEXT 0x30
+
+static void gb_MakeSecretCode(const char *key, const char *userid,
+    const char *password, u8 *out);
+static void gb_OutSecretCode(int length, const char *key, u8 *out);
+static void gb_CreateMD5Hash(u8 *out, const char *key, const char *password);
 static void gb_BitHalfMove(u8 *out, const u8 *in);
-static void gb_BitChangeAndRotation(u8 *out, u8 *in);
+static void gb_BitChangeAndRotation(u8 *out, const u8 *in);
 static void CalcValueMD5(u8 *data, u32 size, u8 *out);
 static void Base64_encode(int length, u8 *data, char *out);
 static void Base64_decode(int length, const char *string, u8 *out);
@@ -16,62 +20,64 @@ static void Base64_decode(int length, const char *string, u8 *out);
 static int i, j, k;
 static int len;
 
-void MA_MakeAuthorizationCode(const char *key1, const char *key2,
-    const char *key3, char *out)
+void MA_MakeAuthorizationCode(const char *key, const char *userid,
+    const char *password, char *out)
 {
-    static u8 seq_bin[0x24];
-    static char seq_text[0x31];
-    static u8 onetime_key_bin[0x24];
-    static char onetime_key_text[0x2d];
+    static u8 seq_bin[KEY_SIZE_BIN];
+    static char seq_text[KEY_SIZE_TEXT + 1];
+    static u8 onetime_key_bin[KEY_SIZE_BIN];
+    static char onetime_key_text[KEY_SIZE_TEXT - 4 + 1];
 
-    seq_text[0] = 0;
-    onetime_key_text[0] = 0;
-    out[0] = 0;
+    seq_text[0] = '\0';
+    onetime_key_text[0] = '\0';
+    out[0] = '\0';
 
-    gb_MakeSecretCode(key1, key2, key3, seq_bin);
-    gb_OutSecretCode(0x30, key1, seq_bin);
-    Base64_encode(0x24, seq_bin, seq_text);
-    Base64_decode(0x30, key1, onetime_key_bin);
-    Base64_encode(0x20, onetime_key_bin, onetime_key_text);
+    gb_MakeSecretCode(key, userid, password, seq_bin);
+    gb_OutSecretCode(KEY_SIZE_TEXT, key, seq_bin);
+    Base64_encode(KEY_SIZE_BIN, seq_bin, seq_text);
+    Base64_decode(KEY_SIZE_TEXT, key, onetime_key_bin);
+    Base64_encode(KEY_SIZE_BIN - 4, onetime_key_bin, onetime_key_text);
     MAU_strcpy(out, onetime_key_text);
-    MAU_strcpy(out + 0x2c, seq_text);
+    MAU_strcpy(&out[KEY_SIZE_TEXT - 4], seq_text);
 }
 
-static void gb_MakeSecretCode(const char *key1, const char *key2,
-    const char *key3, u8 *out)
+static void gb_MakeSecretCode(const char *key, const char *userid,
+    const char *password, u8 *out)
 {
-    static u8 hash[0x11];
+    static u8 hash[HASH_SIZE + 1];
     static int j;
 
-    MAU_memset(hash, 0, 0x11);
-    gb_CreateMD5Hash(hash, key1, key3);
+    MAU_memset(hash, 0, sizeof(hash));
 
-    MAU_memcpy(out, hash, 0x10);
-    MAU_memcpy(out + 0x10, key2, MAU_strlen(key2));
+    gb_CreateMD5Hash(hash, key, password);
+    MAU_memcpy(out, hash, HASH_SIZE);
+    MAU_memcpy(&out[HASH_SIZE], userid, MAU_strlen(userid));
 
-    j = MAU_strlen(key2) + 0x10;
-    MAU_memset(out + j, 0xff, 0x24 - j);
+    j = MAU_strlen(userid) + HASH_SIZE;
+    MAU_memset(&out[j], 0xff, KEY_SIZE_BIN - j);
 }
 
-static void gb_OutSecretCode(int length, const char *string, u8 *out)
+static void gb_OutSecretCode(int length, const char *key, u8 *out)
 {
-    static u8 dest[0x25];
-    static u8 result[0x25];
+    static u8 dest[KEY_SIZE_BIN + 1];
+    static u8 result[KEY_SIZE_BIN + 1];
 
     MAU_memset(dest, 0, sizeof(dest));
-    Base64_decode(length, string, dest);
+
+    Base64_decode(length, key, dest);
     gb_BitHalfMove(result, dest);
     gb_BitChangeAndRotation(out, result);
 }
 
-static void gb_CreateMD5Hash(u8 *out, const char *key1, const char *key3)
+static void gb_CreateMD5Hash(u8 *out, const char *key, const char *password)
 {
     static char buf[100];
 
     MAU_memset(buf, 0, sizeof(buf));
-    MAU_memcpy(buf, key1, 0x30);
-    len = MAU_strlen(key3);
-    MAU_memcpy(buf + 0x30, key3, len);
+
+    MAU_memcpy(buf, key, KEY_SIZE_TEXT);
+    len = MAU_strlen(password);
+    MAU_memcpy(&buf[KEY_SIZE_TEXT], password, len);
     len = MAU_strlen(buf);
     CalcValueMD5(buf, len, out);
 }
@@ -80,9 +86,9 @@ static void gb_BitHalfMove(u8 *out, const u8 *in)
 {
     static int half;
 
-    MAU_memset(out, 0, 0x25);
-    half = 0x12;
+    MAU_memset(out, 0, KEY_SIZE_BIN + 1);
 
+    half = KEY_SIZE_BIN / 2;
     for (i = 0; i < half; i++) {
         j = i * 2;
         out[i] = out[i]
@@ -96,7 +102,7 @@ static void gb_BitHalfMove(u8 *out, const u8 *in)
             | (in[j + 1] & 0x01) >> 0;
     }
 
-    for (; i < 0x24; i++) {
+    for (; i < KEY_SIZE_BIN; i++) {
         j = (i - half) * 2;
         out[i] = out[i]
             | (in[j] & 0x80) << 0
@@ -110,17 +116,15 @@ static void gb_BitHalfMove(u8 *out, const u8 *in)
     }
 }
 
-static void gb_BitChangeAndRotation(u8 *out, u8 *in)
+static void gb_BitChangeAndRotation(u8 *out, const u8 *in)
 {
     static u8 buf;
-    u8 *outp, *inp;
-    u8 c;
 
-    for (i = 0; i < 0x24; i++) {
-        outp = out + i;
-        inp = in + i;
+    for (i = 0; i < KEY_SIZE_BIN; i++) {
+        u8 *outp = &out[i];
+        const u8 *inp = &in[i];
 
-        c = *outp;
+        u8 c = *outp;
         c ^= *inp;
         buf = (c & 0xb6)
             | (c & 0x08) << 3
@@ -177,14 +181,18 @@ static void Base64_encode(int length, u8 *data, char *out)
 static void Base64_decode(int length, const char *string, u8 *out)
 {
     static const u8 base64RevTable[] = {
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x3E,
-        0xFF, 0xFF, 0xFF, 0x3F, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B,
-        0x3C, 0x3D, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x01, 0x02,
-        0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
-        0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
-        0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C,
-        0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0x3e, 0xff, 0xff, 0xff, 0x3f,
+        0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b,
+        0x3c, 0x3d, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+        0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
+        0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
+        0x17, 0x18, 0x19, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20,
+        0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28,
+        0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30,
+        0x31, 0x32, 0x33, 0xff, 0xff, 0xff, 0xff, 0xff,
     };
 
     static u32 code;
