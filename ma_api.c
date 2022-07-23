@@ -8,10 +8,13 @@
 #define CASSETTE_INITIAL_CODE (ROM_BANK0 + 0xac)
 #define CASSETTE_VERSION_NO (ROM_BANK0 + 0xbc)
 
-#define MAPROT_DATA_SIZE (MAPROT_BODY_SIZE - 2)  // Max size of MACMD_DATA packet
-
-#define MAXLEN_TELNO 20
-#define MAXLEN_EMAIL 30
+#define MAX_P2P_DATA_SIZE 0x80
+#define MAX_TCP_DATA_SIZE (MAPROT_BODY_SIZE - 2)
+#define MAX_TELNO_LEN 20
+#define MAX_EMAIL_LEN 30
+#define MAX_URL_LEN 0x400
+#define MAX_RECIPIENT_LEN 0x80
+#define MAX_RECIPIENTS 0x100
 
 // TCP port numbers
 #define PORT_SMTP 25
@@ -670,7 +673,7 @@ static void MATASK_TCP_Disconnect(void)
 #undef param
 }
 
-void MA_TCP_SendRecv(u8 socket, u8 *pData, u8 size, u8 *pRecvSize)
+void MA_TCP_SendRecv(u8 socket, u8 *pSendData, u8 sendSize, u8 *pRecvSize)
 {
 #define param gMA.param.tcp_sendrecv
     SetApiCallFlag();
@@ -691,15 +694,15 @@ void MA_TCP_SendRecv(u8 socket, u8 *pData, u8 size, u8 *pRecvSize)
         return;
     }
 
-    if (size > MAPROT_DATA_SIZE) {
+    if (sendSize > MAX_TCP_DATA_SIZE) {
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;
     }
 
     param.socket = socket;
-    param.pData = pData;
-    param.size = size;
+    param.pSendData = pSendData;
+    param.sendSize = sendSize;
     param.pRecvSize = pRecvSize;
     MA_TaskSet(TASK_TCP_SENDRECV, 0);
     ResetApiCallFlag();
@@ -732,12 +735,12 @@ static void MATASK_TCP_SendRecv(void)
 
     switch (gMA.taskStep) {
     case 0:
-        MABIOS_Data(&gMA.recvBuf, param.pData, param.size, param.socket);
+        MABIOS_Data(&gMA.recvBuf, param.pSendData, param.sendSize, param.socket);
         gMA.taskStep++;
         break;
 
     case 1:
-        MAU_memcpy(param.pData, &gMA.recvBuf.data[1], gMA.recvBuf.size - 1);
+        MAU_memcpy(param.pSendData, &gMA.recvBuf.data[1], gMA.recvBuf.size - 1);
         *param.pRecvSize = gMA.recvBuf.size - 1;
         MA_TaskSet(TASK_NONE, 0);
         break;
@@ -1051,7 +1054,7 @@ void MA_Tel(const char *pTelNo)
     }
 
     len = MAU_strlen(pTelNo);
-    if (len > MAXLEN_TELNO || len == 0) {
+    if (len > MAX_TELNO_LEN || len == 0) {
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;
@@ -1251,7 +1254,7 @@ void MA_SData(const u8 *pSendData, u8 sendSize, u8 *pResult)
         return;
     }
 
-    if (sendSize == 0 || sendSize > 0x80) {
+    if (sendSize == 0 || sendSize > MAX_P2P_DATA_SIZE) {
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;
@@ -1264,8 +1267,8 @@ void MA_SData(const u8 *pSendData, u8 sendSize, u8 *pResult)
         return;
     }
 
-    param.pData = pSendData;
-    param.size = sendSize;
+    param.pSendData = pSendData;
+    param.sendSize = sendSize;
     gMA.status |= STATUS_PTP_SEND;
     ResetApiCallFlag();
 #undef param
@@ -1274,7 +1277,7 @@ void MA_SData(const u8 *pSendData, u8 sendSize, u8 *pResult)
 void MA_GData(u8 *pRecvData, u8 *pRecvSize)
 {
     int i;
-    u8 size;
+    u8 bufSize;
 
     SetApiCallFlag();
     if (!MA_ApiPreExe(TASK_GDATA)) {
@@ -1289,17 +1292,17 @@ void MA_GData(u8 *pRecvData, u8 *pRecvSize)
     }
 
     MAU_memcpy(pRecvData, &gMA.prevBuf[1], gMA.prevBuf[0]);
-
     *pRecvSize = gMA.prevBuf[0];
-    size = gMA.prevBuf[0] + 1;
-    for (i = 0; i < gMA.prevBufSize - size; i++) {
-        gMA.prevBuf[i] = gMA.prevBuf[size + i];
-    }
 
-    gMA.prevBufSize -= size;
+    bufSize = gMA.prevBuf[0] + 1;
+    for (i = 0; i < gMA.prevBufSize - bufSize; i++) {
+        gMA.prevBuf[i] = gMA.prevBuf[bufSize + i];
+    }
+    gMA.prevBufSize -= bufSize;
+
     if (gMA.prevBufSize != 0) {
-        if (gMA.prevBuf[0] == 0 || gMA.prevBuf[0] > 0x80) {
-            gMA.prevBuf[0] = 0x80;  // MAGIC
+        if (gMA.prevBuf[0] == 0 || gMA.prevBuf[0] > MAX_P2P_DATA_SIZE) {
+            gMA.prevBuf[0] = MAX_P2P_DATA_SIZE;
         }
 
         if (gMA.prevBufSize >= gMA.prevBuf[0] + 1) {
@@ -1339,8 +1342,8 @@ static void MATASK_P2P(void)
 
     gMA.recvBuf.data = NULL;
     gMA.recvBuf.size = 0;
-    if (gMA.prevBuf[0] == 0 || gMA.prevBuf[0] > 0x80) {
-        gMA.prevBuf[0] = 0x80;  // MAGIC
+    if (gMA.prevBuf[0] == 0 || gMA.prevBuf[0] > MAX_P2P_DATA_SIZE) {
+        gMA.prevBuf[0] = MAX_P2P_DATA_SIZE;
     }
 
     if (gMA.prevBufSize >= gMA.prevBuf[0] + 1) {
@@ -1578,7 +1581,7 @@ void MA_SMTP_Connect(const char *pMailAddress)
     }
 
     len = MAU_strlen(pMailAddress);
-    if (len > MAXLEN_EMAIL || len == 0) {
+    if (len > MAX_EMAIL_LEN || len == 0) {
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;
@@ -1764,7 +1767,7 @@ void MA_SMTP_Sender(const char * const pRecipients[])
     }
 
     len = MAU_strlen(pRecipients[0]);
-    if (len > MAXLEN_EMAIL || len == 0) {
+    if (len > MAX_EMAIL_LEN || len == 0) {
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;
@@ -1772,7 +1775,7 @@ void MA_SMTP_Sender(const char * const pRecipients[])
 
     for (i = 1; pRecipients[i] != NULL; i++) {
         len = MAU_strlen(pRecipients[i]);
-        if (len == 0 || len >= 0x80 || i > 0x100) {  // MAGIC
+        if (len == 0 || len >= MAX_RECIPIENT_LEN || i > MAX_RECIPIENTS) {
             MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
             ResetApiCallFlag();
             return;
@@ -1859,7 +1862,7 @@ static void MATASK_SMTP_Sender(void)
         break;
 
     case 2:
-        if (*param.pRecipients != 0) {
+        if (*param.pRecipients != NULL) {
             MAU_strcpy(gMA.strBuf, "RCPT TO:<");
             MAU_strcat(gMA.strBuf, *param.pRecipients);
             MAU_strcat(gMA.strBuf, ">\r\n");
@@ -1939,8 +1942,8 @@ void MA_SMTP_Send(const char *pSendData, u16 sendSize, int endFlag)
     }
 
     if (gMA.smtpSender == TRUE) param.totalSize = 0;
-    param.pData = pSendData;
-    param.size = sendSize;
+    param.pSendData = pSendData;
+    param.sendSize = sendSize;
     param.endFlag = endFlag;
     param.totalSize += sendSize;
     MA_TaskSet(TASK_SMTP_SEND, 0);
@@ -1991,20 +1994,20 @@ static void MATASK_SMTP_Send(void)
         gMA.taskStep++;
 
     case 1:
-        if (param.size > MAPROT_DATA_SIZE) {
+        if (param.sendSize > MAX_TCP_DATA_SIZE) {
             MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
-            MABIOS_Data(&gMA.recvBuf, param.pData, MAPROT_DATA_SIZE,
+            MABIOS_Data(&gMA.recvBuf, param.pSendData, MAX_TCP_DATA_SIZE,
                 gMA.sockets[0]);
-            param.pData += MAPROT_DATA_SIZE;
-            param.size -= MAPROT_DATA_SIZE;
+            param.pSendData += MAX_TCP_DATA_SIZE;
+            param.sendSize -= MAX_TCP_DATA_SIZE;
             param.nextStep = gMA.taskStep;
             gMA.taskStep = 50;
             break;
         }
         InitPrevBuf();
         MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
-        MABIOS_Data(&gMA.recvBuf, param.pData, param.size, gMA.sockets[0]);
-        if (param.endFlag == 1) {
+        MABIOS_Data(&gMA.recvBuf, param.pSendData, param.sendSize, gMA.sockets[0]);
+        if (param.endFlag == TRUE) {
             param.nextStep = gMA.taskStep + 1;
             gMA.taskStep = 50;
             break;
@@ -3323,7 +3326,7 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
         }
 
         len = MAU_strlen(pURL);
-        if (len > 1024 || len == 0) {
+        if (len > MAX_URL_LEN || len == 0) {
             MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
             ResetApiCallFlag();
             return;
@@ -3949,11 +3952,11 @@ static void MATASK_HTTP_GetPost(void)
 
     case 6:
         MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
-        if (param.serverPathLen > MAPROT_DATA_SIZE) {
-            MABIOS_Data(&gMA.recvBuf, param.pServerPath, MAPROT_DATA_SIZE,
+        if (param.serverPathLen > MAX_TCP_DATA_SIZE) {
+            MABIOS_Data(&gMA.recvBuf, param.pServerPath, MAX_TCP_DATA_SIZE,
                 gMA.sockets[0]);
-            param.pServerPath += MAPROT_DATA_SIZE;
-            param.serverPathLen -= MAPROT_DATA_SIZE;
+            param.pServerPath += MAX_TCP_DATA_SIZE;
+            param.serverPathLen -= MAX_TCP_DATA_SIZE;
             param.nextStep = gMA.taskStep;
             gMA.taskStep = 50;
             break;
@@ -4142,11 +4145,11 @@ static void MATASK_HTTP_GetPost(void)
 
     case 100:
         MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
-        if (param.sendSize > MAPROT_DATA_SIZE) {
-            MABIOS_Data(&gMA.recvBuf, param.pSendData, MAPROT_DATA_SIZE,
+        if (param.sendSize > MAX_TCP_DATA_SIZE) {
+            MABIOS_Data(&gMA.recvBuf, param.pSendData, MAX_TCP_DATA_SIZE,
                 gMA.sockets[0]);
-            param.pSendData += MAPROT_DATA_SIZE;
-            param.sendSize -= MAPROT_DATA_SIZE;
+            param.pSendData += MAX_TCP_DATA_SIZE;
+            param.sendSize -= MAX_TCP_DATA_SIZE;
             param.nextStep = gMA.taskStep;
             gMA.taskStep = 50;
             break;

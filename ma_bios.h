@@ -19,7 +19,7 @@ void MABIOS_End(void);
 void MABIOS_Tel(u8 calltype, const char *number);
 void MABIOS_Offline(void);
 void MABIOS_WaitCall(void);
-void MABIOS_Data(MA_BUF *pRecvBuf, const u8 *pData, u8 size, u8 socket);
+void MABIOS_Data(MA_BUF *pRecvBuf, const u8 *pSendData, u8 sendSize, u8 socket);
 void MABIOS_ReInit(void);
 void MABIOS_CheckStatus(MA_BUF *pRecvBuf);
 void MABIOS_CheckStatus2(MA_BUF *pRecvBuf);

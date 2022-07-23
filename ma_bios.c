@@ -44,7 +44,7 @@ static void MA_InitIoBuffer(MA_IOBUF *buffer, vu8 *mem, u16 size, u16 state);
 static void MA_StartSioTransmit(void);
 static void MA_SetTransmitData(MA_IOBUF *pSendBuf);
 static int MA_IsSupportedHardware(u8 hardware);
-static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pData, u8 size);
+static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pSendData, u8 sendSize);
 static int MA_CreatePacket(u8 *packet, u8 cmd, u16 size);
 static int MA_Create8BitPacket(u8 *packet, u8 cmd, u16 size);
 static int MA_Create32BitPacket(u8 *packet, u8 cmd, u16 size);
@@ -578,7 +578,7 @@ void MABIOS_WaitCall(void)
     gMA.status |= STATUS_SIO_START;
 }
 
-void MABIOS_Data(MA_BUF *pRecvBuf, const u8 *pData, u8 size, u8 socket)
+void MABIOS_Data(MA_BUF *pRecvBuf, const u8 *pSendData, u8 sendSize, u8 socket)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
@@ -588,16 +588,16 @@ void MABIOS_Data(MA_BUF *pRecvBuf, const u8 *pData, u8 size, u8 socket)
     gMA.sendCmd = MACMD_DATA;
 
     tmppPacket[MAPROT_HEADER_SIZE + 0] = socket;
-    for (i = 0; i < size; i++) {
+    for (i = 0; i < sendSize; i++) {
 #if NONMATCHING
-        tmppPacket[MAPROT_HEADER_SIZE + 1 + i] = *pData++;
+        tmppPacket[MAPROT_HEADER_SIZE + 1 + i] = *pSendData++;
 #else
         u8 *p = tmppPacket;
         int n = i + 1;
-        *(u8 *)(p + n + MAPROT_HEADER_SIZE) = *pData++;
+        *(u8 *)(p + n + MAPROT_HEADER_SIZE) = *pSendData++;
 #endif
     }
-    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DATA, size + 1);
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DATA, sendSize + 1);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
@@ -607,7 +607,7 @@ void MABIOS_Data(MA_BUF *pRecvBuf, const u8 *pData, u8 size, u8 socket)
     gMA.status |= STATUS_SIO_START;
 }
 
-static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pData, u8 size)
+static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pSendData, u8 sendSize)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
@@ -617,17 +617,17 @@ static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pData, u8 size)
     gMA.sendCmd = MACMD_DATA;
 
     tmppPacket[MAPROT_HEADER_SIZE + 0] = 0xff;
-    tmppPacket[MAPROT_HEADER_SIZE + 1] = size;
-    for (i = 0; i < size; i++) {
+    tmppPacket[MAPROT_HEADER_SIZE + 1] = sendSize;
+    for (i = 0; i < sendSize; i++) {
 #if NONMATCHING
-        tmppPacket[MAPROT_HEADER_SIZE + 2 + i] = *pData++;
+        tmppPacket[MAPROT_HEADER_SIZE + 2 + i] = *pSendData++;
 #else
         u8 *p = tmppPacket;
         int n = i + 2;
-        *(u8 *)(p + n + MAPROT_HEADER_SIZE) = *pData++;
+        *(u8 *)(p + n + MAPROT_HEADER_SIZE) = *pSendData++;
 #endif
     }
-    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DATA, size + 2);
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DATA, sendSize + 2);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
@@ -1133,9 +1133,9 @@ static void MA_IntrTimer_SIOIdle(void)
             gMA.counter = 0;
             MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
             if (gMA.status & STATUS_PTP_SEND) {
-                MABIOS_Data2(&gMA.recvBuf, param.pData, param.size);
-                param.pData = NULL;
-                param.size = 0;
+                MABIOS_Data2(&gMA.recvBuf, param.pSendData, param.sendSize);
+                param.pSendData = NULL;
+                param.sendSize = 0;
                 gMA.status |= STATUS_PTP_SEND_DONE;
             } else {
                 MABIOS_Data(&gMA.recvBuf, NULL, 0, 0xff);

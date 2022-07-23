@@ -192,8 +192,8 @@ typedef struct {
 
 typedef struct {
     u32 socket;
-    u8 *pData;
-    u32 size;
+    u8 *pSendData;
+    u32 sendSize;
     u8 *pRecvSize;
 } PARAM_TCP_SENDRECV;
 
@@ -213,8 +213,8 @@ typedef struct {
 } PARAM_TEL;
 
 typedef struct {
-    const u8 *pData;
-    u32 size;
+    const u8 *pSendData;
+    u32 sendSize;
 } PARAM_P2P;
 
 typedef struct {
@@ -235,8 +235,8 @@ typedef struct {
 } PARAM_SMTP_SENDER;
 
 typedef struct {
-    const char *pData;
-    u32 size;
+    const char *pSendData;
+    u32 sendSize;
     u32 endFlag;
     u32 totalSize;  // unused
     u32 timeout;

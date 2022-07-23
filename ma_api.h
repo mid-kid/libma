@@ -13,7 +13,7 @@ void MA_InitLibrary(u8 *pHardwareType);
 void MA_InitLibrary2(u8 *pHardwareType);
 void MA_TCP_Connect(u8 *pSocket, u8 *pAddr, u16 port);
 void MA_TCP_Disconnect(u8 socket);
-void MA_TCP_SendRecv(u8 socket, u8 *pData, u8 size, u8 *pRecvSize);
+void MA_TCP_SendRecv(u8 socket, u8 *pSendData, u8 sendSize, u8 *pRecvSize);
 void MA_GetHostAddress(u8 *pAddr, char *pServerName);
 void MA_GetLocalAddress(u8 *pAddr);
 void MA_TelServer(const char *pTelNo, const char *pUserID, const char *pPassword);
@@ -41,7 +41,7 @@ void MA_HTTP_Post(const char *pURL, char *pHeadBuf, u16 headBufSize,
     const u8 *pSendData, u16 sendSize, u8 *pRecvData, u16 recvBufSize,
     u16 *pRecvSize, const char *pUserID, const char *pPassword);
 void MA_EEPROMRead(u8 *pData);
-void MA_EEPROMWrite(const u8 *unk_1);
+void MA_EEPROMWrite(const u8 *pData);
 void MA_GetTel(MA_TELDATA *pTelData);
 void MA_GetUserID(char *pUserIDBuf);
 void MA_GetMailID(char *pBufPtr);
