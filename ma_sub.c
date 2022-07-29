@@ -109,7 +109,7 @@ const char *MAU_strncpy_CRLF_LF(char *dest, const char *src, int len)
  * will be returned instead.
  *
  * @param[in] str string
- * @param[in] len maximum bytes of string
+ * @param[in] len maximum length of string
  * @return pointer following the CRLF sequence if found, NULL otherwise
  */
 char *MAU_SearchCRLF(char *str, int len)
@@ -223,7 +223,7 @@ int MAU_strcmp(const char *str1, const char *str2)
  *
  * @param[in] str1 string to compare
  * @param[in] str2 string to compare
- * @param[in] len maximum bytes of string
+ * @param[in] len maximum bytes to compare
  * @return comparison result, 0 if strings are equal
  */
 int MAU_strncmp(const char *str1, const char *str2, int len)
@@ -243,7 +243,7 @@ int MAU_strncmp(const char *str1, const char *str2, int len)
  *
  * @param[in] str1 string to compare
  * @param[in] str2 string to compare
- * @param[in] len maximum bytes of string
+ * @param[in] len maximum bytes to compare
  * @return comparison result, 0 if strings are equal
  */
 int MAU_strnicmp(const char *str1, const char *str2, int len)

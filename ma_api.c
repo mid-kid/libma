@@ -11,6 +11,8 @@
 #define MAX_P2P_DATA_SIZE 0x80
 #define MAX_TCP_DATA_SIZE (MAPROT_BODY_SIZE - 2)
 #define MAX_TELNO_LEN 20
+#define MAX_USERID_LEN 0x20
+#define MAX_PASSWORD_LEN 0x10
 #define MAX_EMAIL_LEN 30
 #define MAX_URL_LEN 0x400
 #define MAX_RECIPIENT_LEN 0x80
@@ -869,8 +871,12 @@ void MA_TelServer(const char *pTelNo, const char *pUserID, const char *pPassword
     len_telno = MAU_strlen(pTelNo);
     len_userid = MAU_strlen(pUserID);
     len_password = MAU_strlen(pPassword);
-    if (len_telno > 20 || len_userid > 32 || len_password > 16
-        || len_telno == 0 || len_userid == 0 || len_password == 0) {
+    if (len_telno > MAX_TELNO_LEN
+        || len_userid > MAX_USERID_LEN
+        || len_password > MAX_PASSWORD_LEN
+        || len_telno == 0
+        || len_userid == 0
+        || len_password == 0) {
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;
@@ -2253,14 +2259,14 @@ void MA_POP3_Connect(const char *pUserID, const char *pPassword)
     }
 
     len_userid = MAU_strlen(pUserID);
-    if (len_userid > 30 || len_userid == 0) {
+    if (len_userid > MAX_EMAIL_LEN || len_userid == 0) {
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;
     }
 
     len_password = MAU_strlen(pPassword);
-    if (len_password > 16 || len_password == 0) {
+    if (len_password > MAX_PASSWORD_LEN || len_password == 0) {
         MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
         ResetApiCallFlag();
         return;
@@ -3345,13 +3351,13 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
             param.pPassword = "";
         } else {
             len = MAU_strlen(pUserID);
-            if (len > 16) {
+            if (len > MAX_PASSWORD_LEN) {
                 MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
                 ResetApiCallFlag();
                 return;
             }
             len = MAU_strlen(pPassword);
-            if (len > 16) {
+            if (len > MAX_PASSWORD_LEN) {
                 MA_SetApiError(MAAPIE_ILLEGAL_PARAMETER, 0);
                 ResetApiCallFlag();
                 return;
