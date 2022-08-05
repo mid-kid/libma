@@ -316,8 +316,8 @@ typedef struct {
     vu8 sioMode;
     vu8 hardwareType;
     vu8 footerError;  // unused
-    vu16 timerDataInterval[MA_NUM_SIO_MODES];
-    vu16 timerInterval;
+    vu16 timerIntInter[MA_NUM_SIO_MODES];
+    vu16 timerInter;
     vu16 retryCount;
     vu8 interval;
     u32 nullCounter[MA_NUM_SIO_MODES];
@@ -412,17 +412,11 @@ extern MA_VAR gMA;
 #define TIMER_MS(ms) ((int)(((long long)CPU_F * (ms)) / (1024 * 1000) + 1))
 #define TIMER_COUNTER_MS(ms) (0x10000 - TIMER_MS(ms))
 
-#define MA_SetCondition(cond) \
-{ \
-    gMA.condition &= ~MA_CONDITION_MASK; \
-    gMA.condition |= (cond) << MA_CONDITION_SHIFT; \
-}
-
 #define MA_Reset() \
 { \
     gMA.connMode = CONN_OFFLINE; \
     MA_ChangeSIOMode(MA_SIO_BYTE); \
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode]; \
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode]; \
     gMA.counter = 0; \
     gMA.intrSioMode = MA_INTR_SIO_IDLE; \
     gMA.status &= ~STATUS_CONNECTED; \
@@ -435,6 +429,12 @@ extern MA_VAR gMA;
     MA_SetCondition(MA_CONDITION_IDLE); \
     MAU_Socket_Clear(); \
     MA_SetCondition(MA_CONDITION_IDLE); \
+}
+
+#define MA_SetCondition(cond) \
+{ \
+    gMA.condition &= ~MA_CONDITION_MASK; \
+    gMA.condition |= (cond) << MA_CONDITION_SHIFT; \
 }
 
 #define MA_InitBuffer(pBuf, pData) \

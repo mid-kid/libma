@@ -1,18 +1,39 @@
+/**
+ * @file
+ * @brief Low level mobile adapter protocol
+ *
+ * This file implements the low level protocol for the mobile adapter, and all
+ * the serial handling and timeouts surrounding it.
+ *
+ * The two main functions of interest are MA_IntrTimer and MA_IntrSerialIO. Both
+ * of these functions should be associated with their respective interrupts
+ * within the main program. MA_IntrTimer is responsible for starting serial
+ * transmissions at a constant rate, allowing the adapter enough time to breathe
+ * between each transmission to process the data. MA_IntrSerialIO triggers when
+ * the byte exchange is finished, and is responsible for processing it.
+ */
+
 #include "ma_bios.h"
 
 #include <stddef.h>
 #include "ma_api.h"
 #include "ma_sub.h"
 
+// Serial protocol magic bytes
 #define MAPROT_IDLE_SLAVE 0xd2
 #define MAPROT_IDLE_MASTER 0x4b
 #define MAPROT_MAGIC_1 0x99
 #define MAPROT_MAGIC_2 0x66
 
+// Serial protocol errors
+/// Command is unsupported by the adapter
 #define MAPROT_ERR_ILLEGAL_CMD 0xf0
+/// Packet checksum failed, retry
 #define MAPROT_ERR_CHECKSUM 0xf1
+/// Internal mobile adapter error (e.g. transmit buffer full)
 #define MAPROT_ERR_INTERNAL 0xf2
 
+/// MA_SetTimeoutCount() indexes
 enum timeouts {
     TIMEOUT_02,
     TIMEOUT_10,
@@ -20,6 +41,7 @@ enum timeouts {
     TIMEOUT_90,
 };
 
+/// States of the packet sender
 enum iobuf_send_states {
     IOBUF_SEND_IDLE,
     IOBUF_SEND_PRESTART,
@@ -27,6 +49,7 @@ enum iobuf_send_states {
     IOBUF_SEND_DATA,
 };
 
+/// States of the packet receiver
 enum iobuf_recv_states {
     IOBUF_RECV_IDLE,
     IOBUF_RECV_START,
@@ -42,7 +65,7 @@ static void MA_SetTimeoutCount(int index);
 static int MA_PreSend(void);
 static void MA_InitIoBuffer(MA_IOBUF *buffer, vu8 *mem, u16 size, u16 state);
 static void MA_StartSioTransmit(void);
-static void MA_SetTransmitData(MA_IOBUF *pSendBuf);
+static void MA_SetTransmitData(MA_IOBUF *pSendIoBuf);
 static int MA_IsSupportedHardware(u8 hardware);
 static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pSendData, u8 sendSize);
 static int MA_CreatePacket(u8 *packet, u8 cmd, u16 size);
@@ -63,12 +86,14 @@ static MAPROT_FOOTER *tmppPacketLast;
 static u16 tmpPacketLen;
 static int i;
 
-#define COUNTER_BYTE_INTER1 TIMER_MS(0.20)
-#define COUNTER_BYTE_INTER2 TIMER_MS(0.30)
-#define COUNTER_BYTE_INTER3 TIMER_MS(0.40)
-#define COUNTER_BYTE_INTER4 TIMER_MS(0.50)
-#define COUNTER_BYTE_INTER5 TIMER_MS(0.60)
+// Byte (8-bit serial) timer settings
+#define COUNTER_BYTE_INTER1 TIMER_MS(0.20)  // 4096.6796875 Hz
+#define COUNTER_BYTE_INTER2 TIMER_MS(0.30)  // 3277.34375 Hz
+#define COUNTER_BYTE_INTER3 TIMER_MS(0.40)  // 2340.9598214285716 Hz
+#define COUNTER_BYTE_INTER4 TIMER_MS(0.50)  // 1820.7465277777778 Hz
+#define COUNTER_BYTE_INTER5 TIMER_MS(0.60)  // 1638.671875 Hz
 
+/// Byte timer interrupt intervals
 static const u16 gTimerIntByteInter[] = {
     -COUNTER_BYTE_INTER1,
     -COUNTER_BYTE_INTER2,
@@ -83,19 +108,21 @@ static const u16 gTimerIntByteInter[] = {
     -COUNTER_BYTE_INTER5 * 2,
 };
 
+/// Calculate a timeout counter for each of the byte interrupt intervals
 #define COUNTER_BYTE(ms) \
-    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER1), \
-    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER2), \
-    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER3), \
-    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER4), \
-    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER5), \
+    TIMER_MS((float)(ms) / COUNTER_BYTE_INTER1), \
+    TIMER_MS((float)(ms) / COUNTER_BYTE_INTER2), \
+    TIMER_MS((float)(ms) / COUNTER_BYTE_INTER3), \
+    TIMER_MS((float)(ms) / COUNTER_BYTE_INTER4), \
+    TIMER_MS((float)(ms) / COUNTER_BYTE_INTER5), \
     \
-    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER1) / 2, \
-    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER2) / 2, \
-    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER3) / 2, \
-    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER4) / 2, \
-    TIMER_MS((ms) / (float)COUNTER_BYTE_INTER5) / 2,
+    TIMER_MS((float)(ms) / COUNTER_BYTE_INTER1) / 2, \
+    TIMER_MS((float)(ms) / COUNTER_BYTE_INTER2) / 2, \
+    TIMER_MS((float)(ms) / COUNTER_BYTE_INTER3) / 2, \
+    TIMER_MS((float)(ms) / COUNTER_BYTE_INTER4) / 2, \
+    TIMER_MS((float)(ms) / COUNTER_BYTE_INTER5) / 2,
 
+// Pre-calculated timeout counters for various timeouts
 static const u32 gNullCounterByte[] = { COUNTER_BYTE(1000) };
 static const u32 gP2PCounterByte[] = { COUNTER_BYTE(125) };
 static const u32 gTimeout90CounterByte[] = { COUNTER_BYTE(90000 + 0.05) };
@@ -106,12 +133,14 @@ static const u32 gTimeout200msecCounterByte[] = { COUNTER_BYTE(200) };
 static const u32 gTimeout250msecCounterByte[] = { COUNTER_BYTE(250) };
 static const u32 gTimeout40msecCounterByte[] = { COUNTER_BYTE(40 - 0.05) };
 
-#define COUNTER_WORD_INTER1 TIMER_MS(0.45)
-#define COUNTER_WORD_INTER2 TIMER_MS(0.40)
-#define COUNTER_WORD_INTER3 TIMER_MS(0.50)
-#define COUNTER_WORD_INTER4 TIMER_MS(0.60)
-#define COUNTER_WORD_INTER5 TIMER_MS(0.70)
+// Word (32-bit serial) timer settings
+#define COUNTER_WORD_INTER1 (COUNTER_BYTE_INTER1 * 2)  // 2048.33984375 Hz
+#define COUNTER_WORD_INTER2 TIMER_MS(0.40)  // 2340.9598214285716 Hz
+#define COUNTER_WORD_INTER3 TIMER_MS(0.50)  // 1820.7465277777778 Hz
+#define COUNTER_WORD_INTER4 TIMER_MS(0.60)  // 1638.671875 Hz
+#define COUNTER_WORD_INTER5 TIMER_MS(0.70)  // 1365.5598958333333 Hz
 
+/// Word timer interrupt intervals
 static const u16 gTimerIntWordInter[] = {
     -COUNTER_WORD_INTER1,
     -COUNTER_WORD_INTER2,
@@ -126,19 +155,21 @@ static const u16 gTimerIntWordInter[] = {
     -COUNTER_WORD_INTER4 * 2,
 };
 
+/// Calculate a timeout counter for each of the word interrupt intervals
 #define COUNTER_WORD(ms) \
-    TIMER_MS((ms) / (float)COUNTER_WORD_INTER1), \
-    TIMER_MS((ms) / (float)COUNTER_WORD_INTER2), \
-    TIMER_MS((ms) / (float)COUNTER_WORD_INTER3), \
-    TIMER_MS((ms) / (float)COUNTER_WORD_INTER4), \
-    TIMER_MS((ms) / (float)COUNTER_WORD_INTER5), \
+    TIMER_MS((float)(ms) / COUNTER_WORD_INTER1), \
+    TIMER_MS((float)(ms) / COUNTER_WORD_INTER2), \
+    TIMER_MS((float)(ms) / COUNTER_WORD_INTER3), \
+    TIMER_MS((float)(ms) / COUNTER_WORD_INTER4), \
+    TIMER_MS((float)(ms) / COUNTER_WORD_INTER5), \
     \
-    TIMER_MS((ms) / (float)COUNTER_WORD_INTER1) / 2, \
-    TIMER_MS((ms) / (float)COUNTER_WORD_INTER2) / 2, \
-    TIMER_MS((ms) / (float)COUNTER_WORD_INTER3) / 2, \
-    TIMER_MS((ms) / (float)COUNTER_WORD_INTER4) / 2, \
-    TIMER_MS((ms) / (float)COUNTER_WORD_INTER5) / 2,
+    TIMER_MS((float)(ms) / COUNTER_WORD_INTER1) / 2, \
+    TIMER_MS((float)(ms) / COUNTER_WORD_INTER2) / 2, \
+    TIMER_MS((float)(ms) / COUNTER_WORD_INTER3) / 2, \
+    TIMER_MS((float)(ms) / COUNTER_WORD_INTER4) / 2, \
+    TIMER_MS((float)(ms) / COUNTER_WORD_INTER5) / 2,
 
+// Pre-calculated timeout counters for various timeouts
 static const u32 gNullCounterWord[] = { COUNTER_WORD(1000) };
 static const u32 gP2PCounterWord[] = { COUNTER_WORD(125) };
 static const u32 gTimeout90CounterWord[] = { COUNTER_WORD(90000) };
@@ -149,55 +180,69 @@ static const u32 gTimeout200msecCounterWord[] = { COUNTER_WORD(200) };
 static const u32 gTimeout250msecCounterWord[] = { COUNTER_WORD(250) };
 static const u32 gTimeout40msecCounterWord[] = { COUNTER_WORD(40) };
 
+/// Idle bytes, also used to wake the adapter up if it went on standby
 static const u8 MaPacketData_PreStart[] = {
-    0x4b, 0x4b, 0x4b, 0x4b,
+    MAPROT_IDLE_MASTER,
+    MAPROT_IDLE_MASTER,
+    MAPROT_IDLE_MASTER,
+    MAPROT_IDLE_MASTER,
 };
 
+/// Protocol initialization packet
 static const u8 MaPacketData_Start[] = {
-    0x99, 0x66,
-    0x10, 0x00, 0x00, 0x08,
-    'N', 'I', 'N', 'T', 'E', 'N', 'D', 'O',
-    0x02, 0x77,
-    0x81, 0x00, 0x00, 0x00,
+    MAPROT_MAGIC_1, MAPROT_MAGIC_2,  // Magic bytes
+    MACMD_START, 0x00, 0x00, 0x08,  // Command ID, size
+    'N', 'I', 'N', 'T', 'E', 'N', 'D', 'O',  // Data
+    0x02, 0x77,  // Checksum
+    MAPROT_TYPE_MASTER | MATYPE_GBA, 0x00, 0x00, 0x00,  // Footer
 };
 
+/// No-op packet
 static const u8 MaPacketData_NULL[] = {
-    0x99, 0x66,
-    0x0f, 0x00, 0x00, 0x00,
-    0x00, 0x0f,
-    0x81, 0x00, 0x00, 0x00,
+    MAPROT_MAGIC_1, MAPROT_MAGIC_2,  // Magic bytes
+    MACMD_NULL, 0x00, 0x00, 0x00,  // Command ID, size
+    0x00, 0x0f,  // Checksum
+    MAPROT_TYPE_MASTER | MATYPE_GBA, 0x00, 0x00, 0x00,  // Footer
 };
 
+/// Check adapter status
 static const u8 MaPacketData_CheckStatus[] = {
-    0x99, 0x66,
-    0x17, 0x00, 0x00, 0x00,
-    0x00, 0x17,
-    0x81, 0x00, 0x00, 0x00,
+    MAPROT_MAGIC_1, MAPROT_MAGIC_2,  // Magic bytes
+    MACMD_CHECKSTATUS, 0x00, 0x00, 0x00,  // Command ID, size
+    0x00, 0x17,  // Checksum
+    MAPROT_TYPE_MASTER | MATYPE_GBA, 0x00, 0x00, 0x00,  // Footer
 };
 
+/**
+ * @brief Initialize hardware and variables
+ */
 void MABIOS_Init(void)
 {
     *(vu16 *)REG_IME = 0;
 
+    // Initialize serial hardware and interrupts
     *(vu32 *)REG_TM3CNT = 0;
-    *(vu16 *)REG_RCNT = 0;
+    *(vu16 *)REG_RCNT = R_SIO_MASTER_MODE;
     *(vu16 *)REG_SIOCNT = SIO_8BIT_MODE;
     *(vu16 *)REG_SIOCNT |= SIO_IF_ENABLE | SIO_SCK_IN;
     *(vu16 *)REG_IF = SIO_INTR_FLAG | TIMER3_INTR_FLAG;
     *(vu16 *)REG_IE |= SIO_INTR_FLAG | TIMER3_INTR_FLAG;
     *(vu32 *)REG_TM3CNT = 0;
 
+    // Initialize serial hardware variables
     gMA.condition = 0;
     gMA.error = -1;
     gMA.intrSioMode = MA_INTR_SIO_IDLE;
     gMA.hardwareType = -1;
-
     MA_ChangeSIOMode(MA_SIO_BYTE);
-    MA_SetInterval(0);
 
+    // Initialize timeouts
+    MA_SetInterval(0);
     gMA.counter = 0;
-    gMA.timerInterval = 0;
+    gMA.timerInter = 0;
     gMA.retryCount = 0;
+
+    // Initalize protocol variables and buffers
     gMA.status = 0;
     gMA.pSendIoBuf = NULL;
     gMA.sendCmd = 0;
@@ -207,7 +252,6 @@ void MABIOS_Init(void)
     gMA.sendFooter[1] = 0;
     gMA.recvFooter[0] = 0;
     gMA.recvFooter[1] = 0;
-
     gMA.biosRecvBuf.size = sizeof(gMA.biosRecvPacket);
     gMA.biosRecvBuf.data = gMA.biosRecvPacket;
     gMA.recvBuf.size = sizeof(gMA.recvPacket);
@@ -216,6 +260,15 @@ void MABIOS_Init(void)
     *(vu16 *)REG_IME = 1;
 }
 
+/**
+ * @brief Use the internal receive buffer
+ *
+ * This is used for protocol commands that don't return any useful data, as
+ * they will not have a parameter for the reply packet, and they will be
+ * handled internally.
+ *
+ * @bug Buffer isn't big enough, MA_IntrSio_Recv has no boundary checks.
+ */
 static void SetInternalRecvBuffer(void)
 {
     gMA.biosRecvBuf.size = sizeof(gMA.biosRecvPacket);
@@ -223,15 +276,27 @@ static void SetInternalRecvBuffer(void)
     gMA.pRecvBuf = &gMA.biosRecvBuf;
 }
 
+/**
+ * @brief Set serial transaction interval
+ *
+ * This function initializes the interval between each byte and each word, for
+ * both of the serial modes, as well as all the timeouts values.
+ *
+ * The index parameter lets you choose between one of 5 interval settings, with
+ * 0 being the fastest and 4 being the slowest. Only 0 is actually used.
+ *
+ * @param[in] index interval setting
+ */
 static void MA_SetInterval(int index)
 {
+    // The blue adapter needs twice the interval between each serial transaction
     if (gMA.hardwareType == (MAPROT_TYPE_SLAVE | MATYPE_PDC)) {
         index += 5;
     }
 
     gMA.interval = index;
-    gMA.timerDataInterval[MA_SIO_BYTE] = gTimerIntByteInter[index];
-    gMA.timerDataInterval[MA_SIO_WORD] = gTimerIntWordInter[index];
+    gMA.timerIntInter[MA_SIO_BYTE] = gTimerIntByteInter[index];
+    gMA.timerIntInter[MA_SIO_WORD] = gTimerIntWordInter[index];
     gMA.nullCounter[MA_SIO_BYTE] = gNullCounterByte[index];
     gMA.nullCounter[MA_SIO_WORD] = gNullCounterWord[index];
     gMA.P2PCounter[MA_SIO_BYTE] = gP2PCounterByte[index];
@@ -262,6 +327,15 @@ static void MA_SetInterval(int index)
     }
 }
 
+/**
+ * @brief Set serial timeout
+ *
+ * Set the maximum timeout for a protocol transaction. This includes the time it
+ * takes to send the requesting command, and how long it takes for the reply
+ * to arrive.
+ *
+ * @param[in] index timeout index
+ */
 static void MA_SetTimeoutCount(int index)
 {
     static const u32 * const counterArrayByte[] = {
@@ -385,9 +459,9 @@ static void MA_StartSioTransmit(void)
     *(vu16 *)REG_SIOCNT |= SIO_START;
 }
 
-static void MA_SetTransmitData(MA_IOBUF *pSendBuf)
+static void MA_SetTransmitData(MA_IOBUF *pSendIoBuf)
 {
-    gMA.pSendIoBuf = pSendBuf;
+    gMA.pSendIoBuf = pSendIoBuf;
 }
 
 void MA_ChangeSIOMode(u8 mode)
@@ -402,10 +476,10 @@ void MA_ChangeSIOMode(u8 mode)
     }
 }
 
-void MA_SetDataInterval(u16 interval_byte, u16 interval_word)
+void MA_SetDataInterval(u16 byteInter, u16 wordInter)
 {
-    gMA.timerDataInterval[MA_SIO_BYTE] = interval_byte;
-    gMA.timerDataInterval[MA_SIO_WORD] = interval_word;
+    gMA.timerIntInter[MA_SIO_BYTE] = byteInter;
+    gMA.timerIntInter[MA_SIO_WORD] = wordInter;
 }
 
 static int MA_IsSupportedHardware(u8 hardware)
@@ -442,7 +516,7 @@ void MABIOS_Null(void)
         IOBUF_SEND_DATA);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     gMA.status |= STATUS_CONNTEST;
     gMA.status |= STATUS_SIO_START;
     MA_SetTimeoutCount(TIMEOUT_30);
@@ -461,10 +535,10 @@ void MABIOS_Start(void)
         IOBUF_SEND_PRESTART);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
-    *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
+    *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInter;
 }
 
 void MABIOS_Start2(void)
@@ -486,7 +560,7 @@ void MABIOS_Start2(void)
     }
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_02);
     gMA.status |= STATUS_SIO_START;
 }
@@ -504,7 +578,7 @@ void MABIOS_End(void)
     gMA.sendCmd = MACMD_END;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -537,7 +611,7 @@ void MABIOS_Tel(u8 calltype, const char *number)
         IOBUF_SEND_DATA);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_90);
     gMA.status |= STATUS_SIO_START;
 }
@@ -555,7 +629,7 @@ void MABIOS_Offline(void)
     gMA.sendCmd = MACMD_OFFLINE;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -573,7 +647,7 @@ void MABIOS_WaitCall(void)
     gMA.sendCmd = MACMD_WAITCALL;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -602,7 +676,7 @@ void MABIOS_Data(MA_BUF *pRecvBuf, const u8 *pSendData, u8 sendSize, u8 socket)
         IOBUF_SEND_DATA);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -632,7 +706,7 @@ static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pSendData, u8 sendSize)
         IOBUF_SEND_DATA);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -650,7 +724,7 @@ void MABIOS_ReInit(void)
     gMA.sendCmd = MACMD_REINIT;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -668,7 +742,7 @@ void MABIOS_CheckStatus(MA_BUF *pRecvBuf)
     gMA.sendCmd = MACMD_CHECKSTATUS;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     gMA.status |= STATUS_SIO_START;
     MA_SetTimeoutCount(TIMEOUT_30);
 }
@@ -686,7 +760,7 @@ void MABIOS_CheckStatus2(MA_BUF *pRecvBuf)
     gMA.sendCmd = MACMD_CHECKSTATUS;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_10);
     gMA.status |= STATUS_CONNTEST;
     gMA.status |= STATUS_SIO_START;
@@ -707,7 +781,7 @@ void MABIOS_ChangeClock(u8 mode)
         IOBUF_SEND_DATA);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -728,7 +802,7 @@ void MABIOS_EEPROM_Read(MA_BUF *pRecvBuf, u8 offset, u8 size)
         IOBUF_SEND_DATA);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -758,7 +832,7 @@ void MABIOS_EEPROM_Write(MA_BUF *pRecvBuf, u8 offset, const u8 *data_send,
         IOBUF_SEND_DATA);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -793,7 +867,7 @@ void MABIOS_PPPConnect(MA_BUF *pRecvBuf, const char *pUserID,
         IOBUF_SEND_DATA);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -811,7 +885,7 @@ void MABIOS_PPPDisconnect(void)
     gMA.sendCmd = MACMD_PPPDISCONNECT;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -835,7 +909,7 @@ void MABIOS_TCPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
         IOBUF_SEND_DATA);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.tcpConnectRetryCount = 0;
     gMA.status |= STATUS_SIO_START;
@@ -856,7 +930,7 @@ void MABIOS_TCPDisconnect(MA_BUF *pRecvBuf, u8 socket)
         IOBUF_SEND_DATA);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -880,7 +954,7 @@ void MABIOS_UDPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
         IOBUF_SEND_DATA);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -900,7 +974,7 @@ void MABIOS_UDPDisconnect(MA_BUF *pRecvBuf, u8 socket)
         IOBUF_SEND_DATA);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -932,7 +1006,7 @@ void MABIOS_DNSRequest(MA_BUF *pRecvBuf, char *pServerName)
         IOBUF_SEND_DATA);
 
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -950,7 +1024,7 @@ void MABIOS_TestMode(void)
     gMA.sendCmd = MACMD_TESTMODE;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.intrSioMode = MA_INTR_SIO_SEND;
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.status |= STATUS_SIO_START;
 }
@@ -1039,7 +1113,7 @@ void MA_CancelRequest(void)
 {
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.status |= STATUS_BIOS_RESTART;
-    gMA.timerInterval = TIMER_COUNTER_MS(2500);
+    gMA.timerInter = TIMER_COUNTER_MS(2500);
     gMA.intrSioMode = MA_INTR_SIO_WAIT;
 }
 
@@ -1047,7 +1121,7 @@ void MA_BiosStop(void)
 {
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.status |= STATUS_BIOS_STOP;
-    gMA.timerInterval = 0;
+    gMA.timerInter = 0;
     gMA.intrSioMode = MA_INTR_SIO_WAIT;
     gMA.status &= ~STATUS_BIOS_RESTART;
 }
@@ -1075,13 +1149,13 @@ static void MA_IntrTimer_SIOSend(void)
     case IOBUF_SEND_PRESTART:
         MA_SetTransmitData(&gMA.sendIoBuf);
         gMA.sendIoBuf.state = IOBUF_SEND_START;
-        gMA.timerInterval = TIMER_COUNTER_MS(120);
+        gMA.timerInter = TIMER_COUNTER_MS(120);
         break;
 
     case IOBUF_SEND_START:
         MA_InitIoBuffer(&gMA.sendIoBuf, (u8 *)MaPacketData_Start,
             sizeof(MaPacketData_Start) - 2, IOBUF_SEND_DATA);
-        gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+        gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
         MA_SetTransmitData(&gMA.sendIoBuf);
         break;
 
@@ -1181,17 +1255,27 @@ static void MA_IntrTimer_SIOWaitTime(void)
         gMA.counter = 0;
         gMA.condition &= ~MA_CONDITION_BIOS_BUSY;
     }
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
 }
 
+/**
+ * @brief Interpret CheckStatus response
+ *
+ * Checks the status byte reported by MACMD_CHECKSTATUS, and checks the internal
+ * state to return a suitable MA_CONDITION value. Handles errors by resetting
+ * the library as well.
+ *
+ * @param[in] response status code
+ * @return condition code
+ */
 int MA_ProcessCheckStatusResponse(u8 response)
 {
-    int ret = 0;
+    int ret = MA_CONDITION_IDLE;
 
     switch (response) {
     case 0xff:
         ret = MA_CONDITION_LOST;
-        if (gMA.connMode) {
+        if (gMA.connMode != CONN_OFFLINE) {
             if (gMA.status & STATUS_CONNTEST) {
                 gMA.status = 0;
                 MA_SetError(MAAPIE_OFFLINE);
@@ -1204,7 +1288,7 @@ int MA_ProcessCheckStatusResponse(u8 response)
 
     case 0:
     case 1:
-        if (gMA.connMode) {
+        if (gMA.connMode != CONN_OFFLINE) {
             if (gMA.status & STATUS_CONNTEST) {
                 gMA.status = 0;
                 MA_SetError(MAAPIE_OFFLINE);
@@ -1235,6 +1319,14 @@ int MA_ProcessCheckStatusResponse(u8 response)
     return ret;
 }
 
+/**
+ * @brief Create generic API error from low-level protocol error
+ *
+ * Handles the MACMD_ERROR values for most of the commands, where
+ * MA_DefaultNegaResProc() handles the rest of them. The resulting API errors
+ * can be too generic compared to their actual meanings, but most of them can't
+ * be handled anyway...
+ */
 static void ConvertNegaErrToApiErr(void)
 {
     static const u8 errTable[] = {
@@ -1249,6 +1341,12 @@ static void ConvertNegaErrToApiErr(void)
     gMA.taskErrorDetail = 0;
 }
 
+/**
+ * @brief Create API error from low-level protocol error
+ *
+ * Handles MACMD_ERROR values by converting them to something understood by the
+ * library users.
+ */
 void MA_DefaultNegaResProc(void)
 {
     switch (gMA.negaResCmd) {
@@ -1278,16 +1376,26 @@ void MA_DefaultNegaResProc(void)
     }
 }
 
+/**
+ * @brief Initial handling of received commands
+ *
+ * Handles the basic details of some received commands inmediately in the timer
+ * interrupt routine, allowing things like retrying some commands and changing
+ * the serial mode. Commands that actually return a status are delegated to the
+ * high-level API to handle.
+ *
+ * @param[in] cmd command to process
+ */
 static void MA_ProcessRecvPacket(u8 cmd)
 {
     static u8 *pPacket;
 
-    i = 1;
+    i = TRUE;
     pPacket = gMA.sendPacket;
     if (gMA.status & STATUS_BIOS_RESTART) {
         gMA.status &= ~STATUS_BIOS_RESTART;
         MA_BiosStop();
-        i = 0;
+        i = FALSE;
     } else {
         switch (cmd) {
         case MAPROT_REPLY | MACMD_START:
@@ -1304,55 +1412,65 @@ static void MA_ProcessRecvPacket(u8 cmd)
 
             if (gMA.task != TASK_INITLIBRARY2 && gMA.task != TASK_CONDITION2) {
                 gMA.intrSioMode = MA_INTR_SIO_WAIT;
-                gMA.timerInterval = TIMER_COUNTER_MS(1000);
-                i = 0;
+                gMA.timerInter = TIMER_COUNTER_MS(1000);
+                i = FALSE;
             }
             break;
 
         case MAPROT_REPLY | MACMD_TEL:
         case MAPROT_REPLY | MACMD_WAITCALL:
+            // We're connected to a phone now
             gMA.condition |= MA_CONDITION_CONNECT;
             break;
 
         case MAPROT_REPLY | MACMD_OFFLINE:
+            // We're completely disconnected
             gMA.condition &= ~MA_CONDITION_CONNECT;
             break;
 
         case MAPROT_REPLY | MACMD_TCPCLOSED:
+            // The remote closed the TCP connection
             gMA.pRecvBuf->size = gMA.recvIoBuf.size;
             gMA.condition |= MA_CONDITION_TCPCLOSED;
             break;
 
         case MAPROT_REPLY | MACMD_REINIT:
+            // Return to 8-bit serial mode after resetting the adapter, and give
+            // the adapter some time to reset
             MA_ChangeSIOMode(MA_SIO_BYTE);
             gMA.intrSioMode = MA_INTR_SIO_WAIT;
-            gMA.timerInterval = TIMER_COUNTER_MS(500);
-            i = 0;
+            gMA.timerInter = TIMER_COUNTER_MS(500);
+            i = FALSE;
             break;
 
         case MAPROT_REPLY | MACMD_CHANGECLOCK:
+            // Change the serial mode based on the byte in the request packet
             MA_ChangeSIOMode(pPacket[6]);
             gMA.intrSioMode = MA_INTR_SIO_WAIT;
-            gMA.timerInterval = TIMER_COUNTER_MS(60);
-            i = 0;
+            gMA.timerInter = TIMER_COUNTER_MS(60);
+            i = FALSE;
             break;
 
         case MAPROT_REPLY | MACMD_CHECKSTATUS:
+            // Make sure to update gMA.condition according to the received
+            // status even if the calling function doesn't bother.
             MA_ProcessCheckStatusResponse(gMA.recvIoBuf.pWrite[0]);
             break;
 
         case MAPROT_REPLY | MACMD_ERROR:
+            // Save the error
             gMA.negaResCmd = gMA.recvIoBuf.pWrite[0];
             gMA.negaResErr = gMA.recvIoBuf.pWrite[1];
 
+            // TCP Connect command is retried up to five times
             if (gMA.negaResCmd == MACMD_TCPCONNECT
                 && ++gMA.tcpConnectRetryCount != 5) {
-                gMA.timerInterval = TIMER_COUNTER_MS(1000);
+                gMA.timerInter = TIMER_COUNTER_MS(1000);
                 gMA.status |= STATUS_SIO_RETRY;
                 gMA.intrSioMode = MA_INTR_SIO_WAIT;
-                i = 0;
+                i = FALSE;
                 *(vu32 *)REG_TM3CNT = 0;
-                *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
+                *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInter;
             }
             break;
 
@@ -1363,10 +1481,13 @@ static void MA_ProcessRecvPacket(u8 cmd)
     }
 
     gMA.status &= ~STATUS_SIO_RECV_DONE;
-    if (i == 1) {
+
+    // Signal the main api to process the received packet
+    if (i == TRUE) {
         gMA.intrSioMode = MA_INTR_SIO_IDLE;
         gMA.condition &= ~MA_CONDITION_BIOS_BUSY;
     }
+
     gMA.counter = 0;
 }
 
@@ -1380,7 +1501,7 @@ void MA_IntrTimer(void)
 
     if (!(gMA.status & STATUS_SIO_START) || gMA.status & STATUS_INTR_SIO
         || gMA.status & STATUS_API_CALL || *(vu16 *)REG_SIOCNT & SIO_START) {
-        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
+        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInter;
         gMA.status &= ~STATUS_INTR_TIMER;
         return;
     }
@@ -1389,14 +1510,14 @@ void MA_IntrTimer(void)
 
     if (saveSioMode != gMA.intrSioMode) {
         gMA.status &= ~STATUS_INTR_TIMER;
-        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
+        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInter;
         return;
     }
 
     if (gMA.status & STATUS_SIO_RECV_DONE) {
         MA_ProcessRecvPacket(gMA.recvCmd);
         gMA.status &= ~STATUS_INTR_TIMER;
-        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
+        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInter;
         return;
     }
 
@@ -1408,7 +1529,7 @@ void MA_IntrTimer(void)
     }
     MA_StartSioTransmit();
 
-    *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
+    *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInter;
     gMA.status &= ~STATUS_INTR_TIMER;
 }
 
@@ -1498,11 +1619,11 @@ static void MA_IntrSio_Send(void)
         }
 
         gMA.footerError = gMA.sendFooter[1];
-        gMA.timerInterval = TIMER_COUNTER_MS(120);
+        gMA.timerInter = TIMER_COUNTER_MS(120);
         gMA.status |= STATUS_SIO_RETRY;
         gMA.intrSioMode = MA_INTR_SIO_WAIT;
         *(vu32 *)REG_TM3CNT = 0;
-        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
+        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInter;
         return;
     }
 
@@ -1522,11 +1643,11 @@ static void MA_IntrSio_Send(void)
         }
 
         gMA.footerError = gMA.sendFooter[1];
-        gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+        gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
         gMA.status |= STATUS_SIO_RETRY;
         gMA.intrSioMode = MA_INTR_SIO_WAIT;
         *(vu32 *)REG_TM3CNT = 0;
-        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
+        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInter;
         return;
     }
 
@@ -1549,11 +1670,11 @@ static void MA_IntrSio_Send(void)
         }
 
         gMA.footerError = gMA.sendFooter[1];
-        gMA.timerInterval = TIMER_COUNTER_MS(1000);
+        gMA.timerInter = TIMER_COUNTER_MS(1000);
         gMA.status |= STATUS_SIO_RETRY;
         gMA.intrSioMode = MA_INTR_SIO_WAIT;
         *(vu32 *)REG_TM3CNT = 0;
-        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
+        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInter;
         return;
     }
 
@@ -1571,11 +1692,11 @@ static void MA_IntrSio_Send(void)
         }
 
         gMA.footerError = gMA.sendFooter[1];
-        gMA.timerInterval = TIMER_COUNTER_MS(120);
+        gMA.timerInter = TIMER_COUNTER_MS(120);
         gMA.status |= STATUS_SIO_RETRY;
         gMA.intrSioMode = MA_INTR_SIO_WAIT;
         *(vu32 *)REG_TM3CNT = 0;
-        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInterval;
+        *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInter;
         return;
     }
 

@@ -108,7 +108,7 @@ void ResetApiCallFlag(void)
 
 void MA_TaskSet(u8 task, u8 step)
 {
-    gMA.timerInterval = gMA.timerDataInterval[gMA.sioMode];
+    gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     gMA.task = task;
     gMA.taskStep = step;
     if (gMA.task == 0) gMA.condition &= ~MA_CONDITION_APIWAIT;
