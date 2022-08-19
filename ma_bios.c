@@ -597,14 +597,11 @@ void MABIOS_Tel(u8 calltype, const char *number)
     tmppPacket[MAPROT_HEADER_SIZE + 0] = calltype;
     telNoLen = 0;
     while (*number != '\0') {
-#if NONMATCHING
-        tmppPacket[MAPROT_HEADER_SIZE + 1 + telNoLen++] = *number++;
-#else
+        // FAKEMATCH
         u8 *p = tmppPacket;
         int n = telNoLen + 1;
-        *(u8 *)(p + n + MAPROT_HEADER_SIZE) = *number++;
+        *(p + n + MAPROT_HEADER_SIZE) = *number++;
         telNoLen = n;
-#endif
     }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TEL, telNoLen + 1);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
@@ -663,13 +660,10 @@ void MABIOS_Data(MA_BUF *pRecvBuf, const u8 *pSendData, u8 sendSize, u8 socket)
 
     tmppPacket[MAPROT_HEADER_SIZE + 0] = socket;
     for (i = 0; i < sendSize; i++) {
-#if NONMATCHING
-        tmppPacket[MAPROT_HEADER_SIZE + 1 + i] = *pSendData++;
-#else
+        // FAKEMATCH
         u8 *p = tmppPacket;
         int n = i + 1;
-        *(u8 *)(p + n + MAPROT_HEADER_SIZE) = *pSendData++;
-#endif
+        *(p + n + MAPROT_HEADER_SIZE) = *pSendData++;
     }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DATA, sendSize + 1);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
@@ -693,13 +687,10 @@ static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pSendData, u8 sendSize)
     tmppPacket[MAPROT_HEADER_SIZE + 0] = 0xff;
     tmppPacket[MAPROT_HEADER_SIZE + 1] = sendSize;
     for (i = 0; i < sendSize; i++) {
-#if NONMATCHING
-        tmppPacket[MAPROT_HEADER_SIZE + 2 + i] = *pSendData++;
-#else
+        // FAKEMATCH
         u8 *p = tmppPacket;
         int n = i + 2;
-        *(u8 *)(p + n + MAPROT_HEADER_SIZE) = *pSendData++;
-#endif
+        *(p + n + MAPROT_HEADER_SIZE) = *pSendData++;
     }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DATA, sendSize + 2);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
@@ -819,13 +810,10 @@ void MABIOS_EEPROM_Write(MA_BUF *pRecvBuf, u8 offset, const u8 *data_send,
 
     tmppPacket[MAPROT_HEADER_SIZE + 0] = offset;
     for (i = 0; i < size; i++) {
-#if NONMATCHING
-        tmppPacket[MAPROT_HEADER_SIZE + 1 + i] = *data_send++;
-#else
+        // FAKEMATCH
         u8 *p = tmppPacket;
         int n = i + 1;
-        *(u8 *)(p + n + MAPROT_HEADER_SIZE) = *data_send++;
-#endif
+        *(p + n + MAPROT_HEADER_SIZE) = *data_send++;
     }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_EEPROM_WRITE, size + 1);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
@@ -900,7 +888,7 @@ void MABIOS_TCPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
     gMA.sendCmd = MACMD_TCPCONNECT;
 
     for (i = 0; i < 4; i++) {
-        *(u8 *)(tmppPacket + i + MAPROT_HEADER_SIZE) = *pAddr++;
+        *(tmppPacket + i + MAPROT_HEADER_SIZE) = *pAddr++;
     }
     tmppPacket[MAPROT_HEADER_SIZE + 4 + 0] = ((u8 *)&port)[1];
     tmppPacket[MAPROT_HEADER_SIZE + 4 + 1] = ((u8 *)&port)[0];
@@ -945,7 +933,7 @@ void MABIOS_UDPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
     gMA.sendCmd = MACMD_UDPCONNECT;
 
     for (i = 0; i < 4; i++) {
-        *(u8 *)(tmppPacket + i + MAPROT_HEADER_SIZE) = *pAddr++;
+        *(tmppPacket + i + MAPROT_HEADER_SIZE) = *pAddr++;
     }
     tmppPacket[MAPROT_HEADER_SIZE + 4 + 0] = ((u8 *)&port)[1];
     tmppPacket[MAPROT_HEADER_SIZE + 4 + 1] = ((u8 *)&port)[0];
@@ -992,14 +980,11 @@ void MABIOS_DNSRequest(MA_BUF *pRecvBuf, char *pServerName)
 
     serverNameLen = 0;
     while (*pServerName != '\0') {
-#if NONMATCHING
-        tmppPacket[MAPROT_HEADER_SIZE + serverNameLen++] = *pServerName++;
-#else
+        // FAKEMATCH
         u8 *p = tmppPacket;
         int n = serverNameLen;
-        *(u8 *)(p + n + MAPROT_HEADER_SIZE) = *pServerName++;
+        *(p + n + MAPROT_HEADER_SIZE) = *pServerName++;
         serverNameLen = n + 1;
-#endif
     }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DNSREQUEST, serverNameLen);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
