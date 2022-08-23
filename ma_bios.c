@@ -43,19 +43,29 @@ enum timeouts {
 
 /// States of the packet sender
 enum iobuf_send_states {
+    /// Do nothing
     IOBUF_SEND_IDLE,
+    /// Send byte or word in buffer, wait a bit and move to IOBUF_SEND_START
     IOBUF_SEND_PRESTART,
+    /// Send MaPacketData_Start
     IOBUF_SEND_START,
+    /// Send packet in buffer
     IOBUF_SEND_DATA,
 };
 
 /// States of the packet receiver
 enum iobuf_recv_states {
+    /// Do nothing
     IOBUF_RECV_IDLE,
+    /// Receive magic bytes
     IOBUF_RECV_START,
+    /// Receive packet header
     IOBUF_RECV_HEADER,
+    /// Receive packet data
     IOBUF_RECV_DATA,
+    /// Receive and verify packet checksum
     IOBUF_RECV_CHECKSUM,
+    /// Receive and verify packet footer
     IOBUF_RECV_FOOTER,
 };
 
@@ -71,7 +81,7 @@ static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pSendData, u8 sendSize);
 static int MA_CreatePacket(u8 *packet, u8 cmd, u16 size);
 static int MA_Create8BitPacket(u8 *packet, u8 cmd, u16 size);
 static int MA_Create32BitPacket(u8 *packet, u8 cmd, u16 size);
-static u16 MA_CalcCheckSum(u8 *data, u16 size);
+static u16 MA_CalcCheckSum(u8 *pData, u16 size);
 static void MA_IntrTimer_SIOSend(void);
 static void MA_IntrTimer_SIORecv(void);
 static void MA_IntrTimer_SIOIdle(void);
@@ -451,26 +461,26 @@ static int MA_PreSend(void)
 }
 
 /**
- * @brief Initialize serial IO buffer
+ * @brief Initialize a serial IO buffer
  *
  * Initializes a buffer for sending or receiving a command. Depending on the
  * buffer, the memory pointed to by the mem and size pair will be either read
  * or written. The state variable indicates the next operation the interrupts
  * will perform on the buffer, and depends on the buffer.
  *
- * @param[out] buffer IO buffer to initialize
- * @param[in] mem memory to read from/write to
+ * @param[out] pBuffer IO buffer to initialize
+ * @param[in] pMem memory to read from/write to
  * @param[in] size size of memory
  * @param[in] state next operation, depending on buffer
  */
-static void MA_InitIoBuffer(MA_IOBUF *buffer, vu8 *mem, u16 size, u16 state)
+static void MA_InitIoBuffer(MA_IOBUF *pBuffer, vu8 *pMem, u16 size, u16 state)
 {
-    buffer->state = state;
-    buffer->pRead = mem;
-    buffer->pWrite = mem;
-    buffer->size = size;
-    buffer->readCnt = 0;
-    buffer->checkSum = 0;
+    pBuffer->state = state;
+    pBuffer->pRead = pMem;
+    pBuffer->pWrite = pMem;
+    pBuffer->size = size;
+    pBuffer->readCnt = 0;
+    pBuffer->checkSum = 0;
 }
 
 /**
@@ -509,7 +519,7 @@ static void MA_StartSioTransmit(void)
     }
 
     gMA.pSendIoBuf = NULL;
-    gMA.status &= ~STATUS_SIO_START;
+    gMA.status &= ~STATUS_TIMER_ENABLED;
     *(vu16 *)REG_SIOCNT |= SIO_START;
 }
 
@@ -606,55 +616,93 @@ int MA_GetCallTypeFromHarwareType(u8 harware)
     return 3;
 }
 
+/**
+ * @brief Dummy packet
+ *
+ * Sends a null packet, that incites no reply from the adapter. Due to this, it
+ * will always cause a timeout on reception, leading to a MA_BiosStop().
+ *
+ * Unused.
+ */
 void MABIOS_Null(void)
 {
+    // Make sure we're connected
     if (!(gMA.status & STATUS_CONNECTED) || gMA.status & STATUS_CONNTEST) return;
 
+    // Not returning reply to caller, use internal reception buffer
     SetInternalRecvBuffer();
+
+    // Initialize transaction
     gMA.condition &= ~MA_CONDITION_BIOS_BUSY;
     gMA.sendCmd = MACMD_NULL;
 
+    // Fill packet buffer
     tmpPacketLen = sizeof(MaPacketData_NULL);
     if (gMA.sioMode == MA_SIO_BYTE) tmpPacketLen -= 2;
     MA_InitIoBuffer(&gMA.sendIoBuf, (u8 *)MaPacketData_NULL, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     gMA.status |= STATUS_CONNTEST;
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
     MA_SetTimeoutCount(TIMEOUT_30);
 }
 
+/**
+ * @brief Initialize adapter and start session
+ *
+ * Sends a dummy byte, before waiting a bit and starting the session. This
+ * allows the adapter some time to wake up from sleep mode. The remaining part
+ * is handled in MA_IntrTimer_SIOSend().
+ *
+ * @bug Standard adapter reply packet overflows internal reception buffer.
+ */
 void MABIOS_Start(void)
 {
     *(vu32 *)REG_TM3CNT = 0;
     if (!MA_PreSend()) return;
 
+    // Not returning reply to caller, use internal reception buffer
     SetInternalRecvBuffer();
+
+    // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.sendCmd = MACMD_START;
 
+    // Fill packet buffer
     MA_InitIoBuffer(&gMA.sendIoBuf, (u8 *)MaPacketData_PreStart, 1,
         IOBUF_SEND_PRESTART);
 
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
     *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInter;
 }
 
+/**
+ * @brief Start session
+ *
+ * Start session without waking up the adapter first, as in MABIOS_Start(). Used
+ * to restart the session when we know the adapter hasn't gone to sleep.
+ */
 void MABIOS_Start2(void)
 {
     *(vu32 *)REG_TM3CNT = 0;
     gMA.condition &= ~MA_CONDITION_BIOS_BUSY;
     if (!MA_PreSend()) return;
 
+    // Not returning reply to caller, use internal reception buffer
     SetInternalRecvBuffer();
+
+    // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.sendCmd = MACMD_START;
 
+    // Fill packet buffer
     if (gMA.sioMode == MA_SIO_BYTE) {
         MA_InitIoBuffer(&gMA.sendIoBuf, (u8 *)MaPacketData_Start,
             sizeof(MaPacketData_Start) - 2, IOBUF_SEND_DATA);
@@ -663,105 +711,178 @@ void MABIOS_Start2(void)
             sizeof(MaPacketData_Start), IOBUF_SEND_DATA);
     }
 
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_02);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief End session
+ *
+ * Finalizes the connection with the adapter.
+ */
 void MABIOS_End(void)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Not returning reply to caller, use internal reception buffer
     SetInternalRecvBuffer();
+
+    // Fill packet buffer
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_END, 0);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Initialize transaction
     gMA.sendCmd = MACMD_END;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
+
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
-void MABIOS_Tel(u8 calltype, const char *number)
+/**
+ * @brief Dial a telephone pNumber and connect to it
+ *
+ * Starts a call with a phone, allowing data to be transmitted between both
+ * devices. This can be used to call an ISP or a different adapter.
+ *
+ * The callType parameter is related to the adapter type, and doesn't specify
+ * what kind of connection will be established.
+ *
+ * @param[in] callType call type
+ * @param[in] pNumber phone pNumber
+ */
+void MABIOS_Tel(u8 callType, const char *pNumber)
 {
     static int telNoLen;
 
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Not returning reply to caller, use internal reception buffer
     SetInternalRecvBuffer();
+
+    // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.sendCmd = MACMD_TEL;
 
-    tmppPacket[MAPROT_HEADER_SIZE + 0] = calltype;
+    // Fill packet buffer
+    tmppPacket[MAPROT_HEADER_SIZE + 0] = callType;
     telNoLen = 0;
-    while (*number != '\0') {
+    while (*pNumber != '\0') {
         // FAKEMATCH
         u8 *p = tmppPacket;
         int n = telNoLen + 1;
-        *(p + n + MAPROT_HEADER_SIZE) = *number++;
+        *(p + n + MAPROT_HEADER_SIZE) = *pNumber++;
         telNoLen = n;
     }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TEL, telNoLen + 1);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_90);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Disconnect phone line
+ *
+ * Ends all communications with the phone connected through MABIOS_Tel() or
+ * MABIOS_WaitCall(). This implicitly destroys any ISP and TCP/UDP connections.
+ */
 void MABIOS_Offline(void)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Not returning reply to caller, use internal reception buffer
     SetInternalRecvBuffer();
+
+    // Fill packet buffer
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_OFFLINE, 0);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Initialize transaction
     gMA.sendCmd = MACMD_OFFLINE;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
+
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Wait for phone call and connect to it
+ *
+ * Checks if a phone call is being received, if so, starts a connection with the
+ * calling device.
+ */
 void MABIOS_WaitCall(void)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Not returning reply to caller, use internal reception buffer
     SetInternalRecvBuffer();
+
+    // Fill packet buffer
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_WAITCALL, 0);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Initialize transaction
     gMA.sendCmd = MACMD_WAITCALL;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
+
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Send/receive data through a socket
+ *
+ * Sends and receives data to/from the specified socket parameter. This socket
+ * may be opened with MABIOS_TCPConnect() or MABIOS_UDPConnect().
+ *
+ * If the adapter is connected to a phone line, but hasn't initialized a session
+ * with the ISP yet, this function may also be used to communicate over the
+ * phone line, in which case the socket parameter is ignored, though this
+ * function is primarily intended for TCP/UDP connections.
+ *
+ * @param[out] pRecvBuf received data
+ * @param[in] pSendData data to send
+ * @param[in] sendSize size of data to send
+ * @param[in] socket socket number
+ */
 void MABIOS_Data(MA_BUF *pRecvBuf, const u8 *pSendData, u8 sendSize, u8 socket)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Return reply data to caller
     gMA.pRecvBuf = pRecvBuf;
+
+    // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.sendCmd = MACMD_DATA;
 
+    // Fill packet buffer
     tmppPacket[MAPROT_HEADER_SIZE + 0] = socket;
     for (i = 0; i < sendSize; i++) {
         // FAKEMATCH
@@ -773,21 +894,36 @@ void MABIOS_Data(MA_BUF *pRecvBuf, const u8 *pSendData, u8 sendSize, u8 socket)
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Send/receive data over a phone line
+ *
+ * Counterpart to MABIOS_Data(), but only for connections to other adapters.
+ * Implicitly sets the socket as 0xff and prepends a size byte to the sent data.
+ *
+ * @param[out] pRecvBuf received data
+ * @param[in] pSendData data to send
+ * @param[in] sendSize size of data to send
+ */
 static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pSendData, u8 sendSize)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Return reply data to caller
     gMA.pRecvBuf = pRecvBuf;
+
+    // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.sendCmd = MACMD_DATA;
 
+    // Fill packet buffer
     tmppPacket[MAPROT_HEADER_SIZE + 0] = 0xff;
     tmppPacket[MAPROT_HEADER_SIZE + 1] = sendSize;
     for (i = 0; i < sendSize; i++) {
@@ -800,135 +936,246 @@ static void MABIOS_Data2(MA_BUF *pRecvBuf, const u8 *pSendData, u8 sendSize)
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Reinitialize the adapter
+ *
+ * Equivalent to a MABIOS_End() + MABIOS_Start2(). Closes any connections and
+ * returns to 8-bit serial mode.
+ *
+ * Unused.
+ */
 void MABIOS_ReInit(void)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Not returning reply to caller, use internal reception buffer
     SetInternalRecvBuffer();
+
+    // Fill packet buffer
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_REINIT, 0);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Initialize transaction
     gMA.sendCmd = MACMD_REINIT;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
+
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Get adapter status
+ *
+ * Query the adapter for its status, returns a buffer of three bytes.
+ *
+ * @param[out] pRecvBuf received data
+ */
 void MABIOS_CheckStatus(MA_BUF *pRecvBuf)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Return reply data to caller
     gMA.pRecvBuf = pRecvBuf;
+
+    // Fill packet buffer
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHECKSTATUS, 0);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Initialize transaction
     gMA.sendCmd = MACMD_CHECKSTATUS;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
+
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
     MA_SetTimeoutCount(TIMEOUT_30);
 }
 
+/**
+ * @brief Get adapter status
+ *
+ * Counterpart to MABIOS_CheckStatus() used by the bios functions internally to
+ * test whether the adapter is still connected.
+ *
+ * @param[out] pRecvBuf received data
+ */
 void MABIOS_CheckStatus2(MA_BUF *pRecvBuf)
 {
     tmppPacket = gMA.sendPacket;
+
+    // Make sure we're connected
     if (!(gMA.status & STATUS_CONNECTED) || gMA.status & STATUS_CONNTEST) return;
 
+    // Return reply data to caller
     gMA.pRecvBuf = pRecvBuf;
+
+    // Fill packet buffer
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHECKSTATUS, 0);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Initialize transaction
     gMA.sendCmd = MACMD_CHECKSTATUS;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
+
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_10);
     gMA.status |= STATUS_CONNTEST;
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Change serial mode
+ *
+ * Requests the adapter to change the serial mode, to either MA_SIO_BYTE or
+ * MA_SIO_WORD. Usually called right after the session starts to upgrade to
+ * WORD (32-bit) mode.
+ *
+ * The code in MA_ProcessRecvPacket() takes care of the switching of the
+ * library's serial mode upon successful completion.
+ *
+ * @param[in] mode serial mode
+ */
 void MABIOS_ChangeClock(u8 mode)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Not returning reply to caller, use internal reception buffer
     SetInternalRecvBuffer();
+
+    // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.sendCmd = MACMD_CHANGECLOCK;
 
+    // Fill packet buffer
     tmppPacket[MAPROT_HEADER_SIZE + 0] = mode;
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHANGECLOCK, 1);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Read EEPROM data
+ *
+ * Read data from the adapter's EEPROM storage. Used to store adapter
+ * configuration data, required to establish an ISP connection and connect to
+ * mail servers.
+ *
+ * The received data buffer is prefixed with one byte indicating the offset.
+ *
+ * @param[out] pRecvBuf received data
+ * @param[in] offset eeprom offset
+ * @param[in] size size of data to read
+ */
 void MABIOS_EEPROM_Read(MA_BUF *pRecvBuf, u8 offset, u8 size)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Return reply data to caller
     gMA.pRecvBuf = pRecvBuf;
+
+    // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.sendCmd = MACMD_EEPROM_READ;
 
+    // Fill packet buffer
     tmppPacket[MAPROT_HEADER_SIZE + 0] = offset;
     tmppPacket[MAPROT_HEADER_SIZE + 1] = size;
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_EEPROM_READ, 2);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
-void MABIOS_EEPROM_Write(MA_BUF *pRecvBuf, u8 offset, const u8 *data_send,
+/**
+ * @brief Write EEPROM data
+ *
+ * Writes data to the adapter's EEPROM storage.
+ *
+ * The received data buffer is never read.
+ *
+ * @param[out] pRecvBuf received data
+ * @param[in] offset eeprom offset
+ * @param[in] pSendData data to write
+ * @param[in] size size of data to write
+ */
+void MABIOS_EEPROM_Write(MA_BUF *pRecvBuf, u8 offset, const u8 *pSendData,
     u8 size)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Return reply data to caller
     gMA.pRecvBuf = pRecvBuf;
+
+    // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.sendCmd = MACMD_EEPROM_WRITE;
 
+    // Fill packet buffer
     tmppPacket[MAPROT_HEADER_SIZE + 0] = offset;
     for (i = 0; i < size; i++) {
         // FAKEMATCH
         u8 *p = tmppPacket;
         int n = i + 1;
-        *(p + n + MAPROT_HEADER_SIZE) = *data_send++;
+        *(p + n + MAPROT_HEADER_SIZE) = *pSendData++;
     }
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_EEPROM_WRITE, size + 1);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Connect to the ISP
+ *
+ * Initializes a connection with the ISP, allowing access to the internet. This
+ * function requires info that can be obtained from the EEPROM.
+ *
+ * This function should only be called after dialing the ISP number with
+ * MABIOS_Tel().
+ *
+ * @param[out] pRecvBuf received data
+ * @param[in] pUserID user ID
+ * @param[in] pPassword user password
+ * @param[in] dns1 primary dns address
+ * @param[in] dns2 secondary dns address
+ */
 void MABIOS_PPPConnect(MA_BUF *pRecvBuf, const char *pUserID,
     const char *pPassword, const u8 *dns1, const u8 *dns2)
 {
@@ -938,16 +1185,22 @@ void MABIOS_PPPConnect(MA_BUF *pRecvBuf, const char *pUserID,
     static int passwordLength;
 
     tmppPacket = gMA.sendPacket;
-    pData = tmppPacket + MAPROT_HEADER_SIZE;
+    pData = &tmppPacket[MAPROT_HEADER_SIZE];
     if (!MA_PreSend()) return;
 
+    // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.sendCmd = MACMD_PPPCONNECT;
+
+    // Return reply data to caller
     gMA.pRecvBuf = pRecvBuf;
 
+    // Determine packet data size
     userIDLength = MAU_strlen(pUserID);
     passwordLength = MAU_strlen(pPassword);
     dataLen = userIDLength + passwordLength + 10;
+
+    // Fill packet buffer
     *pData++ = userIDLength;
     for (; userIDLength; userIDLength--) *pData++ = *pUserID++;
     *pData++ = passwordLength;
@@ -958,39 +1211,72 @@ void MABIOS_PPPConnect(MA_BUF *pRecvBuf, const char *pUserID,
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Disconnect from the ISP
+ */
 void MABIOS_PPPDisconnect(void)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Not returning reply to caller, use internal reception buffer
     SetInternalRecvBuffer();
+
+    // Fill packet buffer
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_PPPDISCONNECT, 0);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Initialize transaction
     gMA.sendCmd = MACMD_PPPDISCONNECT;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
+
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Connect to a TCP server
+ *
+ * Connects to a TCP server to transmit data. Once the connection is
+ * established, MABIOS_Data() may be used to send and receive data.
+ * expected to check whether the connection still exists through
+ * MA_GetCondition() & MA_CONDITION_TCPCLOSED or similar, as the server may
+ * close it at any point in time.
+ *
+ * The received data buffer contains the socket number assigned to the
+ * connection.
+ *
+ * This function should only be called after connecting to the ISP with
+ * MABIOS_PPPConnect().
+ *
+ * @param[out] pRecvBuf received data
+ * @param[in] pAddr IPv4 server address
+ * @param[in] port server port
+ */
 void MABIOS_TCPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Return reply data to caller
     gMA.pRecvBuf = pRecvBuf;
+
+    // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.sendCmd = MACMD_TCPCONNECT;
 
+    // Fill packet buffer
     for (i = 0; i < 4; i++) {
         *(tmppPacket + i + MAPROT_HEADER_SIZE) = *pAddr++;
     }
@@ -1000,42 +1286,78 @@ void MABIOS_TCPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
     gMA.tcpConnectRetryCount = 0;
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Disconnect from a TCP server
+ *
+ * The received data buffer is never read.
+ *
+ * @param pRecvBuf received data
+ * @param socket socket number
+ */
 void MABIOS_TCPDisconnect(MA_BUF *pRecvBuf, u8 socket)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Return reply data to caller
     gMA.pRecvBuf = pRecvBuf;
+
+    // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.sendCmd = MACMD_TCPDISCONNECT;
 
+    // Fill packet buffer
     tmppPacket[MAPROT_HEADER_SIZE + 0] = socket;
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TCPDISCONNECT, 1);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Create a UDP socket
+ *
+ * Initializes a socket as UDP with a given destination address, since UDP
+ * doesn't keep track of connection state.
+ *
+ * The received data buffer contains the socket number assigned to the
+ * connection.
+ *
+ * This function should only be called after connecting to the ISP with
+ * MABIOS_PPPConnect().
+ *
+ * Unused.
+ *
+ * @param[out] pRecvBuf received data
+ * @param[in] pAddr IPv4 destination address
+ * @param[in] port destination port
+ */
 void MABIOS_UDPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Return reply data to caller
     gMA.pRecvBuf = pRecvBuf;
+
+    // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.sendCmd = MACMD_UDPCONNECT;
 
+    // Fill packet buffer
     for (i = 0; i < 4; i++) {
         *(tmppPacket + i + MAPROT_HEADER_SIZE) = *pAddr++;
     }
@@ -1045,32 +1367,61 @@ void MABIOS_UDPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Destroy a UDP socket
+ *
+ * Unused.
+ *
+ * @param[out] pRecvBuf received data
+ * @param[in] socket socket number
+ */
 void MABIOS_UDPDisconnect(MA_BUF *pRecvBuf, u8 socket)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Return reply data to caller
     gMA.pRecvBuf = pRecvBuf;
+
+    // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.sendCmd = MACMD_UDPDISCONNECT;
 
+    // Fill packet buffer
     tmppPacket[MAPROT_HEADER_SIZE + 0] = socket;
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_UDPDISCONNECT, 1);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Query IP address of a server name through DNS
+ *
+ * Queries the configured DNS servers for the IPv4 address associated with a
+ * given server name. This is useful to figure out the address to use in
+ * MABIOS_TCPConnect().
+ *
+ * The received data buffer contains the resulting IP address.
+ *
+ * This function should only be called after connecting to the ISP with
+ * MABIOS_PPPConnect().
+ *
+ * @param[out] pRecvBuf received data
+ * @param[in] pServerName server name to query
+ */
 void MABIOS_DNSRequest(MA_BUF *pRecvBuf, char *pServerName)
 {
     static int serverNameLen;
@@ -1078,10 +1429,14 @@ void MABIOS_DNSRequest(MA_BUF *pRecvBuf, char *pServerName)
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Return reply data to caller
     gMA.pRecvBuf = pRecvBuf;
+
+    // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
     gMA.sendCmd = MACMD_DNSREQUEST;
 
+    // Fill packet buffer
     serverNameLen = 0;
     while (*pServerName != '\0') {
         // FAKEMATCH
@@ -1094,30 +1449,55 @@ void MABIOS_DNSRequest(MA_BUF *pRecvBuf, char *pServerName)
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Enter test mode
+ *
+ * Unused.
+ */
 void MABIOS_TestMode(void)
 {
     tmppPacket = gMA.sendPacket;
     if (!MA_PreSend()) return;
 
+    // Not returning reply to caller, use internal reception buffer
     SetInternalRecvBuffer();
+
+    // Fill packet buffer
     tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TESTMODE, 0);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
+    // Initialize transaction
     gMA.sendCmd = MACMD_TESTMODE;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
+
+    // Configure timer and start transaction
     gMA.intrMode = MA_INTR_SEND;
     gMA.timerInter = gMA.timerIntInter[gMA.sioMode];
     MA_SetTimeoutCount(TIMEOUT_30);
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
 }
 
+/**
+ * @brief Finalize packet to send
+ *
+ * Initializes the header and footer of a packet with a given size, calculating
+ * the checksum along the way. Expects a packet buffer already containing data
+ * at the correct offset (MAPROT_HEADER_SIZE). The total size of the packet will
+ * depend on the serial mode, to account for padding in the 32-bit mode.
+ *
+ * @param[in,out] packet pre-filled packet
+ * @param[in] cmd command to write in the header
+ * @param[in] size size of packet data
+ * @return total size
+ */
 static int MA_CreatePacket(u8 *packet, u8 cmd, u16 size)
 {
     if (gMA.sioMode == MA_SIO_WORD) {
@@ -1127,18 +1507,30 @@ static int MA_CreatePacket(u8 *packet, u8 cmd, u16 size)
     }
 }
 
+/**
+ * @brief Finalize an 8-bit packet
+ *
+ * 8-bit branch of MA_CreatePacket().
+ *
+ * @param[in,out] packet pre-filled packet
+ * @param[in] cmd command to write in the header
+ * @param[in] size size of packet data
+ * @return total size
+ */
 static int MA_Create8BitPacket(u8 *packet, u8 cmd, u16 size)
 {
     static u16 checkSum;
 
+    // Initialize the header with the appropriate values
     MAPROT_HEADER *p = (MAPROT_HEADER *)packet;
     p->magic = 0x6699;
     p->cmd = cmd;
     p->pad = 0;
-    p->size = (size & 0x00ff) << 8 | (size & 0xff00) >> 8;
+    p->size = (size & 0x00ff) << 8 | (size & 0xff00) >> 8;  // big endian
 
+    // Initialize the footer, calculating the checksum
     tmppPacketLast = (MAPROT_FOOTER *)(packet + MAPROT_HEADER_SIZE + size);
-    checkSum = MA_CalcCheckSum(packet + 2, size + 4);
+    checkSum = MA_CalcCheckSum(packet + 2, size + MAPROT_HEADER_SIZE - 2);
     tmppPacketLast->checkSum_H = checkSum >> 8;
     tmppPacketLast->checkSum_L = checkSum >> 0;
     tmppPacketLast->device = MAPROT_TYPE_MASTER | MATYPE_GBA;
@@ -1147,6 +1539,16 @@ static int MA_Create8BitPacket(u8 *packet, u8 cmd, u16 size)
     return size + MAPROT_HEADER_SIZE + MAPROT_FOOTER_SIZE - 2;
 }
 
+/**
+ * @brief Finalize a 32-bit packet
+ *
+ * 32-bit branch of MA_CreatePacket().
+ *
+ * @param[in,out] packet pre-filled packet
+ * @param[in] cmd command to write in the header
+ * @param[in] size size of packet data
+ * @return total size
+ */
 static int MA_Create32BitPacket(u8 *packet, u8 cmd, u16 size)
 {
     static u8 *pPadding;
@@ -1154,45 +1556,60 @@ static int MA_Create32BitPacket(u8 *packet, u8 cmd, u16 size)
     static int amari;
     static u16 checkSum;
 
+    // Initialize the header with the appropriate values
     MAPROT_HEADER *p = (MAPROT_HEADER *)packet;
     p->magic = 0x6699;
     p->cmd = cmd;
     p->pad = 0;
     p->size = (size & 0x00ff) << 8 | (size & 0xff00) >> 8;
 
+    // Calculate the padding for the packet data, aligning the footer to 4 bytes
     if (p->size == 0) {
         paddingLength = 0;
     } else {
         amari = size % 4;
         if (amari == 0) {
-            paddingLength = amari;
+            paddingLength = 0;
         } else {
             paddingLength = 4 - amari;
         }
 
+        // Zero-fill the padding bytes
         pPadding = packet + MAPROT_HEADER_SIZE + size;
         for (i = 0; i < paddingLength; i++) *pPadding++ = 0;
     }
 
+    // Initialize the footer, calculating the checksum
     tmppPacketLast =
         (MAPROT_FOOTER *)(packet + MAPROT_HEADER_SIZE + size + paddingLength);
-    checkSum = MA_CalcCheckSum(packet + 2, size + 4);
+    checkSum = MA_CalcCheckSum(packet + 2, size + MAPROT_HEADER_SIZE - 2);
     tmppPacketLast->checkSum_H = checkSum >> 8;
     tmppPacketLast->checkSum_L = checkSum >> 0;
     tmppPacketLast->device = MAPROT_TYPE_MASTER | MATYPE_GBA;
     tmppPacketLast->pad[0] = 0;
     tmppPacketLast->pad[1] = 0;
     tmppPacketLast->pad[2] = 0;
+
     return size + paddingLength + MAPROT_HEADER_SIZE + MAPROT_FOOTER_SIZE;
 }
 
-static u16 MA_CalcCheckSum(u8 *data, u16 size)
+/**
+ * @brief Calculate packet checksum
+ *
+ * Simple additive checksum. Calculated separately for received packets in
+ * MA_IntrSio_Recv().
+ *
+ * @param pData data to checksum
+ * @param size size of data
+ * @return checksum
+ */
+static u16 MA_CalcCheckSum(u8 *pData, u16 size)
 {
     static u16 sum;
 
     sum = 0;
     while (size != 0) {
-        sum = sum + *data++;
+        sum = sum + *pData++;
         size--;
     }
     return sum;
@@ -1212,6 +1629,11 @@ void MA_CancelRequest(void)
     gMA.intrMode = MA_INTR_WAIT;
 }
 
+/**
+ * @brief Stop processing the current command
+ *
+ * Sets the interrupt into idle mode, to keep the connection alive.
+ */
 void MA_BiosStop(void)
 {
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
@@ -1221,12 +1643,22 @@ void MA_BiosStop(void)
     gMA.status &= ~STATUS_BIOS_RESTART;
 }
 
+/**
+ * @brief Re-initialize the send buffer with the same data
+ *
+ * Inmediately triggers a send.
+ */
 void MA_SendRetry(void)
 {
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendIoBuf.pWrite, gMA.sendIoBuf.size,
         IOBUF_SEND_DATA);
 }
 
+/**
+ * @brief Re-initialize the reception buffer with the same pointer
+ *
+ * Inmediately triggers the reception of a packet.
+ */
 void MA_RecvRetry(void)
 {
     MA_InitIoBuffer(&gMA.recvIoBuf, gMA.recvIoBuf.pWrite, 0, IOBUF_RECV_START);
@@ -1238,16 +1670,22 @@ void MA_RecvRetry(void)
     gMA.negaResErr = 0;
 }
 
+/**
+ * @brief Timer interrupt handler for MA_INTR_SEND
+ *
+ * Sends the requested data, depending on the iobuf state.
+ */
 static void MA_IntrTimer_SIOSend(void)
 {
     switch (gMA.sendIoBuf.state) {
-    // Send packet in buffer, wait a bit and move to IOBUF_SEND_START
+    // Send byte or word in buffer, wait a bit and move to IOBUF_SEND_START
     case IOBUF_SEND_PRESTART:
         MA_SetTransmitData(&gMA.sendIoBuf);
         gMA.sendIoBuf.state = IOBUF_SEND_START;
         gMA.timerInter = TIMER_COUNTER_MS(120);
         break;
 
+    // Send MaPacketData_Start
     case IOBUF_SEND_START:
         MA_InitIoBuffer(&gMA.sendIoBuf, (u8 *)MaPacketData_Start,
             sizeof(MaPacketData_Start) - 2, IOBUF_SEND_DATA);
@@ -1255,18 +1693,31 @@ static void MA_IntrTimer_SIOSend(void)
         MA_SetTransmitData(&gMA.sendIoBuf);
         break;
 
+    // Send packet in buffer
     case IOBUF_SEND_DATA:
         MA_SetTransmitData(&gMA.sendIoBuf);
         break;
     }
 }
 
+/**
+ * @brief Timer interrupt handler for MA_INTR_RECV
+ *
+ * When at any stage of receiving a packet, sends dummy bytes by initializing
+ * the send buffer to the same dummy byte buffer. This triggers
+ * MA_IntrSerialIO() which then handles the received bytes.
+ *
+ * The only exception being the footer, which is expected to be filled by
+ * MA_IntrSerialIO() and won't be overridden here.
+ */
 static void MA_IntrTimer_SIORecv(void)
 {
     switch (gMA.recvIoBuf.state) {
+    // Do nothing
     case IOBUF_RECV_IDLE:
         break;
 
+    // Receiving any part of a packet
     case IOBUF_RECV_START:
     case IOBUF_RECV_HEADER:
     case IOBUF_RECV_DATA:
@@ -1279,23 +1730,37 @@ static void MA_IntrTimer_SIORecv(void)
         MA_SetTransmitData(&gMA.tempIoBuf);
         break;
 
+    // Receiving the footer
     case IOBUF_RECV_FOOTER:
         MA_SetTransmitData(&gMA.tempIoBuf);
         break;
     }
 }
 
+/**
+ * @brief Timer interrupt handler for MA_INTR_IDLE
+ *
+ * MA_INTR_IDLE is the mode in which the timer interrupt is enabled, but isn't
+ * doing anything of note. This mode handles periodically checking whether the
+ * adapter is still connected, as well as periodically initiating a p2p transfer
+ * when the adapter is in that mode.
+ */
 static void MA_IntrTimer_SIOIdle(void)
 {
+    // Don't run if any task is currently running, as this could override what
+    // the API is currently doing
     if (gMA.task != TASK_NONE
         && gMA.task != TASK_SDATA
         && gMA.task != TASK_GDATA) {
         return;
     }
 
+    // If the adapter isn't connected, there's nothing to do at all
     if (!(gMA.status & STATUS_CONNECTED)) return;
+
     gMA.counter++;
 
+    // In p2p mode, try to send and receive data
     if (gMA.status & STATUS_CONN_PTP
         && (!(gMA.condition & STATUS_SIO_RETRY) || gMA.status & STATUS_PTP_SEND)) {
         if (gMA.counter > gMA.P2PCounter[gMA.sioMode]) {
@@ -1314,6 +1779,7 @@ static void MA_IntrTimer_SIOIdle(void)
         return;
     }
 
+    // Periodically check if the adapter is still connected
     if (gMA.counter > gMA.nullCounter[gMA.sioMode]) {
         gMA.counter = 0;
         MA_InitBuffer(&gMA.biosRecvBuf, gMA.hwCondition);
@@ -1322,7 +1788,7 @@ static void MA_IntrTimer_SIOIdle(void)
 }
 
 /**
- * @brief MA_INTR_WAIT timer interrupt handler
+ * @brief Timer interrupt handler for MA_INTR_WAIT
  *
  * This handler is used to implement delays with the timer. This is useful to
  * give the adapter some time to breathe between actions like retries, startup
@@ -1338,8 +1804,10 @@ static void MA_IntrTimer_SIOIdle(void)
 static void MA_IntrTimer_SIOWaitTime(void)
 {
     if (gMA.status & STATUS_BIOS_RESTART) {
+        // Restart the connection after the delay
         MABIOS_Start2();
     } else if (gMA.status & STATUS_BIOS_STOP) {
+        // Go into idle mode
         gMA.status &= ~STATUS_BIOS_STOP;
         gMA.condition &= ~MA_CONDITION_BIOS_BUSY;
         gMA.intrMode = MA_INTR_IDLE;
@@ -1384,11 +1852,12 @@ static void MA_IntrTimer_SIOWaitTime(void)
  */
 int MA_ProcessCheckStatusResponse(u8 response)
 {
-    int ret = MA_CONDITION_IDLE;
+    int condition = MA_CONDITION_IDLE;
 
     switch (response) {
+    // The phone isn't connected
     case 0xff:
-        ret = MA_CONDITION_LOST;
+        condition = MA_CONDITION_LOST;
         if (gMA.connMode != CONN_OFFLINE) {
             if (gMA.status & STATUS_CONNTEST) {
                 gMA.status = 0;
@@ -1400,8 +1869,11 @@ int MA_ProcessCheckStatusResponse(u8 response)
         }
         break;
 
+    // Phone line is not busy
     case 0:
     case 1:
+        // If there was an active connection, this means the user manually hung
+        // up. The only thing that can be done here is resetting the library.
         if (gMA.connMode != CONN_OFFLINE) {
             if (gMA.status & STATUS_CONNTEST) {
                 gMA.status = 0;
@@ -1412,25 +1884,26 @@ int MA_ProcessCheckStatusResponse(u8 response)
             MA_Reset();
         }
 
+    // Phone line is busy (in a call)
     case 5:
     case 4:
         switch (gMA.connMode) {
-        case CONN_PPP: ret = MA_CONDITION_PPP; break;
-        case CONN_SMTP: ret = MA_CONDITION_SMTP; break;
-        case CONN_POP3: ret = MA_CONDITION_POP3; break;
-        case CONN_P2P_SEND: ret = MA_CONDITION_P2P_SEND; break;
-        case CONN_P2P_RECV: ret = MA_CONDITION_P2P_RECV; break;
+        case CONN_PPP: condition = MA_CONDITION_PPP; break;
+        case CONN_SMTP: condition = MA_CONDITION_SMTP; break;
+        case CONN_POP3: condition = MA_CONDITION_POP3; break;
+        case CONN_P2P_SEND: condition = MA_CONDITION_P2P_SEND; break;
+        case CONN_P2P_RECV: condition = MA_CONDITION_P2P_RECV; break;
         }
         break;
     }
 
-    MA_SetCondition(ret);
+    MA_SetCondition(condition);
     gMA.intrMode = MA_INTR_IDLE;
     gMA.sendIoBuf.state = IOBUF_SEND_IDLE;
     gMA.recvIoBuf.state = IOBUF_RECV_IDLE;
     gMA.status &= ~STATUS_CONNTEST;
 
-    return ret;
+    return condition;
 }
 
 /**
@@ -1495,8 +1968,8 @@ void MA_DefaultNegaResProc(void)
  *
  * Handles the basic details of some received commands inmediately in the timer
  * interrupt routine, allowing things like retrying some commands and changing
- * the serial mode. Commands that actually return a status are delegated to the
- * high-level API to handle.
+ * the serial mode. Commands that actually return information are delegated to
+ * the high-level API to handle.
  *
  * @param[in] cmd command to process
  */
@@ -1507,6 +1980,7 @@ static void MA_ProcessRecvPacket(u8 cmd)
     i = TRUE;
     pPacket = gMA.sendPacket;
     if (gMA.status & STATUS_BIOS_RESTART) {
+        // Go back into idle mode after the session has been restarted
         gMA.status &= ~STATUS_BIOS_RESTART;
         MA_BiosStop();
         i = FALSE;
@@ -1608,6 +2082,12 @@ static void MA_ProcessRecvPacket(u8 cmd)
     gMA.counter = 0;
 }
 
+/**
+ * @brief Timer interrupt entrypoint
+ *
+ * Must be called by the game upon a timer 3 interrupt. Handles running API
+ * tasks as well as initializing the next serial transfer.
+ */
 void MA_IntrTimer(void)
 {
     static u8 saveSioMode;
@@ -1616,21 +2096,26 @@ void MA_IntrTimer(void)
     saveSioMode = gMA.intrMode;
     *(vu32 *)REG_TM3CNT = 0;
 
-    if (!(gMA.status & STATUS_SIO_START) || gMA.status & STATUS_INTR_SIO
+    // Avoid running if the interrupt is disabled, or we're waiting for the
+    // serial interrupt to run first.
+    if (!(gMA.status & STATUS_TIMER_ENABLED) || gMA.status & STATUS_INTR_SIO
         || gMA.status & STATUS_API_CALL || *(vu16 *)REG_SIOCNT & SIO_START) {
         *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInter;
         gMA.status &= ~STATUS_INTR_TIMER;
         return;
     }
 
+    // Execute the current API task
     MAAPI_Main();
 
+    // If the interrupt mode changed, update the timer interval first
     if (saveSioMode != gMA.intrMode) {
         gMA.status &= ~STATUS_INTR_TIMER;
         *(vu32 *)REG_TM3CNT = TIMER_FLAGS | gMA.timerInter;
         return;
     }
 
+    // If we're done receiving a packet, interpret it
     if (gMA.status & STATUS_SIO_RECV_DONE) {
         MA_ProcessRecvPacket(gMA.recvCmd);
         gMA.status &= ~STATUS_INTR_TIMER;
@@ -1638,6 +2123,7 @@ void MA_IntrTimer(void)
         return;
     }
 
+    // Handle the different interrupt states
     switch (gMA.intrMode) {
     case MA_INTR_IDLE: MA_IntrTimer_SIOIdle(); break;
     case MA_INTR_WAIT: MA_IntrTimer_SIOWaitTime(); break;
@@ -1650,6 +2136,9 @@ void MA_IntrTimer(void)
     gMA.status &= ~STATUS_INTR_TIMER;
 }
 
+/**
+ * @brief Timeout macro for SIO interrupt handlers
+ */
 #define MA_IntrSio_Timeout() \
 { \
     if (++gMA.counter > gMA.timeoutCounter[gMA.sioMode]) { \
@@ -1663,33 +2152,44 @@ void MA_IntrTimer(void)
     } \
 }
 
-#define MA_Bios_Error() \
-{ \
-    gMA.status &= ~STATUS_CONNECTED; \
-    gMA.condition &= ~MA_CONDITION_BIOS_BUSY; \
-    gMA.status &= ~STATUS_CONNTEST; \
-}
-
+/**
+ * @brief Inline variant of MA_Bios_disconnect()
+ */
 #define MA_Bios_disconnect_inline() \
 { \
     gMA.intrMode = MA_INTR_IDLE; \
     gMA.sendIoBuf.state = IOBUF_SEND_IDLE; \
     gMA.recvIoBuf.state = IOBUF_RECV_IDLE; \
     MA_SetError(MAAPIE_MA_NOT_FOUND); \
-    MA_Bios_Error(); \
+    gMA.status &= ~STATUS_CONNECTED; \
+    gMA.condition &= ~MA_CONDITION_BIOS_BUSY; \
+    gMA.status &= ~STATUS_CONNTEST; \
     gMA.sendIoBuf.state = IOBUF_SEND_IDLE; \
     *(vu32 *)REG_TM3CNT = 0; \
 }
 
+/**
+ * @brief End the connection abruptly
+ *
+ * Used when an invalid or malfunctioning adapter is detected, disables the
+ * timer interrupt and raises an error.
+ */
 void MA_Bios_disconnect(void)
 {
     MA_Bios_disconnect_inline();
 }
 
+/**
+ * @brief Serial interrupt handler for MA_INTR_SEND
+ *
+ * Handles the received bytes while sending a packet, essentially only used to
+ * check the footer bytes and initialize the packet reception once done.
+ */
 static void MA_IntrSio_Send(void)
 {
     static int dataLeft;
 
+    // Only handle the footer if a packet is actually being sent
     switch (gMA.sendIoBuf.state) {
     default:
     case IOBUF_SEND_PRESTART: return;
@@ -1699,6 +2199,7 @@ static void MA_IntrSio_Send(void)
 
     MA_IntrSio_Timeout();
 
+    // Read out the footer
     dataLeft = gMA.sendIoBuf.size - gMA.sendIoBuf.readCnt;
     if (gMA.sioMode == MA_SIO_BYTE) {
         if (dataLeft < 2) {
@@ -1713,13 +2214,15 @@ static void MA_IntrSio_Send(void)
         }
     }
 
-    // Process only the packet footer (everything has been sent)
+    // Don't actually process the footer until everything has been sent
     if (gMA.sendIoBuf.size != gMA.sendIoBuf.readCnt) return;
 
     // Pull up behavior on SI (pin always high) means nothing is connected
     if (gMA.sendFooter[0] == 0xff && gMA.sendFooter[1] == 0xff) {
         MA_SetError(MAAPIE_MA_NOT_FOUND);
-        MA_Bios_Error();
+        gMA.status &= ~STATUS_CONNECTED;
+        gMA.condition &= ~MA_CONDITION_BIOS_BUSY;
+        gMA.status &= ~STATUS_CONNTEST;
         return;
     }
 
@@ -1752,7 +2255,9 @@ static void MA_IntrSio_Send(void)
         if (gMA.status & STATUS_SIO_RETRY) {
             if (--gMA.retryCount == 0) {
                 MA_SetError(MAAPIE_PROT_INTERNAL);
-                MA_Bios_Error();
+                gMA.status &= ~STATUS_CONNECTED;
+                gMA.condition &= ~MA_CONDITION_BIOS_BUSY;
+                gMA.status &= ~STATUS_CONNTEST;
                 return;
             }
         } else {
@@ -1779,7 +2284,9 @@ static void MA_IntrSio_Send(void)
                 } else {
                     MA_SetError(MAAPIE_PROT_CHECKSUM);
                 }
-                MA_Bios_Error();
+                gMA.status &= ~STATUS_CONNECTED;
+                gMA.condition &= ~MA_CONDITION_BIOS_BUSY;
+                gMA.status &= ~STATUS_CONNTEST;
                 return;
             }
         } else {
@@ -1834,6 +2341,16 @@ static void MA_IntrSio_Send(void)
     gMA.negaResErr = 0;
 }
 
+/**
+ * @brief Serial interrupt handler for MA_INTR_RECV
+ *
+ * Handles packet reception, timing out and checksumming.
+ *
+ * The first parameter indicates which of the four received bytes to process in
+ * the WORD (32-bit) mode.
+ *
+ * @param[in] byte byte index to process
+ */
 static void MA_IntrSio_Recv(u8 byte)
 {
     static u8 recvByte;
@@ -1846,6 +2363,7 @@ static void MA_IntrSio_Recv(u8 byte)
     }
 
     switch (gMA.recvIoBuf.state) {
+    // Receive magic bytes
     case IOBUF_RECV_START:
         // Wait for handshake
         switch (gMA.recvIoBuf.readCnt) {
@@ -1885,8 +2403,8 @@ static void MA_IntrSio_Recv(u8 byte)
         }
         break;
 
+    // Receive packet header
     case IOBUF_RECV_HEADER:
-        // Parse the header
         switch (gMA.recvIoBuf.readCnt) {
         case 0:  // Command
             gMA.recvCmd = recvByte;
@@ -1931,6 +2449,7 @@ static void MA_IntrSio_Recv(u8 byte)
         gMA.recvIoBuf.state = IOBUF_RECV_DATA;
         break;
 
+    // Receive packet data
     case IOBUF_RECV_DATA:
         MA_IntrSio_Timeout();
 
@@ -1944,6 +2463,7 @@ static void MA_IntrSio_Recv(u8 byte)
         gMA.recvIoBuf.readCnt = 0;
         break;
 
+    // Receive and verify packet checksum
     case IOBUF_RECV_CHECKSUM:
         // Read the checksum
         ((u8 *)&gMA.checkSum)[1 - gMA.recvIoBuf.readCnt] = recvByte;
@@ -1968,6 +2488,7 @@ static void MA_IntrSio_Recv(u8 byte)
         gMA.recvIoBuf.readCnt = 0;
         break;
 
+    // Receive and verify packet footer
     case IOBUF_RECV_FOOTER:
         gMA.recvFooter[gMA.recvIoBuf.readCnt] = recvByte;
         gMA.recvIoBuf.readCnt++;
@@ -1988,21 +2509,29 @@ static void MA_IntrSio_Recv(u8 byte)
     }
 }
 
+/**
+ * @brief Serial interrupt entrypoint
+ *
+ * Must be called by the game upon a serial interrupt. This is triggered after a
+ * serial transmission is complete.
+ */
 void MA_IntrSerialIO(void)
 {
     *(vu32 *)REG_TM3CNT &= ~TMR_IF_ENABLE;
     gMA.status |= STATUS_INTR_SIO;
 
+    // Handle the different interrupt modes
     switch (gMA.intrMode) {
     case MA_INTR_SEND:
         MA_IntrSio_Send();
-        gMA.status |= STATUS_SIO_START;
+        gMA.status |= STATUS_TIMER_ENABLED;
         break;
 
     case MA_INTR_RECV:
         if (gMA.sioMode == MA_SIO_BYTE) {
             MA_IntrSio_Recv(0);
         } else {
+            // In WORD (32-bit) mode, process all four received bytes separately
             for (i = 0; i < 4; i++) {
                 if (gMA.condition & MA_CONDITION_ERROR) break;
                 MA_IntrSio_Recv(i);
@@ -2012,6 +2541,6 @@ void MA_IntrSerialIO(void)
     }
 
     *(vu32 *)REG_TM3CNT |= TMR_IF_ENABLE;
-    gMA.status |= STATUS_SIO_START;
+    gMA.status |= STATUS_TIMER_ENABLED;
     gMA.status &= ~STATUS_INTR_SIO;
 }

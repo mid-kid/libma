@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Miscellaneous subroutines.
+ * @brief Miscellaneous subroutines
  *
  * Mostly copies of libc functions to avoid relying on it, as well as some
  * string parsing, conversion and socket tracking utility functions.

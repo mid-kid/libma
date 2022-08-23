@@ -1,3 +1,8 @@
+/**
+ * @file
+ * @brief Common private variables
+ */
+
 #ifndef _MA_VAR_H
 #define _MA_VAR_H
 
@@ -19,7 +24,7 @@
 #define MA_CONDITION_FREE_F (0x80)  // No call fees apply (MA_Condition only)
 
 #define STATUS_CONNECTED (1 << 0)  // Connected to the adapter
-#define STATUS_SIO_START (1 << 1)  // Send next byte (IntrSio keeps sending until done)
+#define STATUS_TIMER_ENABLED (1 << 1)  // Execute the timer interrupt
 #define STATUS_CONNTEST (1 << 2)  // If the command fails the adapter is disconnected
 #define STATUS_SIO_RETRY (1 << 3)  // Retrying the last packet
 #define STATUS_SIO_ERR_CHECKSUM (1 << 4)  // Checksum error encountered

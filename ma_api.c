@@ -2919,7 +2919,7 @@ static void MATASK_POP3_Dele(void)
     }
 
     if (MA_GetCondition() & MA_CONDITION_TCPCLOSED) {
-        gMA.connMode = 3;
+        gMA.connMode = CONN_PPP;
         MA_SetCondition(MA_CONDITION_PPP);
         gMA.sockets[0] = 0;
         gMA.usedSockets[0] = FALSE;
