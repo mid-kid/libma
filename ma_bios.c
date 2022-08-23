@@ -125,7 +125,7 @@ static const u16 gTimerIntByteInter[] = {
     TIMER_MS((float)(ms) / COUNTER_BYTE_INTER3), \
     TIMER_MS((float)(ms) / COUNTER_BYTE_INTER4), \
     TIMER_MS((float)(ms) / COUNTER_BYTE_INTER5), \
-    \
+\
     TIMER_MS((float)(ms) / COUNTER_BYTE_INTER1) / 2, \
     TIMER_MS((float)(ms) / COUNTER_BYTE_INTER2) / 2, \
     TIMER_MS((float)(ms) / COUNTER_BYTE_INTER3) / 2, \
@@ -133,15 +133,15 @@ static const u16 gTimerIntByteInter[] = {
     TIMER_MS((float)(ms) / COUNTER_BYTE_INTER5) / 2,
 
 // Pre-calculated timeout counters for various timeouts
-static const u32 gNullCounterByte[] = { COUNTER_BYTE(1000) };
-static const u32 gP2PCounterByte[] = { COUNTER_BYTE(125) };
-static const u32 gTimeout90CounterByte[] = { COUNTER_BYTE(90000 + 0.05) };
-static const u32 gTimeout30CounterByte[] = { COUNTER_BYTE(30000) };
-static const u32 gTimeout10CounterByte[] = { COUNTER_BYTE(10000) };
-static const u32 gTimeout02CounterByte[] = { COUNTER_BYTE(2000) };
-static const u32 gTimeout200msecCounterByte[] = { COUNTER_BYTE(200) };
-static const u32 gTimeout250msecCounterByte[] = { COUNTER_BYTE(250) };
-static const u32 gTimeout40msecCounterByte[] = { COUNTER_BYTE(40 - 0.05) };
+static const u32 gNullCounterByte[] = {COUNTER_BYTE(1000)};
+static const u32 gP2PCounterByte[] = {COUNTER_BYTE(125)};
+static const u32 gTimeout90CounterByte[] = {COUNTER_BYTE(90000 + 0.05)};
+static const u32 gTimeout30CounterByte[] = {COUNTER_BYTE(30000)};
+static const u32 gTimeout10CounterByte[] = {COUNTER_BYTE(10000)};
+static const u32 gTimeout02CounterByte[] = {COUNTER_BYTE(2000)};
+static const u32 gTimeout200msecCounterByte[] = {COUNTER_BYTE(200)};
+static const u32 gTimeout250msecCounterByte[] = {COUNTER_BYTE(250)};
+static const u32 gTimeout40msecCounterByte[] = {COUNTER_BYTE(40 - 0.05)};
 
 // Word (32-bit serial) timer settings
 #define COUNTER_WORD_INTER1 (COUNTER_BYTE_INTER1 * 2)  // 2048.33984375 Hz
@@ -172,7 +172,7 @@ static const u16 gTimerIntWordInter[] = {
     TIMER_MS((float)(ms) / COUNTER_WORD_INTER3), \
     TIMER_MS((float)(ms) / COUNTER_WORD_INTER4), \
     TIMER_MS((float)(ms) / COUNTER_WORD_INTER5), \
-    \
+\
     TIMER_MS((float)(ms) / COUNTER_WORD_INTER1) / 2, \
     TIMER_MS((float)(ms) / COUNTER_WORD_INTER2) / 2, \
     TIMER_MS((float)(ms) / COUNTER_WORD_INTER3) / 2, \
@@ -180,15 +180,15 @@ static const u16 gTimerIntWordInter[] = {
     TIMER_MS((float)(ms) / COUNTER_WORD_INTER5) / 2,
 
 // Pre-calculated timeout counters for various timeouts
-static const u32 gNullCounterWord[] = { COUNTER_WORD(1000) };
-static const u32 gP2PCounterWord[] = { COUNTER_WORD(125) };
-static const u32 gTimeout90CounterWord[] = { COUNTER_WORD(90000) };
-static const u32 gTimeout30CounterWord[] = { COUNTER_WORD(30000) };
-static const u32 gTimeout10CounterWord[] = { COUNTER_WORD(10000) };
-static const u32 gTimeout02CounterWord[] = { COUNTER_WORD(2000) };
-static const u32 gTimeout200msecCounterWord[] = { COUNTER_WORD(200) };
-static const u32 gTimeout250msecCounterWord[] = { COUNTER_WORD(250) };
-static const u32 gTimeout40msecCounterWord[] = { COUNTER_WORD(40) };
+static const u32 gNullCounterWord[] = {COUNTER_WORD(1000)};
+static const u32 gP2PCounterWord[] = {COUNTER_WORD(125)};
+static const u32 gTimeout90CounterWord[] = {COUNTER_WORD(90000)};
+static const u32 gTimeout30CounterWord[] = {COUNTER_WORD(30000)};
+static const u32 gTimeout10CounterWord[] = {COUNTER_WORD(10000)};
+static const u32 gTimeout02CounterWord[] = {COUNTER_WORD(2000)};
+static const u32 gTimeout200msecCounterWord[] = {COUNTER_WORD(200)};
+static const u32 gTimeout250msecCounterWord[] = {COUNTER_WORD(250)};
+static const u32 gTimeout40msecCounterWord[] = {COUNTER_WORD(40)};
 
 /// Idle bytes, also used to wake the adapter up if it went on standby
 static const u8 MaPacketData_PreStart[] = {
@@ -627,7 +627,9 @@ int MA_GetCallTypeFromHarwareType(u8 harware)
 void MABIOS_Null(void)
 {
     // Make sure we're connected
-    if (!(gMA.status & STATUS_CONNECTED) || gMA.status & STATUS_CONNTEST) return;
+    if (!(gMA.status & STATUS_CONNECTED) || gMA.status & STATUS_CONNTEST) {
+        return;
+    }
 
     // Not returning reply to caller, use internal reception buffer
     SetInternalRecvBuffer();
@@ -1019,7 +1021,9 @@ void MABIOS_CheckStatus2(MA_BUF *pRecvBuf)
     tmppPacket = gMA.sendPacket;
 
     // Make sure we're connected
-    if (!(gMA.status & STATUS_CONNECTED) || gMA.status & STATUS_CONNTEST) return;
+    if (!(gMA.status & STATUS_CONNECTED) || gMA.status & STATUS_CONNTEST) {
+        return;
+    }
 
     // Return reply data to caller
     gMA.pRecvBuf = pRecvBuf;

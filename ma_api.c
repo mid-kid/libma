@@ -2010,7 +2010,8 @@ static void MATASK_SMTP_Send(void)
         }
         InitPrevBuf();
         MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
-        MABIOS_Data(&gMA.recvBuf, param.pSendData, param.sendSize, gMA.sockets[0]);
+        MABIOS_Data(&gMA.recvBuf, param.pSendData, param.sendSize,
+            gMA.sockets[0]);
         if (param.endFlag == TRUE) {
             param.nextStep = gMA.taskStep + 1;
             gMA.taskStep = 50;
@@ -2370,8 +2371,8 @@ static void MATASK_POP3_Connect(void)
         if (pop3res == 0) {
             InitPrevBuf();
             MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
-            MABIOS_Data(&gMA.recvBuf, param.pUserID,
-                MAU_strlen(param.pUserID), gMA.sockets[0]);
+            MABIOS_Data(&gMA.recvBuf, param.pUserID, MAU_strlen(param.pUserID),
+                gMA.sockets[0]);
             gMA.taskStep++;
         } else if (pop3res == 1) {
             gMA.taskError = MAAPIE_POP3;
@@ -2816,8 +2817,7 @@ static void MATASK_POP3_Retr(void)
                 }
 
                 if (param.recvBufSize >= dataLen) {
-                    MAU_memcpy(param.pRecvData, &gMA.recvBuf.data[1],
-                        dataLen);
+                    MAU_memcpy(param.pRecvData, &gMA.recvBuf.data[1], dataLen);
                     param.pRecvData += dataLen;
                     param.recvBufSize -= dataLen;
                     gMA.condition &= ~MA_CONDITION_BUFFER_FULL;
