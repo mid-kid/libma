@@ -1433,7 +1433,7 @@ static void MATASK_Condition(void)
     case 2:
         *param.pCondition = MA_ProcessCheckStatusResponse(gMA.recvBuf.data[0]);
         if (gMA.hwCondition[2] >= 0xf0) {
-            *param.pCondition |= MA_CONDITION_FREE_F;
+            *param.pCondition |= MA_CONDITION_UNMETERED_F;
         }
 
         if (param.offline == TRUE) {

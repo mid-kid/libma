@@ -21,7 +21,7 @@
 #define MA_CONDITION_BIOS_BUSY ((u16)0x0020)  // Communicating with the adapter
 #define MA_CONDITION_TCPCLOSED ((u16)0x0040)  // Remote closed the connection
 
-#define MA_CONDITION_FREE_F (0x80)  // No call fees apply (MA_Condition only)
+#define MA_CONDITION_UNMETERED_F (0x80)  // No call fees apply (MA_Condition only)
 
 #define STATUS_CONNECTED (1 << 0)  // Connected to the adapter
 #define STATUS_TIMER_ENABLED (1 << 1)  // Execute the timer interrupt
