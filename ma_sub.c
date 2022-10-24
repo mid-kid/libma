@@ -36,12 +36,12 @@ int MAU_strlen(const char *str)
 void MAU_strcpy(char *dest, const char *src)
 {
     static const char *pSrc;
-    pSrc = src;
 
-    *dest++ = *pSrc;
-    while (*pSrc != '\0') {
-        pSrc++;
+    pSrc = src;
+    for (;;) {
         *dest++ = *pSrc;
+        if (*pSrc == '\0') break;
+        pSrc++;
     }
 }
 
