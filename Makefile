@@ -32,6 +32,9 @@ clean:
 ardata: CC := $(HOSTCC)
 ardata: CFLAGS := $(HOSTCFLAGS)
 
+# disable warnings
+md5c.o: CFLAGS := $(CFLAGS) -w
+
 # dependence
 ma_bios.o: $(wildcard *.h)
 ma_api.o: $(wildcard *.h)

@@ -1,6 +1,8 @@
 /* MD5.H - header file for MD5C.C
  */
 
+#include <AgbTypes.h>
+
 /* Copyright (C) 1991-2, RSA Data Security, Inc. Created 1991. All
 rights reserved.
 
@@ -32,17 +34,17 @@ The following makes PROTOTYPES default to 0 if it has not already
   been defined with C compiler flags.
  */
 #ifndef PROTOTYPES
-#define PROTOTYPES 0
+#define PROTOTYPES 1
 #endif
 
 /* POINTER defines a generic pointer type */
-typedef unsigned char *POINTER;
+typedef u8 *POINTER;
 
 /* UINT2 defines a two byte word */
-typedef unsigned short int UINT2;
+typedef u16 UINT2;
 
 /* UINT4 defines a four byte word */
-typedef unsigned long int UINT4;
+typedef u32 UINT4;
 
 /* PROTO_LIST is defined depending on how PROTOTYPES is defined above.
 If using PROTOTYPES, then PROTO_LIST returns the list, otherwise it
