@@ -18,8 +18,10 @@
 #define MAAPIE_PROT_INTERNAL 0x85
 #define MAAPIE_PROT_UNUSED3 0x87
 
-#define MA_CONDITION_BIOS_BUSY ((u16)0x0020)  // Communicating with the adapter
-#define MA_CONDITION_TCPCLOSED ((u16)0x0040)  // Remote closed the connection
+/// Communicating with the adapter
+#define MA_CONDITION_BIOS_BUSY ((u16)0x0020)
+/// Remote closed the connection
+#define MA_CONDITION_TCPCLOSED ((u16)0x0040)
 
 #define MA_CONDITION_UNMETERED_F (0x80)  // No call fees apply (MA_Condition only)
 
@@ -54,22 +56,22 @@
 #define MACMD_END 0x11
 #define MACMD_TEL 0x12
 #define MACMD_OFFLINE 0x13
-#define MACMD_WAITCALL 0x14
+#define MACMD_WAIT_CALL 0x14
 #define MACMD_DATA 0x15
 #define MACMD_REINIT 0x16
 #define MACMD_CHECKSTATUS 0x17
 #define MACMD_CHANGECLOCK 0x18
 #define MACMD_EEPROM_READ 0x19
 #define MACMD_EEPROM_WRITE 0x1a
-#define MACMD_TCPCLOSED 0x1f
-#define MACMD_PPPCONNECT 0x21
-#define MACMD_PPPDISCONNECT 0x22
-#define MACMD_TCPCONNECT 0x23
-#define MACMD_TCPDISCONNECT 0x24
-#define MACMD_UDPCONNECT 0x25
-#define MACMD_UDPDISCONNECT 0x26
-#define MACMD_DNSREQUEST 0x28
-#define MACMD_TESTMODE 0x3f
+#define MACMD_DATA_END 0x1f
+#define MACMD_PPP_CONNECT 0x21
+#define MACMD_PPP_DISCONNECT 0x22
+#define MACMD_TCP_CONNECT 0x23
+#define MACMD_TCP_DISCONNECT 0x24
+#define MACMD_UDP_CONNECT 0x25
+#define MACMD_UDP_DISCONNECT 0x26
+#define MACMD_DNS_REQUEST 0x28
+#define MACMD_TEST_MODE 0x3f
 #define MACMD_ERROR 0x6e
 
 #define NUM_SOCKETS 2

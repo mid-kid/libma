@@ -841,12 +841,12 @@ void MABIOS_WaitCall(void)
     SetInternalRecvBuffer();
 
     // Fill packet buffer
-    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_WAITCALL, 0);
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_WAIT_CALL, 0);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
     // Initialize transaction
-    gMA.sendCmd = MACMD_WAITCALL;
+    gMA.sendCmd = MACMD_WAIT_CALL;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
 
     // Configure timer and start transaction
@@ -1194,7 +1194,7 @@ void MABIOS_PPPConnect(MA_BUF *pRecvBuf, const char *pUserID,
 
     // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
-    gMA.sendCmd = MACMD_PPPCONNECT;
+    gMA.sendCmd = MACMD_PPP_CONNECT;
 
     // Return reply data to caller
     gMA.pRecvBuf = pRecvBuf;
@@ -1211,7 +1211,7 @@ void MABIOS_PPPConnect(MA_BUF *pRecvBuf, const char *pUserID,
     for (; passwordLength; passwordLength--) *pData++ = *pPassword++;
     for (i = 0; i < 4; i++) *pData++ = *dns1++;
     for (i = 0; i < 4; i++) *pData++ = *dns2++;
-    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_PPPCONNECT, dataLen);
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_PPP_CONNECT, dataLen);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
@@ -1234,12 +1234,12 @@ void MABIOS_PPPDisconnect(void)
     SetInternalRecvBuffer();
 
     // Fill packet buffer
-    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_PPPDISCONNECT, 0);
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_PPP_DISCONNECT, 0);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
     // Initialize transaction
-    gMA.sendCmd = MACMD_PPPDISCONNECT;
+    gMA.sendCmd = MACMD_PPP_DISCONNECT;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
 
     // Configure timer and start transaction
@@ -1278,7 +1278,7 @@ void MABIOS_TCPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
 
     // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
-    gMA.sendCmd = MACMD_TCPCONNECT;
+    gMA.sendCmd = MACMD_TCP_CONNECT;
 
     // Fill packet buffer
     for (i = 0; i < 4; i++) {
@@ -1286,7 +1286,7 @@ void MABIOS_TCPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
     }
     tmppPacket[MAPROT_HEADER_SIZE + 4 + 0] = ((u8 *)&port)[1];
     tmppPacket[MAPROT_HEADER_SIZE + 4 + 1] = ((u8 *)&port)[0];
-    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TCPCONNECT, 6);
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TCP_CONNECT, 6);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
@@ -1316,11 +1316,11 @@ void MABIOS_TCPDisconnect(MA_BUF *pRecvBuf, u8 socket)
 
     // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
-    gMA.sendCmd = MACMD_TCPDISCONNECT;
+    gMA.sendCmd = MACMD_TCP_DISCONNECT;
 
     // Fill packet buffer
     tmppPacket[MAPROT_HEADER_SIZE + 0] = socket;
-    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TCPDISCONNECT, 1);
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TCP_DISCONNECT, 1);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
@@ -1359,7 +1359,7 @@ void MABIOS_UDPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
 
     // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
-    gMA.sendCmd = MACMD_UDPCONNECT;
+    gMA.sendCmd = MACMD_UDP_CONNECT;
 
     // Fill packet buffer
     for (i = 0; i < 4; i++) {
@@ -1367,7 +1367,7 @@ void MABIOS_UDPConnect(MA_BUF *pRecvBuf, u8 *pAddr, u16 port)
     }
     tmppPacket[MAPROT_HEADER_SIZE + 4 + 0] = ((u8 *)&port)[1];
     tmppPacket[MAPROT_HEADER_SIZE + 4 + 1] = ((u8 *)&port)[0];
-    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_UDPCONNECT, 6);
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_UDP_CONNECT, 6);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
@@ -1396,11 +1396,11 @@ void MABIOS_UDPDisconnect(MA_BUF *pRecvBuf, u8 socket)
 
     // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
-    gMA.sendCmd = MACMD_UDPDISCONNECT;
+    gMA.sendCmd = MACMD_UDP_DISCONNECT;
 
     // Fill packet buffer
     tmppPacket[MAPROT_HEADER_SIZE + 0] = socket;
-    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_UDPDISCONNECT, 1);
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_UDP_DISCONNECT, 1);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
@@ -1438,7 +1438,7 @@ void MABIOS_DNSRequest(MA_BUF *pRecvBuf, char *pServerName)
 
     // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
-    gMA.sendCmd = MACMD_DNSREQUEST;
+    gMA.sendCmd = MACMD_DNS_REQUEST;
 
     // Fill packet buffer
     serverNameLen = 0;
@@ -1449,7 +1449,7 @@ void MABIOS_DNSRequest(MA_BUF *pRecvBuf, char *pServerName)
         *(p + n + MAPROT_HEADER_SIZE) = *pServerName++;
         serverNameLen = n + 1;
     }
-    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DNSREQUEST, serverNameLen);
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_DNS_REQUEST, serverNameLen);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
@@ -1474,12 +1474,12 @@ void MABIOS_TestMode(void)
     SetInternalRecvBuffer();
 
     // Fill packet buffer
-    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TESTMODE, 0);
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_TEST_MODE, 0);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
     // Initialize transaction
-    gMA.sendCmd = MACMD_TESTMODE;
+    gMA.sendCmd = MACMD_TEST_MODE;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
 
     // Configure timer and start transaction
@@ -1953,15 +1953,15 @@ void MA_DefaultNegaResProc(void)
         break;
 
     case MACMD_START:
-    case MACMD_WAITCALL:
+    case MACMD_WAIT_CALL:
     case MACMD_DATA:
     case MACMD_CHECKSTATUS:
     case MACMD_CHANGECLOCK:
     case MACMD_EEPROM_READ:
     case MACMD_EEPROM_WRITE:
-    case MACMD_PPPCONNECT:
-    case MACMD_TCPCONNECT:
-    case MACMD_DNSREQUEST:
+    case MACMD_PPP_CONNECT:
+    case MACMD_TCP_CONNECT:
+    case MACMD_DNS_REQUEST:
         ConvertNegaErrToApiErr();
         break;
     }
@@ -2013,7 +2013,7 @@ static void MA_ProcessRecvPacket(u8 cmd)
             break;
 
         case MAPROT_REPLY | MACMD_TEL:
-        case MAPROT_REPLY | MACMD_WAITCALL:
+        case MAPROT_REPLY | MACMD_WAIT_CALL:
             // We're connected to a phone now
             gMA.condition |= MA_CONDITION_CONNECT;
             break;
@@ -2023,7 +2023,7 @@ static void MA_ProcessRecvPacket(u8 cmd)
             gMA.condition &= ~MA_CONDITION_CONNECT;
             break;
 
-        case MAPROT_REPLY | MACMD_TCPCLOSED:
+        case MAPROT_REPLY | MACMD_DATA_END:
             // The remote closed the TCP connection
             gMA.pRecvBuf->size = gMA.recvIoBuf.size;
             gMA.condition |= MA_CONDITION_TCPCLOSED;
@@ -2058,7 +2058,7 @@ static void MA_ProcessRecvPacket(u8 cmd)
             gMA.negaResErr = gMA.recvIoBuf.pWrite[1];
 
             // TCP Connect command is retried up to five times
-            if (gMA.negaResCmd == MACMD_TCPCONNECT
+            if (gMA.negaResCmd == MACMD_TCP_CONNECT
                 && ++gMA.tcpConnectRetryCount != 5) {
                 gMA.timerInter = TIMER_COUNTER_MS(1000);
                 gMA.status |= STATUS_SIO_RETRY;

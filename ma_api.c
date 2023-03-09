@@ -427,7 +427,7 @@ static void MATASK_TCP_Cut(void)
         gMA.taskStep++;
 
     case 1:
-        if (param.cmd == MACMD_TCPCONNECT
+        if (param.cmd == MACMD_TCP_CONNECT
             && gMA.recvCmd != (MAPROT_REPLY | MACMD_ERROR)) {
             gMA.sockets[0] = gMA.recvBuf.data[0];
             gMA.taskStep++;
@@ -580,7 +580,7 @@ static void MATASK_TCP_Connect(void)
 #define param gMA.param.tcp_connect
     if (gMA.recvCmd == (MAPROT_REPLY | MACMD_ERROR)) {
         switch (gMA.negaResCmd) {
-        case MACMD_TCPCONNECT:
+        case MACMD_TCP_CONNECT:
             gMA.taskError = MAAPIE_TCP_CONNECT;
             gMA.taskErrorDetail = 0;
             gMA.taskStep = 0xf0;
@@ -646,7 +646,7 @@ static void MATASK_TCP_Disconnect(void)
 #define param gMA.param.tcp_disconnect
     if (gMA.recvCmd == (MAPROT_REPLY | MACMD_ERROR)) {
         switch (gMA.negaResCmd) {
-        case MACMD_TCPDISCONNECT:
+        case MACMD_TCP_DISCONNECT:
             break;
 
         default:
@@ -780,7 +780,7 @@ static void MATASK_GetHostAddress(void)
 #define param gMA.param.gethostaddress
     if (gMA.recvCmd == (MAPROT_REPLY | MACMD_ERROR)) {
         switch (gMA.negaResCmd) {
-        case MACMD_DNSREQUEST:
+        case MACMD_DNS_REQUEST:
             gMA.taskError = MAAPIE_TCP_CONNECT;
             gMA.taskErrorDetail = 0;
             gMA.taskStep = 0xf0;
@@ -926,7 +926,7 @@ static void MATASK_TelServer(void)
             gMA.taskStep = 0xfa;
             break;
 
-        case MACMD_PPPCONNECT:
+        case MACMD_PPP_CONNECT:
             gMA.taskError = MAAPIE_PPP_CONNECT;
             gMA.taskErrorDetail = 0;
             gMA.taskStep = 0xf9;
@@ -1180,7 +1180,7 @@ static void MATASK_Receive(void)
         case MACMD_END:
             break;
 
-        case MACMD_WAITCALL:
+        case MACMD_WAIT_CALL:
             if (gMA.negaResErr != 0) {
                 MA_DefaultNegaResProc();
                 gMA.taskStep = 0xfa;
@@ -1217,7 +1217,7 @@ static void MATASK_Receive(void)
         break;
 
     case 3:
-        if (gMA.recvCmd != (MAPROT_REPLY | MACMD_WAITCALL)) {
+        if (gMA.recvCmd != (MAPROT_REPLY | MACMD_WAIT_CALL)) {
             gMA.taskStep--;
         } else {
             gMA.taskStep++;
@@ -1613,14 +1613,14 @@ static void MATASK_SMTP_Connect(void)
             gMA.taskStep = 0xf0;
             break;
 
-        case MACMD_TCPCONNECT:
-        case MACMD_DNSREQUEST:
+        case MACMD_TCP_CONNECT:
+        case MACMD_DNS_REQUEST:
             gMA.taskError = MAAPIE_TCP_CONNECT;
             gMA.taskErrorDetail = 0;
             gMA.taskStep = 0xf1;
             break;
 
-        case MACMD_TCPDISCONNECT:
+        case MACMD_TCP_DISCONNECT:
             break;
 
         default:
@@ -1805,7 +1805,7 @@ static void MATASK_SMTP_Sender(void)
             gMA.taskStep = 0xf0;
             break;
 
-        case MACMD_TCPDISCONNECT:
+        case MACMD_TCP_DISCONNECT:
             break;
 
         default:
@@ -1968,7 +1968,7 @@ static void MATASK_SMTP_Send(void)
             gMA.taskStep = 0xf0;
             break;
 
-        case MACMD_TCPDISCONNECT:
+        case MACMD_TCP_DISCONNECT:
             break;
 
         default:
@@ -2151,7 +2151,7 @@ static void MATASK_SMTP_POP3_Quit(void)
             gMA.taskStep = 0xf0;
             break;
 
-        case MACMD_TCPDISCONNECT:
+        case MACMD_TCP_DISCONNECT:
             break;
 
         default:
@@ -2309,14 +2309,14 @@ static void MATASK_POP3_Connect(void)
             gMA.taskStep = 0xf0;
             break;
 
-        case MACMD_TCPCONNECT:
-        case MACMD_DNSREQUEST:
+        case MACMD_TCP_CONNECT:
+        case MACMD_DNS_REQUEST:
             gMA.taskError = MAAPIE_TCP_CONNECT;
             gMA.taskErrorDetail = 0;
             gMA.taskStep = 0xf1;
             break;
 
-        case MACMD_TCPDISCONNECT:
+        case MACMD_TCP_DISCONNECT:
             break;
 
         default:
@@ -2486,7 +2486,7 @@ static void MATASK_POP3_Stat(void)
             gMA.taskStep = 0xf0;
             break;
 
-        case MACMD_TCPDISCONNECT:
+        case MACMD_TCP_DISCONNECT:
             break;
 
         default:
@@ -2602,7 +2602,7 @@ static void MATASK_POP3_List(void)
             gMA.taskStep = 0xf0;
             break;
 
-        case MACMD_TCPDISCONNECT:
+        case MACMD_TCP_DISCONNECT:
             break;
 
         default:
@@ -2754,7 +2754,7 @@ static void MATASK_POP3_Retr(void)
             gMA.taskStep = 0xf0;
             break;
 
-        case MACMD_TCPDISCONNECT:
+        case MACMD_TCP_DISCONNECT:
             break;
 
         default:
@@ -2908,7 +2908,7 @@ static void MATASK_POP3_Dele(void)
             gMA.taskStep = 0xf0;
             break;
 
-        case MACMD_TCPDISCONNECT:
+        case MACMD_TCP_DISCONNECT:
             break;
 
         default:
@@ -3055,7 +3055,7 @@ static void MATASK_POP3_Head(void)
             gMA.taskStep = 0xf0;
             break;
 
-        case MACMD_TCPDISCONNECT:
+        case MACMD_TCP_DISCONNECT:
             break;
 
         default:
@@ -3893,14 +3893,14 @@ static void MATASK_HTTP_GetPost(void)
             gMA.taskStep = 0xf0;
             break;
 
-        case MACMD_TCPCONNECT:
-        case MACMD_DNSREQUEST:
+        case MACMD_TCP_CONNECT:
+        case MACMD_DNS_REQUEST:
             gMA.taskError = MAAPIE_TCP_CONNECT;
             gMA.taskErrorDetail = 0;
             gMA.taskStep = 0xf1;
             break;
 
-        case MACMD_TCPDISCONNECT:
+        case MACMD_TCP_DISCONNECT:
             break;
 
         default:
