@@ -914,8 +914,8 @@ static void MATASK_TelServer(void)
             break;
 
         case MACMD_TEL:
-        case MACMD_CHECKSTATUS:
-        case MACMD_CHANGECLOCK:
+        case MACMD_CHECK_STATUS:
+        case MACMD_CHANGE_CLOCK:
             MA_DefaultNegaResProc();
             gMA.taskStep = 0xfa;
             break;
@@ -1086,8 +1086,8 @@ static void MATASK_Tel(void)
             break;
 
         case MACMD_TEL:
-        case MACMD_CHECKSTATUS:
-        case MACMD_CHANGECLOCK:
+        case MACMD_CHECK_STATUS:
+        case MACMD_CHANGE_CLOCK:
         case MACMD_EEPROM_READ:
             MA_DefaultNegaResProc();
             gMA.taskStep = 0xfa;
@@ -1187,7 +1187,7 @@ static void MATASK_Receive(void)
             }
             break;
 
-        case MACMD_CHANGECLOCK:
+        case MACMD_CHANGE_CLOCK:
         case MACMD_EEPROM_READ:
             MA_DefaultNegaResProc();
             gMA.taskStep = 0xfa;
@@ -1402,7 +1402,7 @@ static void MATASK_Condition(void)
         case MACMD_END:
             break;
 
-        case MACMD_CHECKSTATUS:
+        case MACMD_CHECK_STATUS:
             MA_DefaultNegaResProc();
             if (param.offline == TRUE) {
                 gMA.taskStep = 0xfa;
@@ -4278,7 +4278,7 @@ static void MATASK_GetEEPROMData(void)
         case MACMD_END:
             break;
 
-        case MACMD_CHANGECLOCK:
+        case MACMD_CHANGE_CLOCK:
             MA_DefaultNegaResProc();
             gMA.taskStep = 0xfa;
             break;
@@ -4394,7 +4394,7 @@ static void MATASK_EEPROM_Read(void)
         case MACMD_END:
             break;
 
-        case MACMD_CHANGECLOCK:
+        case MACMD_CHANGE_CLOCK:
         case MACMD_EEPROM_READ:
             MA_DefaultNegaResProc();
             gMA.taskStep = 0xfa;
@@ -4487,7 +4487,7 @@ static void MATASK_EEPROM_Write(void)
         case MACMD_END:
             break;
 
-        case MACMD_CHANGECLOCK:
+        case MACMD_CHANGE_CLOCK:
         case MACMD_EEPROM_WRITE:
             MA_DefaultNegaResProc();
             gMA.taskStep = 0xfa;

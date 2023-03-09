@@ -218,7 +218,7 @@ static const u8 MaPacketData_NULL[] = {
 /// Check adapter status
 static const u8 MaPacketData_CheckStatus[] = {
     MAPROT_MAGIC_1, MAPROT_MAGIC_2,  // Magic bytes
-    MACMD_CHECKSTATUS, 0x00, 0x00, 0x00,  // Command ID, size
+    MACMD_CHECK_STATUS, 0x00, 0x00, 0x00,  // Command ID, size
     0x00, 0x17,  // Checksum
     MAPROT_TYPE_MASTER | MATYPE_GBA, 0x00, 0x00, 0x00,  // Footer
 };
@@ -993,12 +993,12 @@ void MABIOS_CheckStatus(MA_BUF *pRecvBuf)
     gMA.pRecvBuf = pRecvBuf;
 
     // Fill packet buffer
-    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHECKSTATUS, 0);
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHECK_STATUS, 0);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
     // Initialize transaction
-    gMA.sendCmd = MACMD_CHECKSTATUS;
+    gMA.sendCmd = MACMD_CHECK_STATUS;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
 
     // Configure timer and start transaction
@@ -1029,12 +1029,12 @@ void MABIOS_CheckStatus2(MA_BUF *pRecvBuf)
     gMA.pRecvBuf = pRecvBuf;
 
     // Fill packet buffer
-    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHECKSTATUS, 0);
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHECK_STATUS, 0);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
     // Initialize transaction
-    gMA.sendCmd = MACMD_CHECKSTATUS;
+    gMA.sendCmd = MACMD_CHECK_STATUS;
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
 
     // Configure timer and start transaction
@@ -1067,11 +1067,11 @@ void MABIOS_ChangeClock(u8 mode)
 
     // Initialize transaction
     gMA.condition |= MA_CONDITION_BIOS_BUSY;
-    gMA.sendCmd = MACMD_CHANGECLOCK;
+    gMA.sendCmd = MACMD_CHANGE_CLOCK;
 
     // Fill packet buffer
     tmppPacket[MAPROT_HEADER_SIZE + 0] = mode;
-    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHANGECLOCK, 1);
+    tmpPacketLen = MA_CreatePacket(tmppPacket, MACMD_CHANGE_CLOCK, 1);
     MA_InitIoBuffer(&gMA.sendIoBuf, gMA.sendPacket, tmpPacketLen,
         IOBUF_SEND_DATA);
 
@@ -1847,7 +1847,7 @@ static void MA_IntrTimer_SIOWaitTime(void)
 /**
  * @brief Interpret CheckStatus response
  *
- * Checks the status byte reported by MACMD_CHECKSTATUS, and checks the internal
+ * Checks the status byte reported by MACMD_CHECK_STATUS, and checks the internal
  * state to return a suitable MA_CONDITION value. Handles errors by resetting
  * the library as well.
  *
@@ -1955,8 +1955,8 @@ void MA_DefaultNegaResProc(void)
     case MACMD_START:
     case MACMD_WAIT_CALL:
     case MACMD_DATA:
-    case MACMD_CHECKSTATUS:
-    case MACMD_CHANGECLOCK:
+    case MACMD_CHECK_STATUS:
+    case MACMD_CHANGE_CLOCK:
     case MACMD_EEPROM_READ:
     case MACMD_EEPROM_WRITE:
     case MACMD_PPP_CONNECT:
@@ -2038,7 +2038,7 @@ static void MA_ProcessRecvPacket(u8 cmd)
             i = FALSE;
             break;
 
-        case MAPROT_REPLY | MACMD_CHANGECLOCK:
+        case MAPROT_REPLY | MACMD_CHANGE_CLOCK:
             // Change the serial mode based on the byte in the request packet
             MA_ChangeSIOMode(pPacket[6]);
             gMA.intrMode = MA_INTR_WAIT;
@@ -2046,7 +2046,7 @@ static void MA_ProcessRecvPacket(u8 cmd)
             i = FALSE;
             break;
 
-        case MAPROT_REPLY | MACMD_CHECKSTATUS:
+        case MAPROT_REPLY | MACMD_CHECK_STATUS:
             // Make sure to update gMA.condition according to the received
             // status even if the calling function doesn't bother.
             MA_ProcessCheckStatusResponse(gMA.recvIoBuf.pWrite[0]);
