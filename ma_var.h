@@ -303,7 +303,7 @@ typedef struct {
     const char *pServerPathBkp;
     u32 serverPathLenBkp;
     u32 headBufSize;
-    u32 serverType;
+    u32 serverAuth;
     u32 authStep;
     char *pHeadBuf;
     u32 headEnd;

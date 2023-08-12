@@ -3345,7 +3345,7 @@ void MA_HTTP_GetPost(const char *pURL, char *pHeadBuf, u16 headBufSize,
             return;
         }
 
-        param.serverType = serverAuth;
+        param.serverAuth = serverAuth;
         if (serverType == SERVER_UNKNOWN) {
             param.pUserID = "";
             param.pPassword = "";
@@ -3503,7 +3503,7 @@ static int GetRequestType(void)
     ret = 0;
     switch (param.task) {
     case TASK_HTTP_GET:
-        switch (param.serverType) {
+        switch (param.serverAuth) {
         case SERVER_DOWNLOAD:
             switch (param.authStep) {
             case 0:
@@ -3519,7 +3519,7 @@ static int GetRequestType(void)
         break;
 
     case TASK_HTTP_POST:
-        switch (param.serverType) {
+        switch (param.serverAuth) {
         case SERVER_UNKNOWN:
             ret = 1;
             break;
@@ -3569,7 +3569,7 @@ static void CreateHttpRequestHeader(void)
 
     switch (param.task) {
     case TASK_HTTP_GET:
-        switch (param.serverType) {
+        switch (param.serverAuth) {
         case SERVER_UNKNOWN:
             break;
 
@@ -3605,7 +3605,7 @@ static void CreateHttpRequestHeader(void)
         break;
 
     case TASK_HTTP_POST:
-        switch (param.serverType) {
+        switch (param.serverAuth) {
         case SERVER_UNKNOWN:
             bAddContentLength = TRUE;
             break;
@@ -3684,7 +3684,7 @@ static int HttpGetNextStep(int index)
     case 0:
         switch (param.task) {
         case TASK_HTTP_GET:
-            switch (param.serverType) {
+            switch (param.serverAuth) {
             case SERVER_UNKNOWN:
                 step = 8;
                 break;
@@ -3700,7 +3700,7 @@ static int HttpGetNextStep(int index)
             break;
 
         case TASK_HTTP_POST:
-            switch (param.serverType) {
+            switch (param.serverAuth) {
             case SERVER_UNKNOWN:
                 step = 100;
                 break;
@@ -3744,7 +3744,7 @@ static int HttpGetNextStep(int index)
     case 1:
         switch (param.task) {
         case TASK_HTTP_GET:
-            switch (param.serverType) {
+            switch (param.serverAuth) {
             case SERVER_UNKNOWN:
                 step = 110;
                 break;
@@ -3774,7 +3774,7 @@ static int HttpGetNextStep(int index)
             break;
 
         case TASK_HTTP_POST:
-            switch (param.serverType) {
+            switch (param.serverAuth) {
             case SERVER_UNKNOWN:
                 step = 110;
                 break;
@@ -3812,7 +3812,7 @@ static int HttpGetNextStep(int index)
     case 2:
         switch (param.task) {
         case TASK_HTTP_GET:
-            switch (param.serverType) {
+            switch (param.serverAuth) {
             case SERVER_UNKNOWN:
                 step = 0xff;
                 break;
@@ -3841,7 +3841,7 @@ static int HttpGetNextStep(int index)
             break;
 
         case TASK_HTTP_POST:
-            switch (param.serverType) {
+            switch (param.serverAuth) {
             case SERVER_UNKNOWN:
                 step = 0xff;
                 break;
@@ -4039,10 +4039,10 @@ static void MATASK_HTTP_GetPost(void)
                     if (CheckResponse(&lineCp[9])) {
                         gMA.httpRes = GetResponse(&lineCp[9]);
                         param.headFound = TRUE;
-                        if ((param.serverType == SERVER_DOWNLOAD
-                                || param.serverType == SERVER_UPLOAD
-                                || param.serverType == SERVER_UTILITY
-                                || param.serverType == SERVER_RANKING)
+                        if ((param.serverAuth == SERVER_DOWNLOAD
+                                || param.serverAuth == SERVER_UPLOAD
+                                || param.serverAuth == SERVER_UTILITY
+                                || param.serverAuth == SERVER_RANKING)
                             && param.authStep == 0) {
                             if (gMA.httpRes != 401) {
                                 gMA.taskError = MAAPIE_HTTP;
