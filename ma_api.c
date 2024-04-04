@@ -349,6 +349,7 @@ static void MATASK_Stop(void)
     switch (gMA.taskStep) {
     case 0:
         gMA.taskStep++;
+        // fallthrough
 
     case 1:
         MA_BiosStop();
@@ -425,6 +426,7 @@ static void MATASK_TCP_Cut(void)
     switch (gMA.taskStep) {
     case 0:
         gMA.taskStep++;
+        // fallthrough
 
     case 1:
         if (param.cmd == MACMD_TCP_CONNECT
@@ -437,6 +439,7 @@ static void MATASK_TCP_Cut(void)
         } else {
             gMA.taskStep++;
         }
+        // fallthrough
 
     case 2:
         MABIOS_TCPDisconnect(&gMA.recvBuf, gMA.sockets[0]);
@@ -517,6 +520,7 @@ static void MATASK_InitLibrary(void)
 
     case 1:
         gMA.taskStep++;
+        // fallthrough
 
     case 2:
         MABIOS_End();
@@ -1996,6 +2000,7 @@ static void MATASK_SMTP_Send(void)
             break;
         }
         gMA.taskStep++;
+        // fallthrough
 
     case 1:
         if (param.sendSize > MAX_TCP_DATA_SIZE) {
@@ -2056,6 +2061,7 @@ static void MATASK_SMTP_Send(void)
     case 50:
         param.timeout = gMA.tcpDelayCounter[gMA.sioMode];
         gMA.taskStep++;
+        // fallthrough
 
     case 51:
         if (param.timeout-- == 0) gMA.taskStep = param.nextStep;
@@ -3920,6 +3926,7 @@ static void MATASK_HTTP_GetPost(void)
     case 1:
         MAU_memcpy(gMA.socketAddr, gMA.recvBuf.data, sizeof(gMA.socketAddr));
         gMA.taskStep++;
+        // fallthrough
 
     case 2:
         MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
@@ -3935,6 +3942,7 @@ static void MATASK_HTTP_GetPost(void)
         gMA.sockets[0] = gMA.recvBuf.data[0];
         gMA.usedSockets[0] = TRUE;
         gMA.taskStep++;
+        // fallthrough
 
     case 4:
         MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
@@ -3953,6 +3961,7 @@ static void MATASK_HTTP_GetPost(void)
         param.pServerPath = param.pServerPathBkp;
         param.serverPathLen = param.serverPathLenBkp;
         gMA.taskStep++;
+        // fallthrough
 
     case 6:
         MA_InitBuffer(&gMA.recvBuf, gMA.recvPacket);
@@ -4140,6 +4149,7 @@ static void MATASK_HTTP_GetPost(void)
     case 50:
         param.counter = gMA.tcpDelayCounter[gMA.sioMode];
         gMA.taskStep++;
+        // fallthrough
 
     case 51:
         if (param.counter-- == 0) {

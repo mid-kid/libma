@@ -216,6 +216,7 @@ static const u8 MaPacketData_NULL[] = {
 };
 
 /// Check adapter status
+__attribute__((unused))
 static const u8 MaPacketData_CheckStatus[] = {
     MAPROT_MAGIC_1, MAPROT_MAGIC_2,  // Magic bytes
     MACMD_CHECK_STATUS, 0x00, 0x00, 0x00,  // Command ID, size
@@ -1887,6 +1888,7 @@ int MA_ProcessCheckStatusResponse(u8 response)
             }
             MA_Reset();
         }
+        // fallthrough
 
     // Phone line is busy (in a call)
     case 5:
