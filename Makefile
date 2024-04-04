@@ -1,7 +1,7 @@
 HOSTCC ?= cc
-AR = thumb-elf-ar
-AS = thumb-elf-as
-CC = thumb-elf-gcc
+AR ?= thumb-elf-ar
+AS ?= thumb-elf-as
+CC ?= thumb-elf-gcc
 
 OFILES = ma_bios.o ma_api.o ma_sub.o md5c.o ma_ango.o ma_var.o
 LIB = libma.a
