@@ -1,7 +1,6 @@
 #ifndef _MA_BIOS
 #define _MA_BIOS
 
-#include <AgbTypes.h>
 #include "ma_var.h"
 
 void MABIOS_Init(void);
