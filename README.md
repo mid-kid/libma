@@ -11,5 +11,4 @@ How to build
 ------------
 
 * Build the [010110-ThumbPatch toolchain](https://github.com/mid-kid/arm-000512/tree/010110-ThumbPatch) using `./configure --prefix=<install dir> --host=i686-linux-gnu --target=thumb-elf`, and add it to `$PATH`.
-* Get the AGB SDK, any version is fine (such as `gbasdk.zip`), and set the `$AGBDIR` to point to it. If you get errors with "stray '\\' in program", run `dos2unix $AGBDIR/include/*.h`.
 * Run `make`.
